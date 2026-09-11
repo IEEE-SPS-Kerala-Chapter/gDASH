@@ -16,7 +16,7 @@ export default async function StatusPage({ params }: { params: { token: string }
   if (!result.found) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gignite-bg p-8 text-center font-body text-gignite-text">
-        <BrandLogo className="h-9" />
+        <BrandLogo className="h-14 lg:h-16" />
         <h1 className="font-heading text-2xl font-bold text-black">Registration not found</h1>
         <p className="max-w-sm text-gignite-text/80">
           That status link doesn&apos;t match a registration. Double-check the link your team leader
@@ -36,7 +36,7 @@ export default async function StatusPage({ params }: { params: { token: string }
     <main className="min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text">
       <div className="mx-auto flex max-w-[460px] flex-col gap-6">
         <div className="flex items-center gap-3">
-          <BrandLogo className="h-8" />
+          <BrandLogo className="h-12 lg:h-16" />
           <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-gignite-blue">
             Registration status
           </span>

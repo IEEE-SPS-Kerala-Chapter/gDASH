@@ -126,7 +126,7 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
       >
         ←
       </button>
-      <BrandLogo className="h-6" />
+      <BrandLogo className="h-8" />
       <div className="w-[34px]" />
     </div>
   );
@@ -142,9 +142,9 @@ export function DesktopSidebar({
   onHome: () => void;
 }) {
   return (
-    <div className="sticky top-10 hidden w-[240px] flex-none flex-col gap-8 lg:flex">
+    <div className="sticky top-10 hidden w-[300px] flex-none flex-col gap-10 lg:flex">
       <button type="button" onClick={onHome} className="w-fit text-left" aria-label="Back to home">
-        <BrandLogo className="h-8" />
+        <BrandLogo className="h-20" />
       </button>
 
       <div className="flex flex-col gap-1">
