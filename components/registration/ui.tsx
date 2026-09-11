@@ -126,7 +126,7 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
       >
         ←
       </button>
-      <BrandLogo className="h-8" />
+      <span className="font-heading text-[16px] font-bold text-black">Team Registration</span>
       <div className="w-[34px]" />
     </div>
   );
