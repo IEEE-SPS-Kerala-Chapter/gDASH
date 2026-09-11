@@ -121,6 +121,58 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
   );
 }
 
+export function DesktopSidebar({
+  steps,
+  step,
+  onHome,
+}: {
+  steps: readonly { key: string; nav: string }[];
+  step: number;
+  onHome: () => void;
+}) {
+  return (
+    <div className="sticky top-10 hidden w-[240px] flex-none flex-col gap-8 lg:flex">
+      <button
+        type="button"
+        onClick={onHome}
+        className="flex items-center gap-2 text-left"
+        aria-label="Back to home"
+      >
+        <div className="h-[13px] w-[13px] rounded-[3px] bg-gignite-accent" />
+        <span className="font-heading text-[18px] font-bold text-black">gIGNITE</span>
+      </button>
+
+      <div className="flex flex-col gap-1">
+        {steps.map((s, i) => {
+          const state = i < step ? "done" : i === step ? "current" : "upcoming";
+          return (
+            <div key={s.key} className="flex items-center gap-3 py-2">
+              <div
+                className={cn(
+                  "flex h-6 w-6 flex-none items-center justify-center rounded-full font-mono text-[11px] font-medium",
+                  state === "done" && "bg-gignite-accent text-black",
+                  state === "current" && "border-[1.5px] border-gignite-blue text-gignite-blue",
+                  state === "upcoming" && "border-[1.5px] border-gignite-border text-gignite-muted",
+                )}
+              >
+                {state === "done" ? "✓" : i + 1}
+              </div>
+              <span
+                className={cn(
+                  "font-body text-[14px]",
+                  state === "current" ? "font-semibold text-black" : "text-gignite-text/70",
+                )}
+              >
+                {s.nav}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function ProgressBar({ step }: { step: number }) {
   return (
     <div className="flex gap-[5px]">

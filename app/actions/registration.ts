@@ -2,10 +2,18 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 type SubmitResult =
   | { success: true; accessToken: string }
   | { success: false; error: string };
+
+type SubmitOptions = {
+  /** Value of the hidden honeypot input — must be empty for a real user. */
+  honeypot?: string;
+  /** Cloudflare Turnstile token from the widget on the final step. */
+  turnstileToken?: string | null;
+};
 
 /**
  * Submits the whole 4-step registration form in one atomic call to the
@@ -13,7 +21,21 @@ type SubmitResult =
  * participant account — the caller gets back an opaque access token used to
  * view /register/status/[token] afterwards.
  */
-export async function submitRegistration(data: RegistrationForm): Promise<SubmitResult> {
+export async function submitRegistration(
+  data: RegistrationForm,
+  options: SubmitOptions = {},
+): Promise<SubmitResult> {
+  // Bots that fill every field (including hidden ones) trip the honeypot.
+  // Pretend success without touching the database or revealing detection.
+  if (options.honeypot) {
+    return { success: true, accessToken: "0".repeat(36) };
+  }
+
+  const verified = await verifyTurnstile(options.turnstileToken ?? null);
+  if (!verified) {
+    return { success: false, error: "Verification failed. Please retry the challenge and submit again." };
+  }
+
   const parsed = registrationFormSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: "Some fields are invalid. Please review the form." };

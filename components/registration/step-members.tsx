@@ -60,18 +60,20 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
               </button>
             </div>
 
-            <Field label="Full name" error={e?.fullName?.message}>
-              <TextInput {...register(`members.${index}.fullName`)} />
-            </Field>
-            <Field label="Email" error={e?.email?.message}>
-              <TextInput type="email" {...register(`members.${index}.email`)} />
-            </Field>
-            <Field label="Phone" error={e?.phone?.message}>
-              <TextInput type="tel" {...register(`members.${index}.phone`)} />
-            </Field>
-            <Field label="College / institution" error={e?.college?.message}>
-              <TextInput {...register(`members.${index}.college`)} />
-            </Field>
+            <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-4">
+              <Field label="Full name" error={e?.fullName?.message}>
+                <TextInput {...register(`members.${index}.fullName`)} />
+              </Field>
+              <Field label="Email" error={e?.email?.message}>
+                <TextInput type="email" {...register(`members.${index}.email`)} />
+              </Field>
+              <Field label="Phone" error={e?.phone?.message}>
+                <TextInput type="tel" {...register(`members.${index}.phone`)} />
+              </Field>
+              <Field label="College / institution" error={e?.college?.message}>
+                <TextInput {...register(`members.${index}.college`)} />
+              </Field>
+            </div>
             <div className="flex gap-[10px]">
               <div className="min-w-0 flex-1">
                 <Field label="Branch" error={e?.branch?.message}>

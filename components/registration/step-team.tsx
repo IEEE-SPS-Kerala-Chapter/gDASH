@@ -38,25 +38,27 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
         Team leader
       </span>
 
-      <Field label="3 · Full name" error={e?.leaderName?.message}>
-        <TextInput {...register("team.leaderName")} placeholder="Your full name" />
-      </Field>
+      <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-[18px]">
+        <Field label="3 · Full name" error={e?.leaderName?.message}>
+          <TextInput {...register("team.leaderName")} placeholder="Your full name" />
+        </Field>
 
-      <Field
-        label="4 · Email"
-        hint="College email — eligibility is checked against it."
-        error={e?.leaderEmail?.message}
-      >
-        <TextInput type="email" {...register("team.leaderEmail")} placeholder="you@college.ac.in" />
-      </Field>
+        <Field
+          label="4 · Email"
+          hint="College email — eligibility is checked against it."
+          error={e?.leaderEmail?.message}
+        >
+          <TextInput type="email" {...register("team.leaderEmail")} placeholder="you@college.ac.in" />
+        </Field>
 
-      <Field label="5 · Phone" error={e?.leaderPhone?.message}>
-        <TextInput type="tel" {...register("team.leaderPhone")} placeholder="+91 98765 43210" />
-      </Field>
+        <Field label="5 · Phone" error={e?.leaderPhone?.message}>
+          <TextInput type="tel" {...register("team.leaderPhone")} placeholder="+91 98765 43210" />
+        </Field>
 
-      <Field label="6 · College / institution" error={e?.college?.message}>
-        <TextInput {...register("team.college")} placeholder="e.g. FISAT, Angamaly" />
-      </Field>
+        <Field label="6 · College / institution" error={e?.college?.message}>
+          <TextInput {...register("team.college")} placeholder="e.g. FISAT, Angamaly" />
+        </Field>
+      </div>
 
       <Field label="7 · District" error={e?.district?.message}>
         <Select {...register("team.district")} defaultValue="">
