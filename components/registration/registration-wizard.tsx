@@ -170,15 +170,17 @@ export function RegistrationWizard() {
           : `${[decl?.eligibility, decl?.originality, decl?.rules, decl?.mediaConsent].filter(Boolean).length} of 4 confirmed`;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-8 lg:flex-row lg:items-start lg:gap-14">
+    <div className="mx-auto flex w-full max-w-[460px] flex-col gap-10 lg:max-w-[1320px] lg:flex-row lg:items-start lg:gap-20">
       <DesktopSidebar steps={STEPS} step={step} onHome={() => router.push("/")} />
 
       <div
         className={
-          "mx-auto flex w-full max-w-[460px] flex-col overflow-hidden rounded-[30px] border border-black/[0.14] " +
+          "flex w-full flex-col overflow-hidden rounded-[30px] border border-black/[0.14] " +
           "bg-gignite-card shadow-[0_18px_46px_rgba(44,44,44,0.13)] " +
-          "lg:mx-0 lg:max-w-none lg:flex-1 lg:rounded-2xl lg:border-black/[0.08] lg:bg-gignite-surface " +
-          "lg:shadow-[0_2px_4px_rgba(44,44,44,0.05),0_20px_44px_rgba(32,65,154,0.08)]"
+          // Desktop drops the outer card entirely — the form sits directly on
+          // the page background, so only the per-section field groups below
+          // (FormCard) read as cards, not the whole panel doubled up.
+          "lg:flex-1 lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none"
         }
       >
         <div className="lg:hidden">
@@ -189,7 +191,7 @@ export function RegistrationWizard() {
             ev.preventDefault();
             void handleContinue();
           }}
-          className="flex flex-col gap-[18px] px-5 pb-[34px] pt-5 lg:px-12 lg:pb-12 lg:pt-10"
+          className="flex flex-col gap-[18px] px-5 pb-[34px] pt-5 lg:px-0 lg:pb-0 lg:pt-0"
         >
           {/* Honeypot: real users never see or fill this. Any bot that fills
               every field in a scripted form submit trips it. */}
@@ -217,7 +219,7 @@ export function RegistrationWizard() {
 
           <StepTitle title={current.title} subtitle={current.subtitle} />
 
-          <div className="lg:max-w-[640px]">
+          <div className="lg:max-w-[760px]">
             {current.key === "team" && <StepTeam form={form} />}
             {current.key === "members" && <StepMembers form={form} />}
             {current.key === "idea" && <StepIdea form={form} />}
@@ -225,12 +227,12 @@ export function RegistrationWizard() {
           </div>
 
           {isLastStep && (
-            <div className="lg:max-w-[640px]">
+            <div className="lg:max-w-[760px]">
               <TurnstileWidget onToken={setTurnstileToken} />
             </div>
           )}
 
-          <div className="flex flex-col gap-3 lg:max-w-[640px] lg:flex-row-reverse lg:items-center">
+          <div className="flex flex-col gap-3 lg:max-w-[760px] lg:flex-row-reverse lg:items-center">
             <div className="lg:flex-1">
               <PrimaryButton type="submit" disabled={submitting || (isLastStep && !readyToSubmit)}>
                 {submitting ? "Submitting…" : current.cta}

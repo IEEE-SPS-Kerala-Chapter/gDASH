@@ -213,7 +213,7 @@ export function StepTitle({ title, subtitle }: { title: string; subtitle: string
 
 export function FormCard({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-[18px] rounded-2xl border border-black/[0.08] bg-gignite-surface p-[22px] shadow-[0_2px_4px_rgba(44,44,44,0.05),0_16px_34px_rgba(32,65,154,0.09)]">
+    <div className="flex flex-col gap-[18px] rounded-2xl border border-black/[0.08] bg-gignite-surface p-[22px] shadow-[0_2px_4px_rgba(44,44,44,0.05),0_16px_34px_rgba(32,65,154,0.09)] lg:border-black/[0.05] lg:p-8 lg:shadow-[0_1px_2px_rgba(44,44,44,0.03),0_8px_20px_rgba(32,65,154,0.05)]">
       {children}
     </div>
   );

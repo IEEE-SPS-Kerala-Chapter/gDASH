@@ -2,7 +2,7 @@ import { RegistrationWizard } from "@/components/registration/registration-wizar
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text">
+    <main className="min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text lg:px-16 lg:py-16">
       <div className="mx-auto mb-8 flex max-w-[460px] flex-col gap-2 lg:hidden">
         <div className="flex items-center gap-[11px]">
           <div className="h-[13px] w-[13px] rounded-[3px] bg-gignite-accent" />
