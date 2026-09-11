@@ -49,7 +49,29 @@ const config: Config = {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
+  			},
+  			gignite: {
+  				bg: '#EFE7D3',
+  				card: '#FAF3E2',
+  				surface: '#FFFFFF',
+  				border: '#D9CDB2',
+  				'border-strong': '#C9BC9F',
+  				divider: '#F1EADB',
+  				text: '#2C2C2C',
+  				heading: '#000000',
+  				accent: '#F27721',
+  				'accent-hover': '#FF8A38',
+  				blue: '#20419A',
+  				'blue-pale': '#E4EAF6',
+  				danger: '#B23A16',
+  				warn: '#C25E0E',
+  				muted: '#6B6355'
   			}
+  		},
+  		fontFamily: {
+  			heading: ['var(--font-heading)'],
+  			body: ['var(--font-body)'],
+  			mono: ['var(--font-mono)']
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
