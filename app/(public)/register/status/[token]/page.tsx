@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getRegistrationStatus } from "@/app/actions/registration";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/registration/ui";
 
 const STATUS_STYLES: Record<string, string> = {
   submitted: "bg-gignite-blue-pale text-gignite-blue",
@@ -15,6 +16,7 @@ export default async function StatusPage({ params }: { params: { token: string }
   if (!result.found) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gignite-bg p-8 text-center font-body text-gignite-text">
+        <BrandLogo className="h-9" />
         <h1 className="font-heading text-2xl font-bold text-black">Registration not found</h1>
         <p className="max-w-sm text-gignite-text/80">
           That status link doesn&apos;t match a registration. Double-check the link your team leader
@@ -33,10 +35,10 @@ export default async function StatusPage({ params }: { params: { token: string }
   return (
     <main className="min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text">
       <div className="mx-auto flex max-w-[460px] flex-col gap-6">
-        <div className="flex items-center gap-[11px]">
-          <div className="h-[13px] w-[13px] rounded-[3px] bg-gignite-accent" />
+        <div className="flex items-center gap-3">
+          <BrandLogo className="h-8" />
           <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-gignite-blue">
-            gIGNITE · Registration status
+            Registration status
           </span>
         </div>
 

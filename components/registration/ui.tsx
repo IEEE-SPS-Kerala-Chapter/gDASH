@@ -1,6 +1,20 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import type { InputHTMLAttributes } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+
+export function BrandLogo({ className }: { className?: string }) {
+  return (
+    <Image
+      src="/gignite-logo.png"
+      alt="gIGNITE"
+      width={1100}
+      height={451}
+      priority
+      className={cn("h-auto w-auto", className)}
+    />
+  );
+}
 
 export function Field({
   label,
@@ -112,10 +126,7 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
       >
         ←
       </button>
-      <div className="flex items-center gap-2">
-        <div className="h-[11px] w-[11px] rounded-[3px] bg-gignite-accent" />
-        <span className="font-heading text-[16px] font-bold text-black">gIGNITE</span>
-      </div>
+      <BrandLogo className="h-6" />
       <div className="w-[34px]" />
     </div>
   );
@@ -132,14 +143,8 @@ export function DesktopSidebar({
 }) {
   return (
     <div className="sticky top-10 hidden w-[240px] flex-none flex-col gap-8 lg:flex">
-      <button
-        type="button"
-        onClick={onHome}
-        className="flex items-center gap-2 text-left"
-        aria-label="Back to home"
-      >
-        <div className="h-[13px] w-[13px] rounded-[3px] bg-gignite-accent" />
-        <span className="font-heading text-[18px] font-bold text-black">gIGNITE</span>
+      <button type="button" onClick={onHome} className="w-fit text-left" aria-label="Back to home">
+        <BrandLogo className="h-8" />
       </button>
 
       <div className="flex flex-col gap-1">
