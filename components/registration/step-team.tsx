@@ -3,15 +3,10 @@ import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
 import { createClient } from "@/lib/supabase/client";
+import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 
-export function StepTeam({
-  form,
-  testMode,
-}: {
-  form: UseFormReturn<RegistrationForm>;
-  testMode?: boolean;
-}) {
+export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const router = useRouter();
   const {
     register,
@@ -58,15 +53,12 @@ export function StepTeam({
           <TextInput {...register("team.leaderName")} placeholder="Your full name" />
         </Field>
 
-        <Field label="4 · Email" error={e?.leaderEmail?.message}>
-          {testMode ? (
-            <>
-              <TextInput type="email" {...register("team.leaderEmail")} placeholder="you@college.ac.in" />
-              <span className="text-[13px] leading-[1.45] text-gignite-warn">
-                Test mode — email is not verified.
-              </span>
-            </>
-          ) : (
+        <Field
+          label="4 · Email"
+          hint={GOOGLE_OAUTH_ENABLED ? undefined : "College email — eligibility is checked against it."}
+          error={e?.leaderEmail?.message}
+        >
+          {GOOGLE_OAUTH_ENABLED ? (
             <>
               <TextInput
                 type="email"
@@ -85,6 +77,8 @@ export function StepTeam({
                 </button>
               </span>
             </>
+          ) : (
+            <TextInput type="email" {...register("team.leaderEmail")} placeholder="you@college.ac.in" />
           )}
         </Field>
 

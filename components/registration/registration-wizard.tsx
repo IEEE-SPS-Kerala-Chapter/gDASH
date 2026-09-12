@@ -104,13 +104,7 @@ function buildDefaults(leaderEmail: string) {
   } as unknown as RegistrationForm;
 }
 
-export function RegistrationWizard({
-  leaderEmail,
-  testMode,
-}: {
-  leaderEmail: string;
-  testMode?: boolean;
-}) {
+export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -228,7 +222,7 @@ export function RegistrationWizard({
           <StepTitle title={current.title} subtitle={current.subtitle} />
 
           <div className="lg:max-w-[760px]">
-            {current.key === "team" && <StepTeam form={form} testMode={testMode} />}
+            {current.key === "team" && <StepTeam form={form} />}
             {current.key === "members" && <StepMembers form={form} />}
             {current.key === "idea" && <StepIdea form={form} />}
             {current.key === "declarations" && <StepDeclarations form={form} />}

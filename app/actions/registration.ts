@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
 
 type SubmitResult =
   | { success: true; accessToken: string }
@@ -45,27 +46,23 @@ export async function submitRegistration(
   try {
     const supabase = await createClient();
 
-    // The leader's email is only meaningful as "verified" if it actually
-    // came from the authenticated Google session — never from whatever the
-    // client posted. A tampered client payload could otherwise claim any
-    // email as "signed in" while bypassing OAuth entirely. Re-check the
-    // session here and use ITS email, ignoring team.leaderEmail from data.
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    // When Google OAuth is enabled (see lib/config.ts), the leader's email
+    // is only meaningful as "verified" if it actually came from the
+    // authenticated session — never from whatever the client posted, since
+    // a tampered payload could otherwise claim any email as "signed in."
+    // While disabled, this whole check is skipped and the submitted email
+    // is trusted directly, same as before OAuth existed.
     let leaderEmail: string;
-    if (user?.email) {
+    if (GOOGLE_OAUTH_ENABLED) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.email) {
+        return { success: false, error: "Please sign in with Google to register as team leader." };
+      }
       leaderEmail = user.email;
-    } else if (process.env.NODE_ENV !== "production") {
-      // Dev-only fallback while Google OAuth isn't configured yet (see
-      // googleOauth.md) — falls back to trusting the submitted email, same
-      // as before OAuth existed. Inert in production: Vercel always sets
-      // NODE_ENV=production, so a real deployment always requires a real
-      // session here regardless of what the client sends.
-      leaderEmail = team.leaderEmail;
     } else {
-      return { success: false, error: "Please sign in with Google to register as team leader." };
+      leaderEmail = team.leaderEmail;
     }
 
     const { data: result, error } = await supabase.rpc("submit_registration", {

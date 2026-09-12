@@ -1,18 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { BrandLogo, PrimaryButton, SecondaryButton } from "./ui";
+import { BrandLogo, PrimaryButton } from "./ui";
 
-export function LeaderSignIn({
-  authError,
-  showTestButton,
-}: {
-  authError?: boolean;
-  showTestButton?: boolean;
-}) {
-  const router = useRouter();
+export function LeaderSignIn({ authError }: { authError?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   async function handleSignIn() {
@@ -44,21 +36,10 @@ export function LeaderSignIn({
         </p>
       )}
 
-      <div className="flex w-full max-w-xs flex-col items-center gap-3">
+      <div className="w-full max-w-xs">
         <PrimaryButton type="button" onClick={handleSignIn} disabled={loading}>
           {loading ? "Redirecting…" : "Continue with Google"}
         </PrimaryButton>
-
-        {showTestButton && (
-          <>
-            <SecondaryButton type="button" onClick={() => router.push("/register?dev=1")}>
-              Test register (dev only, skips sign-in)
-            </SecondaryButton>
-            <p className="text-xs text-gignite-text/60">
-              Only visible in local dev — Google sign-in isn&apos;t configured yet.
-            </p>
-          </>
-        )}
       </div>
     </main>
   );
