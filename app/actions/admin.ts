@@ -253,3 +253,100 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
 
   return { success: true, csv, filename: `registrations-${today}.csv` };
 }
+
+export type StaffAccount = { id: string; full_name: string; email: string; role: string; created_at: string };
+
+/** Admin-only: every staff account (admin/judge/volunteer), for the staff management page. */
+export async function getStaffAccounts(): Promise<
+  { success: true; staff: StaffAccount[] } | { success: false; error: string }
+> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "admin") {
+    return { success: false, error: "Only admins can view staff accounts." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { success: false, error: "Could not load staff accounts." };
+  }
+  return { success: true, staff: data ?? [] };
+}
+
+const STAFF_ROLES = ["admin", "judge", "volunteer"] as const;
+const STAFF_EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+type CreateStaffResult = { success: true } | { success: false; error: string };
+
+/**
+ * Admin-only: create a staff account (judge, volunteer, or another admin)
+ * directly from the dashboard, instead of the terminal-only
+ * scripts/seed-staff.mjs. Uses the service-role client for both steps —
+ * auth.admin.createUser() always needs it, and there's no "admin can
+ * update anyone's profile" RLS policy (profiles_update_own only allows a
+ * self-update), so setting the requested role also has to go through it.
+ * The password is chosen by the admin and must still be handed to the new
+ * staff member out of band — there's no invite-email flow yet.
+ */
+export async function createStaffAccount(input: {
+  email: string;
+  fullName: string;
+  role: string;
+  password: string;
+}): Promise<CreateStaffResult> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "admin") {
+    return { success: false, error: "Only admins can create staff accounts." };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const fullName = input.fullName.trim();
+
+  if (!STAFF_EMAIL_RE.test(email)) {
+    return { success: false, error: "Enter a valid email address." };
+  }
+  if (fullName.length < 2 || fullName.length > 80) {
+    return { success: false, error: "Name must be 2-80 characters." };
+  }
+  if (!STAFF_ROLES.includes(input.role as (typeof STAFF_ROLES)[number])) {
+    return { success: false, error: "Invalid role." };
+  }
+  if (input.password.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  });
+
+  if (error || !data.user) {
+    if (error?.code === "email_exists") {
+      return { success: false, error: "An account with that email already exists." };
+    }
+    return { success: false, error: "Could not create the account." };
+  }
+
+  // handle_new_user() already inserted a profiles row (default role 'admin')
+  // — set it to the role actually requested.
+  const { error: roleError } = await admin
+    .from("profiles")
+    .update({ role: input.role, full_name: fullName })
+    .eq("id", data.user.id);
+
+  if (roleError) {
+    return {
+      success: false,
+      error: "Account created, but couldn't set its role. Fix it via scripts/seed-staff.mjs.",
+    };
+  }
+
+  return { success: true };
+}

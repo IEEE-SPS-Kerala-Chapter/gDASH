@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,11 @@ export function DashboardShell({
           <Badge variant="secondary" className="capitalize">
             {role}
           </Badge>
+          {role === "admin" && (
+            <Link href="/dashboard/staff" className="text-sm text-secondary-foreground hover:underline">
+              Manage staff
+            </Link>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">{name}</span>
