@@ -44,11 +44,37 @@ export type Idea = z.infer<typeof ideaSchema>;
 export type Declarations = z.infer<typeof declarationsSchema>;
 
 // Full multi-step form, validated again server-side on final submit.
-export const registrationFormSchema = z.object({
-  team: teamDetailsSchema,
-  members: membersStepSchema,
-  idea: ideaSchema,
-  declarations: declarationsSchema,
-});
+export const registrationFormSchema = z
+  .object({
+    team: teamDetailsSchema,
+    members: membersStepSchema,
+    idea: ideaSchema,
+    declarations: declarationsSchema,
+  })
+  // Catches a duplicate email *within this one submission* (leader re-typed
+  // as a member, or two members given the same email by mistake) before it
+  // ever reaches the database — the DB's unique index only catches this
+  // person already being on a *different* team.
+  .superRefine((data, ctx) => {
+    const seenBy = new Map<string, string>(); // normalized email -> who had it first
+
+    const leaderEmail = data.team.leaderEmail?.trim().toLowerCase();
+    if (leaderEmail) seenBy.set(leaderEmail, "the team leader");
+
+    data.members.forEach((member, index) => {
+      const email = member.email?.trim().toLowerCase();
+      if (!email) return;
+      const existing = seenBy.get(email);
+      if (existing) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["members", index, "email"],
+          message: `This email is already used by ${existing} above.`,
+        });
+      } else {
+        seenBy.set(email, `member ${index + 2}`);
+      }
+    });
+  });
 
 export type RegistrationForm = z.infer<typeof registrationFormSchema>;

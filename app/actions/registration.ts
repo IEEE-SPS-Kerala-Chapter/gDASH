@@ -84,7 +84,7 @@ export async function submitRegistration(
     if (error.message?.includes("member email already registered")) {
       return {
         success: false,
-        error: "One of these members is already registered on another team.",
+        error: "A team member can only join one team, and can't be part of another.",
       };
     }
     if (error.message?.includes("team name taken")) {
