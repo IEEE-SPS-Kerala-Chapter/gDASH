@@ -76,14 +76,19 @@ export async function submitRegistration(
   });
 
   if (error) {
-    if (error.code === "23505" || error.message?.includes("team name taken")) {
-      return { success: false, error: "That team name is taken — try another." };
-    }
+    // Both exceptions share the same Postgres error class (23505, unique
+    // violation), so the message — not the code — is what tells them apart.
+    // Checking error.code alone here previously matched the member-email
+    // case too and always reported "team name taken", even when the real
+    // conflict was a duplicate member email.
     if (error.message?.includes("member email already registered")) {
       return {
         success: false,
         error: "One of these members is already registered on another team.",
       };
+    }
+    if (error.message?.includes("team name taken")) {
+      return { success: false, error: "That team name is taken — try another." };
     }
     return { success: false, error: "Something went wrong submitting your registration." };
   }
