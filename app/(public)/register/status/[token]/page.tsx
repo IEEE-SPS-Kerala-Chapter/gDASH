@@ -17,10 +17,13 @@ export default async function StatusPage({ params }: { params: { token: string }
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gignite-bg p-8 text-center font-body text-gignite-text">
         <BrandLogo className="h-14 lg:h-16" />
-        <h1 className="font-heading text-2xl font-bold text-black">Registration not found</h1>
+        <h1 className="font-heading text-2xl font-bold text-black">
+          {result.systemError ? "Couldn't check your status" : "Registration not found"}
+        </h1>
         <p className="max-w-sm text-gignite-text/80">
-          That status link doesn&apos;t match a registration. Double-check the link your team leader
-          received, or register a new team.
+          {result.systemError
+            ? "Something went wrong on our end — this isn't about your registration. Try refreshing in a moment."
+            : "That status link doesn't match a registration. Double-check the link your team leader received, or register a new team."}
         </p>
         <Link href="/register" className="font-semibold text-gignite-blue hover:text-gignite-accent">
           Go to registration →
