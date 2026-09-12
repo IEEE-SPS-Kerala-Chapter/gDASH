@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { createClient } from "@/lib/supabase/client";
-import { Field, TextArea, TextInput, FormCard } from "./ui";
+import { Field, TextArea, FormCard } from "./ui";
 import { cn } from "@/lib/utils";
 
 const MAX_DECK_BYTES = 20 * 1024 * 1024;
@@ -84,11 +84,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
       </Field>
 
       <Field label="19 · Supporting material" error={e?.supportingLink?.message}>
-        <TextInput
-          {...register("idea.supportingLink")}
-          placeholder="Link to a deck, repo or short video"
-        />
-        <label className="mt-2 flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">
+        <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">
           <input
             type="file"
             accept=".pdf,.pptx"
