@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/registration/ui";
 import { signIn } from "@/app/actions/auth";
 
 export default function AdminLoginPage() {
@@ -30,10 +31,11 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
+      <BrandLogo className="h-14" />
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Staff sign-in</CardTitle>
+          <CardTitle className="font-heading">Staff sign-in</CardTitle>
           <CardDescription>For organizers, judges, and volunteers only.</CardDescription>
         </CardHeader>
         <CardContent>

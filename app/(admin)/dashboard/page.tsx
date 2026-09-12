@@ -1,5 +1,5 @@
 import { getTeamsForAdmin, getJudges } from "@/app/actions/admin";
-import { DashboardTable } from "@/components/admin/dashboard-table";
+import { TeamsBrowser } from "@/components/admin/teams-browser";
 
 export default async function DashboardPage() {
   const [teamsResult, judgesResult] = await Promise.all([getTeamsForAdmin(), getJudges()]);
@@ -10,8 +10,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Registrations</h1>
-      <DashboardTable teams={teamsResult.teams} judges={judgesResult.success ? judgesResult.judges : []} />
+      <h1 className="font-heading text-2xl font-bold">Registrations</h1>
+      <TeamsBrowser teams={teamsResult.teams} judges={judgesResult.success ? judgesResult.judges : []} />
     </div>
   );
 }

@@ -67,6 +67,57 @@ export type AdminTeam = {
 
 const REGISTRATION_STATUSES = ["submitted", "under_review", "shortlisted", "rejected"] as const;
 
+const TEAM_SELECT = `id, name, ai_theme, district, status, created_at,
+     team_members ( id, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
+     registrations (
+       id, problem_statement, proposed_solution, ai_approach, expected_impact,
+       supporting_link, deck_path, status, created_at,
+       registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) )
+     )`;
+
+type RawTeamRow = {
+  id: string;
+  name: string;
+  ai_theme: string;
+  district: string;
+  status: string;
+  created_at: string;
+  team_members: AdminMember[] | null;
+  registrations:
+    | (AdminRegistration & {
+        registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
+      })
+    | (AdminRegistration & {
+        registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
+      })[]
+    | null;
+};
+
+function mapTeamRow(t: RawTeamRow): AdminTeam {
+  const rawReg = Array.isArray(t.registrations) ? t.registrations[0] : t.registrations;
+  let registration: AdminRegistration | null = null;
+  if (rawReg) {
+    registration = {
+      ...rawReg,
+      assignments: (rawReg.registration_assignments ?? []).map((a) => ({
+        id: a.id,
+        judge_id: a.judge_id,
+        judge_name: a.profiles?.full_name ?? "Unknown",
+      })),
+    };
+  }
+  return {
+    id: t.id,
+    name: t.name,
+    ai_theme: t.ai_theme,
+    district: t.district,
+    status: t.status,
+    created_at: t.created_at,
+    members: t.team_members ?? [],
+    registration,
+  };
+}
+
 /** Staff-only data fetch: all teams with their members and registration. */
 export async function getTeamsForAdmin(): Promise<
   { success: true; teams: AdminTeam[] } | { success: false; error: string }
@@ -75,15 +126,7 @@ export async function getTeamsForAdmin(): Promise<
 
   const { data, error } = await supabase
     .from("teams")
-    .select(
-      `id, name, ai_theme, district, status, created_at,
-       team_members ( id, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
-       registrations (
-         id, problem_statement, proposed_solution, ai_approach, expected_impact,
-         supporting_link, deck_path, status, created_at,
-         registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) )
-       )`,
-    )
+    .select(TEAM_SELECT)
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -93,35 +136,22 @@ export async function getTeamsForAdmin(): Promise<
     return { success: false, error: "Could not load teams." };
   }
 
-  const teams: AdminTeam[] = (data ?? []).map((t) => {
-    const rawReg = Array.isArray(t.registrations) ? t.registrations[0] : t.registrations;
-    let registration: AdminRegistration | null = null;
-    if (rawReg) {
-      const reg = rawReg as unknown as AdminRegistration & {
-        registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
-      };
-      registration = {
-        ...reg,
-        assignments: (reg.registration_assignments ?? []).map((a) => ({
-          id: a.id,
-          judge_id: a.judge_id,
-          judge_name: a.profiles?.full_name ?? "Unknown",
-        })),
-      };
-    }
-    return {
-      id: t.id,
-      name: t.name,
-      ai_theme: t.ai_theme,
-      district: t.district,
-      status: t.status,
-      created_at: t.created_at,
-      members: (t.team_members ?? []) as AdminMember[],
-      registration,
-    };
-  });
+  return { success: true, teams: (data ?? []).map((t) => mapTeamRow(t as unknown as RawTeamRow)) };
+}
 
-  return { success: true, teams };
+/** Staff-only data fetch: one team by id, for the detail page. */
+export async function getTeamDetail(
+  teamId: string,
+): Promise<{ success: true; team: AdminTeam } | { success: false; error: string }> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.from("teams").select(TEAM_SELECT).eq("id", teamId).single();
+
+  if (error || !data) {
+    return { success: false, error: "Team not found." };
+  }
+
+  return { success: true, team: mapTeamRow(data as unknown as RawTeamRow) };
 }
 
 /** Staff-only: list all judge accounts, for the assignment picker. */

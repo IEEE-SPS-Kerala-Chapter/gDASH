@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BrandLogo } from "@/components/registration/ui";
 import { signOut } from "@/app/actions/auth";
 
 export function DashboardShell({
@@ -23,10 +24,10 @@ export function DashboardShell({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="flex items-center justify-between border-b bg-white px-6 py-4">
+    <div className="min-h-screen bg-background">
+      <header className="flex items-center justify-between border-b bg-card px-6 py-4">
         <div className="flex items-center gap-3">
-          <span className="font-semibold">gIGNITE admin</span>
+          <BrandLogo className="h-8" />
           <Badge variant="secondary" className="capitalize">
             {role}
           </Badge>
