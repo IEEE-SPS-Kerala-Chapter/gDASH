@@ -170,6 +170,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                 <TableHead>Leader</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Judges</TableHead>
+                <TableHead>Avg score</TableHead>
                 <TableHead
                   className="cursor-pointer select-none"
                   onClick={() => setSortNewestFirst((s) => !s)}
@@ -212,6 +213,9 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                       ) : (
                         "—"
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {team.registration?.avgScore != null ? `${team.registration.avgScore.toFixed(1)} / 10` : "—"}
                     </TableCell>
                     <TableCell>
                       {team.registration ? new Date(team.registration.created_at).toLocaleString("en-IN", {
@@ -267,19 +271,26 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                       : "Not submitted"}
                   </span>
                 </div>
-                <div className="border-t pt-3">
-                  <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Judges
-                  </span>
-                  {team.registration ? (
-                    <InlineJudgeAssign
-                      registrationId={team.registration.id}
-                      assignments={team.registration.assignments}
-                      judges={judges}
-                      onChange={(a) => handleAssignmentsChange(team.id, a)}
-                    />
-                  ) : (
-                    <span className="text-sm text-muted-foreground">—</span>
+                <div className="flex items-center justify-between border-t pt-3">
+                  <div>
+                    <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Judges
+                    </span>
+                    {team.registration ? (
+                      <InlineJudgeAssign
+                        registrationId={team.registration.id}
+                        assignments={team.registration.assignments}
+                        judges={judges}
+                        onChange={(a) => handleAssignmentsChange(team.id, a)}
+                      />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  {team.registration?.avgScore != null && (
+                    <span className="whitespace-nowrap text-sm font-medium">
+                      {team.registration.avgScore.toFixed(1)} / 10
+                    </span>
                   )}
                 </div>
               </Card>

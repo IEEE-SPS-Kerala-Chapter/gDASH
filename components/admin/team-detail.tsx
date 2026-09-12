@@ -9,6 +9,8 @@ import type { AdminTeam, AdminJudge } from "@/app/actions/admin";
 import { updateRegistrationStatus } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { InlineDeckViewer } from "./inline-deck-viewer";
+import { JudgeScoresSummary } from "./judge-scores-summary";
+import { ScoreForm } from "@/components/judge/score-form";
 
 const STATUS_LABELS: Record<string, string> = {
   submitted: "Submitted",
@@ -24,10 +26,20 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: "border-transparent bg-red-100 text-red-800",
 };
 
-export function TeamDetail({ team: initialTeam, judges }: { team: AdminTeam; judges: AdminJudge[] }) {
+export function TeamDetail({
+  team: initialTeam,
+  judges,
+  viewerRole,
+}: {
+  team: AdminTeam;
+  judges: AdminJudge[];
+  viewerRole: string;
+}) {
   const [team, setTeam] = useState(initialTeam);
   const reg = team.registration;
   const leader = team.members.find((m) => m.is_leader);
+  const isAdmin = viewerRole === "admin";
+  const isJudge = viewerRole === "judge";
 
   async function handleStatusChange(status: string) {
     if (!reg) return;
@@ -64,7 +76,7 @@ export function TeamDetail({ team: initialTeam, judges }: { team: AdminTeam; jud
         )}
       </div>
 
-      {reg && (
+      {reg && isAdmin && (
         <section className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Status</span>
           <Select value={reg.status} onValueChange={handleStatusChange}>
@@ -89,7 +101,7 @@ export function TeamDetail({ team: initialTeam, judges }: { team: AdminTeam; jud
         </section>
       )}
 
-      {reg && (
+      {reg && isAdmin && (
         <section className="flex flex-col gap-2">
           <span className="text-sm font-medium">Assigned judges</span>
           <InlineJudgeAssign
@@ -100,6 +112,20 @@ export function TeamDetail({ team: initialTeam, judges }: { team: AdminTeam; jud
               setTeam((prev) => (prev.registration ? { ...prev, registration: { ...prev.registration, assignments } } : prev))
             }
           />
+        </section>
+      )}
+
+      {reg && isAdmin && (
+        <section className="flex flex-col gap-2">
+          <span className="text-sm font-medium">Judge scores</span>
+          <JudgeScoresSummary scores={reg.scores} avgScore={reg.avgScore} />
+        </section>
+      )}
+
+      {reg && isJudge && (
+        <section className="flex flex-col gap-2">
+          <span className="text-sm font-medium">Your evaluation</span>
+          <ScoreForm registrationId={reg.id} existingScore={reg.scores[0]} />
         </section>
       )}
 

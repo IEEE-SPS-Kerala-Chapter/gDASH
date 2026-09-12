@@ -2,9 +2,18 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  TEAM_SELECT,
+  mapTeamRow,
+  type RawTeamRow,
+  type AdminJudge,
+  type AdminTeam,
+} from "@/lib/admin-teams";
+
+export type { AdminMember, AdminJudge, AdminAssignment, AdminJudgeScore, AdminRegistration, AdminTeam, RawTeamRow } from "@/lib/admin-teams";
 
 /** Returns the caller's profile role, or null if not signed in / no profile. */
-async function getCallerRole(): Promise<{ userId: string; role: string } | null> {
+export async function getCallerRole(): Promise<{ userId: string; role: string } | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -17,108 +26,16 @@ async function getCallerRole(): Promise<{ userId: string; role: string } | null>
   return { userId: user.id, role: profile.role };
 }
 
-export type AdminMember = {
-  id: string;
-  full_name: string;
-  email: string;
-  phone: string;
-  college: string;
-  branch: string | null;
-  year: string | null;
-  role_in_team: string | null;
-  is_leader: boolean;
-};
-
-export type AdminJudge = {
-  id: string;
-  full_name: string;
-  email: string;
-};
-
-export type AdminAssignment = {
-  id: string;
-  judge_id: string;
-  judge_name: string;
-};
-
-export type AdminRegistration = {
-  id: string;
-  problem_statement: string;
-  proposed_solution: string;
-  ai_approach: string;
-  expected_impact: string;
-  supporting_link: string | null;
-  deck_path: string | null;
-  status: "submitted" | "under_review" | "shortlisted" | "rejected";
-  created_at: string;
-  assignments: AdminAssignment[];
-};
-
-export type AdminTeam = {
-  id: string;
-  name: string;
-  ai_theme: string;
-  district: string;
-  status: string;
-  created_at: string;
-  members: AdminMember[];
-  registration: AdminRegistration | null;
-};
-
 const REGISTRATION_STATUSES = ["submitted", "under_review", "shortlisted", "rejected"] as const;
 
-const TEAM_SELECT = `id, name, ai_theme, district, status, created_at,
-     team_members ( id, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
-     registrations (
-       id, problem_statement, proposed_solution, ai_approach, expected_impact,
-       supporting_link, deck_path, status, created_at,
-       registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) )
-     )`;
-
-type RawTeamRow = {
-  id: string;
-  name: string;
-  ai_theme: string;
-  district: string;
-  status: string;
-  created_at: string;
-  team_members: AdminMember[] | null;
-  registrations:
-    | (AdminRegistration & {
-        registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
-      })
-    | (AdminRegistration & {
-        registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
-      })[]
-    | null;
-};
-
-function mapTeamRow(t: RawTeamRow): AdminTeam {
-  const rawReg = Array.isArray(t.registrations) ? t.registrations[0] : t.registrations;
-  let registration: AdminRegistration | null = null;
-  if (rawReg) {
-    registration = {
-      ...rawReg,
-      assignments: (rawReg.registration_assignments ?? []).map((a) => ({
-        id: a.id,
-        judge_id: a.judge_id,
-        judge_name: a.profiles?.full_name ?? "Unknown",
-      })),
-    };
-  }
-  return {
-    id: t.id,
-    name: t.name,
-    ai_theme: t.ai_theme,
-    district: t.district,
-    status: t.status,
-    created_at: t.created_at,
-    members: t.team_members ?? [],
-    registration,
-  };
-}
-
-/** Staff-only data fetch: all teams with their members and registration. */
+/**
+ * Staff-only data fetch: all teams with their members and registration.
+ * Named for its original caller (the admin dashboard), but RLS scopes the
+ * underlying query per role regardless of who calls it — an admin session
+ * gets every team, a judge session would only get teams assigned to them.
+ * The judge dashboard uses its own getMyAssignedTeams() in app/actions/judge.ts
+ * instead, mostly so the intent reads clearly at the call site.
+ */
 export async function getTeamsForAdmin(): Promise<
   { success: true; teams: AdminTeam[] } | { success: false; error: string }
 > {
