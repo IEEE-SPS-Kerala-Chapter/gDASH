@@ -15,8 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { AdminTeam } from "@/app/actions/admin";
-import { updateRegistrationStatus, exportRegistrationsCsv } from "@/app/actions/admin";
+import type { AdminTeam, AdminJudge } from "@/app/actions/admin";
+import {
+  updateRegistrationStatus,
+  exportRegistrationsCsv,
+  getDeckDownloadUrl,
+  assignJudge,
+  unassignJudge,
+} from "@/app/actions/admin";
 
 const STATUS_STYLES: Record<string, string> = {
   submitted: "",
@@ -32,12 +38,29 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: "Rejected",
 };
 
-export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) {
+// Explicit locale + timezone, pinned so this renders identically on the
+// server and the client (an unpinned toLocaleString() reflects whatever
+// locale each environment happens to default to — Node's on the server,
+// the browser's on the client — which are usually different and trigger a
+// hydration mismatch) and so every viewer sees the same IST wall-clock time
+// regardless of where the server or their own browser is.
+function formatSubmittedAt(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+export function DashboardTable({ teams: initialTeams, judges }: { teams: AdminTeam[]; judges: AdminJudge[] }) {
   const [teams, setTeams] = useState(initialTeams);
   const [search, setSearch] = useState("");
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [selected, setSelected] = useState<AdminTeam | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [deckLoading, setDeckLoading] = useState(false);
+  const [pickedJudgeId, setPickedJudgeId] = useState("");
+  const [assigning, setAssigning] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -50,25 +73,65 @@ export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) 
     });
   }, [teams, search, sortNewestFirst]);
 
+  function patchRegistration(teamId: string, patch: Partial<NonNullable<AdminTeam["registration"]>>) {
+    setTeams((prev) =>
+      prev.map((t) => (t.id === teamId && t.registration ? { ...t, registration: { ...t.registration, ...patch } } : t)),
+    );
+    setSelected((prev) =>
+      prev && prev.id === teamId && prev.registration ? { ...prev, registration: { ...prev.registration, ...patch } } : prev,
+    );
+  }
+
   async function handleStatusChange(registrationId: string, teamId: string, status: string) {
     const result = await updateRegistrationStatus(registrationId, status);
     if (!result.success) {
       toast.error(result.error);
       return;
     }
-    setTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId && t.registration
-          ? { ...t, registration: { ...t.registration, status: status as typeof t.registration.status } }
-          : t,
-      ),
-    );
-    setSelected((prev) =>
-      prev && prev.id === teamId && prev.registration
-        ? { ...prev, registration: { ...prev.registration, status: status as typeof prev.registration.status } }
-        : prev,
-    );
+    patchRegistration(teamId, { status: status as NonNullable<AdminTeam["registration"]>["status"] });
     toast.success("Status updated.");
+  }
+
+  async function handleViewDeck(deckPath: string) {
+    setDeckLoading(true);
+    const result = await getDeckDownloadUrl(deckPath);
+    setDeckLoading(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    window.open(result.url, "_blank", "noopener,noreferrer");
+  }
+
+  async function handleAssign(teamId: string, registrationId: string) {
+    if (!pickedJudgeId) return;
+    setAssigning(true);
+    const result = await assignJudge(registrationId, pickedJudgeId);
+    setAssigning(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    const judge = judges.find((j) => j.id === pickedJudgeId);
+    if (judge) {
+      const newAssignment = { id: result.assignmentId, judge_id: judge.id, judge_name: judge.full_name };
+      patchRegistration(teamId, {
+        assignments: [...(teams.find((t) => t.id === teamId)?.registration?.assignments ?? []), newAssignment],
+      });
+    }
+    setPickedJudgeId("");
+    toast.success("Judge assigned.");
+  }
+
+  async function handleUnassign(teamId: string, assignmentId: string) {
+    const result = await unassignJudge(assignmentId);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    const current = teams.find((t) => t.id === teamId)?.registration?.assignments ?? [];
+    patchRegistration(teamId, { assignments: current.filter((a) => a.id !== assignmentId) });
+    toast.success("Assignment removed.");
   }
 
   async function handleExport() {
@@ -89,6 +152,9 @@ export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) 
     a.remove();
     URL.revokeObjectURL(url);
   }
+
+  const assignedIds = new Set(selected?.registration?.assignments.map((a) => a.judge_id) ?? []);
+  const availableJudges = judges.filter((j) => !assignedIds.has(j.id));
 
   return (
     <div className="flex flex-col gap-4">
@@ -113,6 +179,7 @@ export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) 
               <TableHead>Members</TableHead>
               <TableHead>Leader</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Judges</TableHead>
               <TableHead
                 className="cursor-pointer select-none"
                 onClick={() => setSortNewestFirst((s) => !s)}
@@ -124,7 +191,7 @@ export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) 
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                   {teams.length === 0 ? "No teams registered yet." : "No teams match your search."}
                 </TableCell>
               </TableRow>
@@ -147,8 +214,9 @@ export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) 
                         {STATUS_LABELS[status] ?? status}
                       </Badge>
                     </TableCell>
+                    <TableCell>{team.registration?.assignments.length ?? 0}</TableCell>
                     <TableCell>
-                      {team.registration ? new Date(team.registration.created_at).toLocaleString() : "—"}
+                      {team.registration ? formatSubmittedAt(team.registration.created_at) : "—"}
                     </TableCell>
                   </TableRow>
                 );
@@ -191,6 +259,78 @@ export function DashboardTable({ teams: initialTeams }: { teams: AdminTeam[] }) 
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                )}
+
+                {selected.registration?.deck_path && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium">Uploaded deck</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-fit"
+                      disabled={deckLoading}
+                      onClick={() => selected.registration?.deck_path && handleViewDeck(selected.registration.deck_path)}
+                    >
+                      {deckLoading ? "Opening…" : "View / download deck"}
+                    </Button>
+                  </div>
+                )}
+
+                {selected.registration && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-sm font-medium">Assigned judges</span>
+                    {selected.registration.assignments.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selected.registration.assignments.map((a) => (
+                          <Badge key={a.id} variant="secondary" className="gap-1.5">
+                            {a.judge_name}
+                            <button
+                              type="button"
+                              aria-label={`Unassign ${a.judge_name}`}
+                              onClick={() => handleUnassign(selected.id, a.id)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              ×
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">No judges assigned yet.</span>
+                    )}
+
+                    {availableJudges.length > 0 ? (
+                      <div className="flex gap-2">
+                        <Select value={pickedJudgeId} onValueChange={setPickedJudgeId}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Choose a judge…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableJudges.map((j) => (
+                              <SelectItem key={j.id} value={j.id}>
+                                {j.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={!pickedJudgeId || assigning}
+                          onClick={() => selected.registration && handleAssign(selected.id, selected.registration.id)}
+                        >
+                          Assign
+                        </Button>
+                      </div>
+                    ) : (
+                      judges.length === 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          No judge accounts exist yet — create one with the seed script (role: judge).
+                        </span>
+                      )
+                    )}
                   </div>
                 )}
 
