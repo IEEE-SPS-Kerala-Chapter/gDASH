@@ -75,34 +75,36 @@ const STEPS = [
   },
 ] as const;
 
-const emptyDefaults = {
-  team: {
-    teamName: "",
-    aiTheme: "",
-    leaderName: "",
-    leaderEmail: "",
-    leaderPhone: "",
-    college: "",
-    district: "",
-  },
-  members: [],
-  idea: {
-    problemStatement: "",
-    proposedSolution: "",
-    aiApproach: "",
-    expectedImpact: "",
-    supportingLink: "",
-    deckPath: "",
-  },
-  declarations: {
-    eligibility: false,
-    originality: false,
-    rules: false,
-    mediaConsent: false,
-  },
-} as unknown as RegistrationForm;
+function buildDefaults(leaderEmail: string) {
+  return {
+    team: {
+      teamName: "",
+      aiTheme: "",
+      leaderName: "",
+      leaderEmail,
+      leaderPhone: "",
+      college: "",
+      district: "",
+    },
+    members: [],
+    idea: {
+      problemStatement: "",
+      proposedSolution: "",
+      aiApproach: "",
+      expectedImpact: "",
+      supportingLink: "",
+      deckPath: "",
+    },
+    declarations: {
+      eligibility: false,
+      originality: false,
+      rules: false,
+      mediaConsent: false,
+    },
+  } as unknown as RegistrationForm;
+}
 
-export function RegistrationWizard() {
+export function RegistrationWizard({ leaderEmail }: { leaderEmail: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -114,7 +116,7 @@ export function RegistrationWizard() {
     // react-hook-form's own Resolver<T> — a known type-only friction between
     // the two packages, not a real mismatch. Runtime behavior is correct.
     resolver: zodResolver(registrationFormSchema) as never,
-    defaultValues: emptyDefaults,
+    defaultValues: buildDefaults(leaderEmail),
     mode: "onBlur",
   });
 

@@ -45,13 +45,26 @@ export async function submitRegistration(
   try {
     const supabase = await createClient();
 
+    // The leader's email is only meaningful as "verified" if it actually
+    // came from the authenticated Google session — never from whatever the
+    // client posted. A tampered client payload could otherwise claim any
+    // email as "signed in" while bypassing OAuth entirely. Re-check the
+    // session here and use ITS email, ignoring team.leaderEmail from data.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.email) {
+      return { success: false, error: "Please sign in with Google to register as team leader." };
+    }
+    const leaderEmail = user.email;
+
     const { data: result, error } = await supabase.rpc("submit_registration", {
       p_team_name: team.teamName,
       p_ai_theme: team.aiTheme,
       p_district: team.district,
       p_leader: {
         full_name: team.leaderName,
-        email: team.leaderEmail,
+        email: leaderEmail,
         phone: team.leaderPhone,
         college: team.college,
       },

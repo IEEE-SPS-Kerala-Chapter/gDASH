@@ -1,14 +1,23 @@
+import { useRouter } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
+import { createClient } from "@/lib/supabase/client";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 
 export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
+  const router = useRouter();
   const {
     register,
     formState: { errors },
   } = form;
   const e = errors.team;
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.refresh();
+  }
 
   return (
     <FormCard>
@@ -43,12 +52,23 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
           <TextInput {...register("team.leaderName")} placeholder="Your full name" />
         </Field>
 
-        <Field
-          label="4 · Email"
-          hint="College email — eligibility is checked against it."
-          error={e?.leaderEmail?.message}
-        >
-          <TextInput type="email" {...register("team.leaderEmail")} placeholder="you@college.ac.in" />
+        <Field label="4 · Email" error={e?.leaderEmail?.message}>
+          <TextInput
+            type="email"
+            {...register("team.leaderEmail")}
+            readOnly
+            className="cursor-not-allowed bg-gignite-card text-gignite-text/80"
+          />
+          <span className="text-[13px] leading-[1.45] text-gignite-text/70">
+            Verified via Google.{" "}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="font-semibold text-gignite-blue hover:text-gignite-accent"
+            >
+              Not you? Sign out
+            </button>
+          </span>
         </Field>
 
         <Field label="5 · Phone" error={e?.leaderPhone?.message}>
