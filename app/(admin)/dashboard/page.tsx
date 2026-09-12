@@ -1,7 +1,17 @@
-export default function DashboardPage() {
+import { getTeamsForAdmin } from "@/app/actions/admin";
+import { DashboardTable } from "@/components/admin/dashboard-table";
+
+export default async function DashboardPage() {
+  const result = await getTeamsForAdmin();
+
+  if (!result.success) {
+    return <p className="text-destructive">{result.error}</p>;
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
-      <p className="text-muted-foreground">Admin dashboard — coming soon.</p>
-    </main>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-2xl font-semibold">Registrations</h1>
+      <DashboardTable teams={result.teams} />
+    </div>
   );
 }
