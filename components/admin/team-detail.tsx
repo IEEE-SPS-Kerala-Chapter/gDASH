@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { AdminTeam, AdminJudge } from "@/app/actions/admin";
 import { updateRegistrationStatus } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
-import { DeckViewer } from "./deck-viewer";
+import { InlineDeckViewer } from "./inline-deck-viewer";
 
 const STATUS_LABELS: Record<string, string> = {
   submitted: "Submitted",
@@ -45,7 +45,7 @@ export function TeamDetail({ team: initialTeam, judges }: { team: AdminTeam; jud
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <Link href="/dashboard" className="w-fit text-sm text-secondary-foreground hover:underline">
         ← Back to registrations
       </Link>
@@ -85,9 +85,7 @@ export function TeamDetail({ team: initialTeam, judges }: { team: AdminTeam; jud
       {reg?.deck_path && (
         <section className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Uploaded deck</span>
-          <div>
-            <DeckViewer deckPath={reg.deck_path} />
-          </div>
+          <InlineDeckViewer deckPath={reg.deck_path} />
         </section>
       )}
 
