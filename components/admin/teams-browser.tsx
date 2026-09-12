@@ -16,9 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { AdminTeam, AdminJudge, AdminAssignment } from "@/app/actions/admin";
+import type { AdminTeam, AdminJudge, AdminAssignment, AdminRegistration } from "@/app/actions/admin";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
+import { InlineStatusSelect } from "./inline-status-select";
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -78,6 +79,16 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
   function handleAssignmentsChange(teamId: string, assignments: AdminAssignment[]) {
     setTeams((prev) =>
       prev.map((t) => (t.id === teamId && t.registration ? { ...t, registration: { ...t.registration, assignments } } : t)),
+    );
+  }
+
+  function handleStatusChange(teamId: string, status: string) {
+    setTeams((prev) =>
+      prev.map((t) =>
+        t.id === teamId && t.registration
+          ? { ...t, registration: { ...t.registration, status: status as AdminRegistration["status"] } }
+          : t,
+      ),
     );
   }
 
@@ -178,9 +189,17 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                     <TableCell>{team.members.length}</TableCell>
                     <TableCell>{leader?.full_name ?? "—"}</TableCell>
                     <TableCell>
-                      <Badge className={STATUS_STYLES[status]} variant="secondary">
-                        {STATUS_LABELS[status] ?? status}
-                      </Badge>
+                      {team.registration ? (
+                        <InlineStatusSelect
+                          registrationId={team.registration.id}
+                          status={status}
+                          onChange={(s) => handleStatusChange(team.id, s)}
+                        />
+                      ) : (
+                        <Badge className={STATUS_STYLES[status]} variant="secondary">
+                          {STATUS_LABELS[status] ?? status}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {team.registration ? (
@@ -223,9 +242,17 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                     <h3 className="font-heading font-semibold">{team.name}</h3>
                     <p className="text-sm text-muted-foreground">{team.ai_theme}</p>
                   </div>
-                  <Badge className={STATUS_STYLES[status]} variant="secondary">
-                    {STATUS_LABELS[status] ?? status}
-                  </Badge>
+                  {team.registration ? (
+                    <InlineStatusSelect
+                      registrationId={team.registration.id}
+                      status={status}
+                      onChange={(s) => handleStatusChange(team.id, s)}
+                    />
+                  ) : (
+                    <Badge className={STATUS_STYLES[status]} variant="secondary">
+                      {STATUS_LABELS[status] ?? status}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1 text-sm text-muted-foreground">
                   <span>Leader: {leader?.full_name ?? "—"}</span>
