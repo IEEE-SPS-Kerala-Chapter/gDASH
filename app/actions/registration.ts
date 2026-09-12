@@ -53,10 +53,20 @@ export async function submitRegistration(
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user?.email) {
+
+    let leaderEmail: string;
+    if (user?.email) {
+      leaderEmail = user.email;
+    } else if (process.env.NODE_ENV !== "production") {
+      // Dev-only fallback while Google OAuth isn't configured yet (see
+      // googleOauth.md) — falls back to trusting the submitted email, same
+      // as before OAuth existed. Inert in production: Vercel always sets
+      // NODE_ENV=production, so a real deployment always requires a real
+      // session here regardless of what the client sends.
+      leaderEmail = team.leaderEmail;
+    } else {
       return { success: false, error: "Please sign in with Google to register as team leader." };
     }
-    const leaderEmail = user.email;
 
     const { data: result, error } = await supabase.rpc("submit_registration", {
       p_team_name: team.teamName,
