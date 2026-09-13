@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useFieldArray, type UseFormReturn } from "react-hook-form";
-import type { RegistrationForm } from "@/lib/validations/registration";
+import { normalizeCollegeName, type RegistrationForm } from "@/lib/validations/registration";
 import { MEMBER_YEARS } from "@/lib/validations/member";
 import { Field, TextInput, Select, FormCard } from "./ui";
 
@@ -26,6 +27,17 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
   const college = watch("team.college");
   const slotsLeft = MAX_ADDITIONAL_MEMBERS - fields.length;
 
+  // Cross-field "same college" validation only actually runs once the
+  // schema resolver re-fires (on blur, or when the step is submitted) — so
+  // on its own, a member could type a mismatched college and see nothing
+  // until they try to move on. Tracking "has this field been left at least
+  // once" here lets us show the same check live, right after they finish
+  // typing it, independent of when/whether RHF's own validation catches up.
+  // Keyed by useFieldArray's stable field.id (not array index) so removing
+  // an earlier member doesn't shift a later member's "touched" state onto
+  // the wrong row.
+  const [collegeTouched, setCollegeTouched] = useState<Record<string, boolean>>({});
+
   return (
     <div className="flex flex-col gap-[16px]">
       <div className="flex items-center gap-3 rounded-xl bg-gignite-blue-pale px-4 py-[14px]">
@@ -45,6 +57,19 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
 
       {fields.map((field, index) => {
         const e = errors.members?.[index];
+        const memberCollege = watch(`members.${index}.college`);
+        const collegeMismatch =
+          Boolean(collegeTouched[field.id]) &&
+          Boolean(college?.trim()) &&
+          Boolean(memberCollege?.trim()) &&
+          normalizeCollegeName(memberCollege) !== normalizeCollegeName(college);
+        const collegeError =
+          e?.college?.message ??
+          (collegeMismatch
+            ? `Doesn't match the team's college (${college}). If it's the same college, try dropping the location, e.g. "FISAT" instead of "FISAT, Angamaly".`
+            : undefined);
+        const collegeReg = register(`members.${index}.college`);
+
         return (
           <FormCard key={field.id}>
             <div className="flex items-center justify-between">
@@ -70,8 +95,18 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
               <Field label="Phone" error={e?.phone?.message}>
                 <TextInput type="tel" {...register(`members.${index}.phone`)} />
               </Field>
-              <Field label="College / institution" error={e?.college?.message}>
-                <TextInput {...register(`members.${index}.college`)} />
+              <Field
+                label="College / institution"
+                error={collegeError}
+                hint={college ? `Must match the team's college: ${college}` : undefined}
+              >
+                <TextInput
+                  {...collegeReg}
+                  onBlur={(ev) => {
+                    void collegeReg.onBlur(ev);
+                    setCollegeTouched((prev) => ({ ...prev, [field.id]: true }));
+                  }}
+                />
               </Field>
             </div>
             <div className="flex gap-[10px]">

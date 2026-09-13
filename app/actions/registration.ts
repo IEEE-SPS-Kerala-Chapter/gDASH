@@ -111,6 +111,11 @@ export async function submitRegistration(
       if (error.message?.includes("team name taken")) {
         return { success: false, error: "That team name is taken — try another." };
       }
+      if (error.message?.includes("same college")) {
+        // The Zod schema already catches this client-side — reaching here
+        // means either a stale form state or a direct API call bypassing it.
+        return { success: false, error: "All team members must be from the same college." };
+      }
       return { success: false, error: "Something went wrong submitting your registration." };
     }
 
