@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Users, UserCog, Download, LogOut } from "lucide-react";
-import { BrandLogo, GridBackground } from "@/components/admin/ui";
+import { BrandLogo, GridBackground, MarqueeStrip } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
@@ -115,8 +115,9 @@ export function DashboardShell({
         </div>
       </aside>
 
-      {/* Content column: compact top bar (mobile/tablet only) + main, stacked. */}
+      {/* Content column: marquee + compact top bar (mobile/tablet only) + main, stacked. Sidebar stays untouched to the left. */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+        <MarqueeStrip />
         <header className="flex items-center justify-between border-b border-gignite-border bg-gignite-card px-5 py-3.5 lg:hidden">
           <div className="flex items-center gap-3">
             <BrandLogo className="h-7" />

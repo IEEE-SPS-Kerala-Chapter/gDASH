@@ -45,6 +45,45 @@ export function GridBackground({ faded = false }: { faded?: boolean }) {
   );
 }
 
+/**
+ * Continuously scrolling sponsor strip — the Gadgeon logo (from the
+ * gIGNITE-UI landing page's public/ folder) repeated in a seamless loop.
+ * Two identical copies of the same run sit side by side; animating the
+ * outer track exactly -50% of its own width loops without a visible seam.
+ * Sits in normal document flow (not fixed/overlaid), so it never covers
+ * page content — just pushes it down like a banner.
+ */
+export function MarqueeStrip({ className }: { className?: string }) {
+  const run = (copyIndex: number) => (
+    <div className="flex flex-none items-center gap-20 pr-20" aria-hidden={copyIndex === 1}>
+      {Array.from({ length: 6 }, (_, i) => (
+        <Image
+          key={i}
+          src="/gadgeon-logo.png"
+          alt={copyIndex === 0 && i === 0 ? "Gadgeon Smart Systems" : ""}
+          width={190}
+          height={64}
+          className="h-14 w-auto flex-none opacity-80"
+        />
+      ))}
+    </div>
+  );
+
+  return (
+    <div
+      className={cn(
+        "relative z-10 flex w-full items-center overflow-hidden border-b border-gignite-border bg-gignite-card py-4",
+        className,
+      )}
+    >
+      <div className="flex w-max animate-marquee">
+        {run(0)}
+        {run(1)}
+      </div>
+    </div>
+  );
+}
+
 export function Field({
   label,
   hint,

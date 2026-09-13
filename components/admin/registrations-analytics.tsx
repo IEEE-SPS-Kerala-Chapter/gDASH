@@ -118,11 +118,22 @@ function DailyActivityPanel({ teams }: { teams: AdminTeam[] }) {
   const yesterday = daily[daily.length - 2];
   const delta = today.count - yesterday.count;
   const maxCount = Math.max(1, ...daily.map((d) => d.count));
+  // Derived from the same "today" key the trend itself uses (not a second,
+  // independent `new Date()`), so it can't disagree with the chart and
+  // rolls forward on its own as days — and months — pass.
+  const monthLabel = new Date(`${today.key}T00:00:00+05:30`).toLocaleDateString("en-IN", {
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
 
   return (
     <Panel className="flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Daily submissions</span>
+        <div className="flex items-baseline gap-2">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Daily submissions</span>
+          <span className="font-mono text-[11px] text-gignite-blue">{monthLabel}</span>
+        </div>
         <div className="flex items-baseline gap-2">
           <span className="font-heading text-[24px] font-bold text-black">{today.count}</span>
           <span className="text-[13px] text-gignite-text/70">today</span>

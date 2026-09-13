@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { BrandLogo, GridBackground, PrimaryButton } from "./ui";
+import { BrandLogo, GridBackground, MarqueeStrip, PrimaryButton } from "./ui";
 
 export function LeaderSignIn({ authError }: { authError?: boolean }) {
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,9 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
   }
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center gap-6 bg-gignite-bg p-8 text-center font-body text-gignite-text">
+    <>
+      <MarqueeStrip />
+      <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-6 bg-gignite-bg p-8 text-center font-body text-gignite-text">
       <GridBackground />
       <BrandLogo className="relative z-10 h-16" />
       <div className="relative z-10 flex max-w-sm flex-col gap-2">
@@ -42,6 +44,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
           {loading ? "Redirecting…" : "Continue with Google"}
         </PrimaryButton>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

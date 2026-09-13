@@ -1,6 +1,6 @@
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { LeaderSignIn } from "@/components/registration/leader-sign-in";
-import { BrandLogo, GridBackground } from "@/components/registration/ui";
+import { BrandLogo, GridBackground, MarqueeStrip } from "@/components/registration/ui";
 import { createClient } from "@/lib/supabase/server";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
 
@@ -24,27 +24,33 @@ export default async function RegisterPage({
     }
 
     return (
+      <>
+        <MarqueeStrip />
+        <main className="relative min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text lg:px-16 lg:py-16">
+          <GridBackground />
+          <div className="relative z-10">
+            <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
+              <BrandLogo className="h-14" />
+            </div>
+            <RegistrationWizard leaderEmail={user.email} />
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <MarqueeStrip />
       <main className="relative min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text lg:px-16 lg:py-16">
         <GridBackground />
         <div className="relative z-10">
           <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
             <BrandLogo className="h-14" />
           </div>
-          <RegistrationWizard leaderEmail={user.email} />
+          <RegistrationWizard />
         </div>
       </main>
-    );
-  }
-
-  return (
-    <main className="relative min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text lg:px-16 lg:py-16">
-      <GridBackground />
-      <div className="relative z-10">
-        <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
-          <BrandLogo className="h-14" />
-        </div>
-        <RegistrationWizard />
-      </div>
-    </main>
+    </>
   );
 }
