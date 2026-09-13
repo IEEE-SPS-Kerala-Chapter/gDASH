@@ -2,29 +2,23 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { updateRegistrationStatus } from "@/app/actions/admin";
+import { REGISTRATION_STATUS_LABELS, REGISTRATION_STATUS_BADGE_VARIANT } from "@/lib/registration-status";
 import { cn } from "@/lib/utils";
 
-const STATUS_LABELS: Record<string, string> = {
-  submitted: "Submitted",
-  under_review: "Under review",
-  shortlisted: "Shortlisted",
-  rejected: "Rejected",
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  submitted: "",
-  under_review: "border-transparent bg-amber-100 text-amber-800",
-  shortlisted: "border-transparent bg-emerald-100 text-emerald-800",
-  rejected: "border-transparent bg-red-100 text-red-800",
+const VARIANT_SELECT_CLASSES: Record<string, string> = {
+  neutral: "border-gignite-blue/25 bg-gignite-blue-pale text-gignite-blue",
+  warn: "border-gignite-warn/25 bg-gignite-warn-pale text-gignite-warn",
+  success: "border-gignite-success/25 bg-gignite-success-pale text-gignite-success",
+  danger: "border-gignite-danger/25 bg-gignite-danger-pale text-gignite-danger",
 };
 
 /**
  * Change a registration's status directly from a list row or card, without
- * navigating into the detail page. Stops click propagation so it can sit
- * inside a row/card that navigates on click elsewhere.
+ * navigating into the detail page. The select itself is the colored pill —
+ * clicking it opens the native dropdown to change status. Stops click
+ * propagation so it can sit inside a row/card that navigates on click
+ * elsewhere.
  */
 export function InlineStatusSelect({
   registrationId,
@@ -50,24 +44,24 @@ export function InlineStatusSelect({
     toast.success("Status updated.");
   }
 
+  const variant = REGISTRATION_STATUS_BADGE_VARIANT[status] ?? "neutral";
+
   return (
-    <div onClick={(e) => e.stopPropagation()}>
-      <Select disabled={busy} value={status} onValueChange={handleChange}>
-        <SelectTrigger className="h-7 w-[150px] text-xs">
-          <SelectValue>
-            <Badge className={cn("text-[10px]", STATUS_STYLES[status])} variant="secondary">
-              {STATUS_LABELS[status] ?? status}
-            </Badge>
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <SelectItem key={value} value={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <select
+      disabled={busy}
+      value={status}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => handleChange(e.target.value)}
+      className={cn(
+        "cursor-pointer appearance-none rounded-full border-[1.5px] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        VARIANT_SELECT_CLASSES[variant],
+      )}
+    >
+      {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
+    </select>
   );
 }

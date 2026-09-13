@@ -2,13 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createStaffAccount, type StaffAccount } from "@/app/actions/admin";
+import { Badge, Field, FormCard, Panel, PrimaryButton, SecondaryButton, SectionLabel, Select, TextInput } from "@/components/admin/ui";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", judge: "Judge", volunteer: "Volunteer" };
 
@@ -64,102 +59,77 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
   return (
     <div className="flex flex-col gap-6">
       {justCreated && (
-        <Card className="border-primary">
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
-            <div className="text-sm">
-              <p className="font-medium">Account created — share these with them yourself:</p>
-              <p className="text-muted-foreground">
+        <Panel className="border-gignite-blue/40">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 text-[14px]">
+            <div>
+              <p className="m-0 font-semibold text-black">Account created — share these with them yourself:</p>
+              <p className="m-0 text-gignite-text/70">
                 {justCreated.email} / {justCreated.password}
               </p>
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={copyCredentials}>
+              <SecondaryButton type="button" onClick={copyCredentials}>
                 Copy
-              </Button>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setJustCreated(null)}>
+              </SecondaryButton>
+              <SecondaryButton type="button" onClick={() => setJustCreated(null)}>
                 Dismiss
-              </Button>
+              </SecondaryButton>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-heading text-lg">Add a staff account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="staff-name">Full name</Label>
-                <Input id="staff-name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      <FormCard>
+        <h2 className="m-0 font-heading text-[19px] font-bold text-black">Add a staff account</h2>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Full name">
+              <TextInput required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <TextInput type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </Field>
+            <Field label="Role">
+              <Select value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value="judge">Judge</option>
+                <option value="volunteer">Volunteer</option>
+                <option value="admin">Admin</option>
+              </Select>
+            </Field>
+            <Field label="Temporary password">
+              <div className="flex gap-2">
+                <TextInput required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+                <SecondaryButton type="button" onClick={() => setPassword(generatePassword())}>
+                  Generate
+                </SecondaryButton>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="staff-email">Email</Label>
-                <Input
-                  id="staff-email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="staff-role">Role</Label>
-                <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger id="staff-role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="judge">Judge</SelectItem>
-                    <SelectItem value="volunteer">Volunteer</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="staff-password">Temporary password</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="staff-password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <Button type="button" variant="outline" onClick={() => setPassword(generatePassword())}>
-                    Generate
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              There&apos;s no invite email yet — after creating the account, you&apos;ll need to send this email and
-              password to them yourself.
-            </p>
-            <Button type="submit" disabled={submitting} className="w-fit">
+            </Field>
+          </div>
+          <p className="m-0 text-[13px] text-gignite-text/60">
+            There&apos;s no invite email yet — after creating the account, you&apos;ll need to send this email and
+            password to them yourself.
+          </p>
+          <div className="w-fit">
+            <PrimaryButton type="submit" disabled={submitting}>
               {submitting ? "Creating…" : "Create account"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            </PrimaryButton>
+          </div>
+        </form>
+      </FormCard>
 
       <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">Existing staff ({staff.length})</span>
-        <div className="flex flex-col divide-y rounded-md border bg-card">
+        <SectionLabel>Existing staff ({staff.length})</SectionLabel>
+        <Panel className="flex flex-col divide-y divide-gignite-divider">
           {staff.map((s) => (
-            <div key={s.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+            <div key={s.id} className="flex items-center justify-between gap-3 p-3 text-[14px]">
               <div>
-                <div className="font-medium">{s.full_name}</div>
-                <div className="text-muted-foreground">{s.email}</div>
+                <div className="font-semibold text-black">{s.full_name}</div>
+                <div className="text-gignite-text/70">{s.email}</div>
               </div>
-              <Badge variant="secondary" className="capitalize">
-                {ROLE_LABELS[s.role] ?? s.role}
-              </Badge>
+              <Badge>{ROLE_LABELS[s.role] ?? s.role}</Badge>
             </div>
           ))}
-        </div>
+        </Panel>
       </div>
     </div>
   );

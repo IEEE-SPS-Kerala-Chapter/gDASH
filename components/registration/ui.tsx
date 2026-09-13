@@ -16,6 +16,35 @@ export function BrandLogo({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Faint graph-paper grid, fixed behind the page content — matches the
+ * ".circuit-grid-overlay" background used on the gIGNITE landing page
+ * (gIGNITE-UI repo, src/index.css), ported here so the registration and
+ * staff-login pages read as the same product as the site that links to
+ * them. Render it first, then wrap the actual content in `relative z-10`
+ * so it paints above the overlay regardless of DOM stacking quirks.
+ *
+ * `faded` softens it further with a blur + lower opacity — used behind the
+ * admin/staff dashboard, where the grid sits directly behind dense card
+ * content and reads as busier than on the mostly-empty registration/login
+ * pages; the sharp version stays the default everywhere else.
+ */
+export function GridBackground({ faded = false }: { faded?: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn("pointer-events-none fixed inset-0 z-0", faded && "blur-[3px]")}
+      style={{
+        backgroundImage:
+          "linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)",
+        backgroundSize: "80px 80px",
+        backgroundPosition: "center center",
+        opacity: faded ? 0.6 : 1,
+      }}
+    />
+  );
+}
+
 export function Field({
   label,
   hint,

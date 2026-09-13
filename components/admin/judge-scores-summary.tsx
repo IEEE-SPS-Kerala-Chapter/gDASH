@@ -9,38 +9,99 @@ const CRITERION_ACCESSOR: Record<string, (s: AdminJudgeScore) => number> = {
   completion_functionality: (s) => s.completionFunctionality,
 };
 
-/** Read-only breakdown of every judge's Stage 1 score for a registration — admin view only. */
-export function JudgeScoresSummary({ scores, avgScore }: { scores: AdminJudgeScore[]; avgScore: number | null }) {
-  if (scores.length === 0) {
-    return <p className="text-sm text-muted-foreground">No judge has scored this team yet.</p>;
-  }
+const CRITERION_SHORT_LABEL: Record<string, string> = {
+  problem_relevance: "Relev.",
+  technical_implementation: "Tech.",
+  innovation_creativity: "Innov.",
+  feasibility_scalability: "Feas.",
+  completion_functionality: "Compl.",
+};
+
+const GRID_COLS = "grid grid-cols-[minmax(0,1.4fr)_repeat(5,56px)_72px] items-center gap-2.5";
+
+/**
+ * Judge scores table for the team detail page — per-criterion breakdown
+ * across the assigned panel, plus each judge's written comment below.
+ * Read-only: judges edit their own scores elsewhere until the round closes.
+ */
+export function JudgeScoresSummary({
+  scores,
+  avgScore,
+  assignedCount,
+}: {
+  scores: AdminJudgeScore[];
+  avgScore: number | null;
+  assignedCount: number;
+}) {
+  const heading =
+    scores.length > 0
+      ? `${scores.length} of ${assignedCount} assigned judges have scored`
+      : "No scores submitted yet";
 
   return (
-    <div className="flex flex-col gap-3">
-      {avgScore !== null && (
-        <p className="text-sm">
-          Average weighted score ({scores.length} judge{scores.length > 1 ? "s" : ""}):{" "}
-          <span className="font-semibold">{avgScore.toFixed(1)} / 10</span>
-        </p>
-      )}
-      <div className="flex flex-col gap-3">
-        {scores.map((s) => (
-          <div key={s.id} className="rounded-md border bg-card p-3 text-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-medium">{s.judgeName}</span>
-              <span className="font-semibold">{s.weighted.toFixed(1)} / 10</span>
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    <div className="flex flex-col gap-4 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">
+            Judge scores · Stage 1
+          </span>
+          <h3 className="m-0 font-heading text-[22px] font-medium tracking-[-0.01em] text-black">{heading}</h3>
+        </div>
+        <div className="flex items-baseline gap-2.5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Average</span>
+          <span className="font-heading text-[34px] font-bold leading-none tracking-[-0.02em] text-gignite-warn">
+            {avgScore === null ? "—" : `${avgScore.toFixed(1)} / 10`}
+          </span>
+        </div>
+      </div>
+
+      {scores.length > 0 && (
+        <>
+          <div className="overflow-hidden rounded-[10px] border border-gignite-divider">
+            <div className={`${GRID_COLS} bg-gignite-card px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-text`}>
+              <span>Judge</span>
               {STAGE1_CRITERIA.map((c) => (
-                <span key={c.key}>
-                  {c.label}: {CRITERION_ACCESSOR[c.key](s)}
+                <span key={c.key} className="text-center leading-tight">
+                  {CRITERION_SHORT_LABEL[c.key]}
+                  <br />
+                  {c.weight}%
                 </span>
               ))}
+              <span className="text-right">Weighted</span>
             </div>
-            {s.comments && <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{s.comments}</p>}
+            {scores.map((s) => (
+              <div key={s.id} className={`${GRID_COLS} border-t border-gignite-divider bg-white px-4 py-3`}>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-black">{s.judgeName}</span>
+                </div>
+                {STAGE1_CRITERIA.map((c) => (
+                  <span key={c.key} className="text-center font-mono text-[14px] text-gignite-text">
+                    {CRITERION_ACCESSOR[c.key](s)}
+                  </span>
+                ))}
+                <span className="text-right font-heading text-[16px] font-bold text-gignite-blue">
+                  {s.weighted.toFixed(1)}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+
+          <div className="flex flex-col gap-3.5">
+            {scores.map((s) => (
+              <div key={s.id} className="flex flex-col gap-1.5 rounded-[10px] bg-gignite-card p-4">
+                <div className="flex items-baseline justify-between gap-3.5">
+                  <span className="text-[14px] font-semibold text-black">{s.judgeName}</span>
+                  <span className="font-mono text-[12px] text-gignite-blue">{s.weighted.toFixed(1)} weighted</span>
+                </div>
+                {s.comments && <p className="m-0 text-[14px] leading-[1.6] text-gignite-text">{s.comments}</p>}
+              </div>
+            ))}
+          </div>
+          <span className="text-[13px] leading-[1.5] text-gignite-text/70">
+            Read-only. Judges edit their own scores until the round closes; the average is unweighted across judges.
+          </span>
+        </>
+      )}
     </div>
   );
 }

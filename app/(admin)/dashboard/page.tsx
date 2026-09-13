@@ -3,6 +3,7 @@ import { getMyAssignedTeams } from "@/app/actions/judge";
 import { getMyProfile } from "@/app/actions/profile";
 import { TeamsBrowser } from "@/components/admin/teams-browser";
 import { JudgeTeamsList } from "@/components/judge/judge-teams-list";
+import { PageHeading, Panel } from "@/components/admin/ui";
 
 export default async function DashboardPage() {
   const profile = await getMyProfile();
@@ -11,11 +12,11 @@ export default async function DashboardPage() {
     const teamsResult = await getMyAssignedTeams();
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="font-heading text-2xl font-bold">Your assigned teams</h1>
+        <PageHeading title="Your assigned teams" />
         {teamsResult.success ? (
           <JudgeTeamsList teams={teamsResult.teams} />
         ) : (
-          <p className="text-destructive">{teamsResult.error}</p>
+          <p className="text-gignite-danger">{teamsResult.error}</p>
         )}
       </div>
     );
@@ -23,21 +24,21 @@ export default async function DashboardPage() {
 
   if (profile?.role === "volunteer") {
     return (
-      <div className="rounded-md border bg-card py-16 text-center text-muted-foreground">
+      <Panel className="py-16 text-center text-[14px] text-gignite-text/60">
         Nothing here for you yet — check back once check-in opens closer to the event.
-      </div>
+      </Panel>
     );
   }
 
   const [teamsResult, judgesResult] = await Promise.all([getTeamsForAdmin(), getJudges()]);
 
   if (!teamsResult.success) {
-    return <p className="text-destructive">{teamsResult.error}</p>;
+    return <p className="text-gignite-danger">{teamsResult.error}</p>;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-heading text-2xl font-bold">Registrations</h1>
+      <PageHeading title="Registrations" />
       <TeamsBrowser teams={teamsResult.teams} judges={judgesResult.success ? judgesResult.judges : []} />
     </div>
   );

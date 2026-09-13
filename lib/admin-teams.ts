@@ -54,6 +54,10 @@ export type AdminRegistration = {
   deck_path: string | null;
   status: "submitted" | "under_review" | "shortlisted" | "rejected";
   created_at: string;
+  declaration_eligibility: boolean;
+  declaration_originality: boolean;
+  declaration_rules: boolean;
+  declaration_media_consent: boolean;
   assignments: AdminAssignment[];
   /**
    * Whoever the caller is, RLS already scoped this: an admin sees every
@@ -80,6 +84,7 @@ export const TEAM_SELECT = `id, name, ai_theme, district, status, created_at,
      registrations (
        id, problem_statement, proposed_solution, ai_approach, expected_impact,
        supporting_link, deck_path, status, created_at,
+       declaration_eligibility, declaration_originality, declaration_rules, declaration_media_consent,
        registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
        judge_scores (
          id, judge_id, problem_relevance, technical_implementation, innovation_creativity,

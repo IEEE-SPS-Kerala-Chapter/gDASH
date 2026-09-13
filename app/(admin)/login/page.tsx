@@ -3,11 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { BrandLogo } from "@/components/registration/ui";
+import { BrandLogo, FormCard, Field, TextInput, PrimaryButton, GridBackground } from "@/components/admin/ui";
 import { signIn } from "@/app/actions/auth";
 
 export default function AdminLoginPage() {
@@ -31,18 +27,18 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
-      <BrandLogo className="h-14" />
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="font-heading">Staff sign-in</CardTitle>
-          <CardDescription>For organizers, judges, and volunteers only.</CardDescription>
-        </CardHeader>
-        <CardContent>
+    <main className="relative flex min-h-screen flex-col items-center justify-center gap-8 bg-gignite-bg p-4 font-body text-gignite-text">
+      <GridBackground />
+      <BrandLogo className="relative z-10 h-16" />
+      <div className="relative z-10 w-full max-w-sm">
+        <FormCard>
+          <div className="flex flex-col gap-[6px]">
+            <h1 className="m-0 font-heading text-[20px] font-bold text-black">Staff sign-in</h1>
+            <p className="m-0 text-[14px] text-gignite-text/70">For organizers, judges, and volunteers only.</p>
+          </div>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
+            <Field label="Email">
+              <TextInput
                 id="email"
                 type="email"
                 required
@@ -50,10 +46,9 @@ export default function AdminLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
               />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input
+            </Field>
+            <Field label="Password">
+              <TextInput
                 id="password"
                 type="password"
                 required
@@ -61,13 +56,13 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
               />
-            </div>
-            <Button type="submit" disabled={loading} className="mt-2">
+            </Field>
+            <PrimaryButton type="submit" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
-            </Button>
+            </PrimaryButton>
           </form>
-        </CardContent>
-      </Card>
+        </FormCard>
+      </div>
     </main>
   );
 }

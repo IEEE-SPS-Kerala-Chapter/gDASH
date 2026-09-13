@@ -64,7 +64,11 @@ const config: Config = {
   				blue: '#20419A',
   				'blue-pale': '#E4EAF6',
   				danger: '#B23A16',
+  				'danger-pale': '#F5E1DC',
   				warn: '#C25E0E',
+  				'warn-pale': '#FBEEDA',
+  				success: '#1F7A42',
+  				'success-pale': '#E4F1E6',
   				muted: '#6B6355'
   			}
   		},
