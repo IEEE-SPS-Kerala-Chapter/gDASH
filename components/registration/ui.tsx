@@ -46,40 +46,43 @@ export function GridBackground({ faded = false }: { faded?: boolean }) {
 }
 
 /**
- * Continuously scrolling sponsor strip — the Gadgeon logo (from the
- * gIGNITE-UI landing page's public/ folder) repeated in a seamless loop.
- * Two identical copies of the same run sit side by side; animating the
- * outer track exactly -50% of its own width loops without a visible seam.
+ * Static 3-logo header bar — Gadgeon far-left (the sponsor, sized up so it
+ * reads clearly), the FISAT IEEE Student Branch logo centered (hotlinked
+ * from the SB's own site — a placeholder until a real gIGNITE-specific SB
+ * asset exists), and the combined IEEE + SPS Kerala Chapter logo far-right.
  * Sits in normal document flow (not fixed/overlaid), so it never covers
- * page content — just pushes it down like a banner.
+ * page content — just pushes it down like a banner. Replaces the earlier
+ * scrolling `MarqueeStrip`, which was only ever a placeholder for this.
  */
-export function MarqueeStrip({ className }: { className?: string }) {
-  const run = (copyIndex: number) => (
-    <div className="flex flex-none items-center gap-20 pr-20" aria-hidden={copyIndex === 1}>
-      {Array.from({ length: 6 }, (_, i) => (
-        <Image
-          key={i}
-          src="/gadgeon-logo.png"
-          alt={copyIndex === 0 && i === 0 ? "Gadgeon Smart Systems" : ""}
-          width={190}
-          height={64}
-          className="h-14 w-auto flex-none opacity-80"
-        />
-      ))}
-    </div>
-  );
-
+export function LogoHeaderBar({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "relative z-10 flex w-full items-center overflow-hidden border-b border-gignite-border bg-gignite-card py-4",
+        "relative z-10 flex w-full items-center justify-between gap-4 border-b border-gignite-border bg-gignite-card px-6 py-3",
         className,
       )}
     >
-      <div className="flex w-max animate-marquee">
-        {run(0)}
-        {run(1)}
-      </div>
+      <Image
+        src="/gadgeon-logo.png"
+        alt="Gadgeon Smart Systems"
+        width={190}
+        height={64}
+        className="h-12 w-auto flex-none sm:h-16"
+      />
+      {/* Plain <img>, not next/image — a one-off external host doesn't
+          warrant a next.config.js remotePatterns entry. */}
+      <img
+        src="https://www.ieeefisat.org/assets/img/sblogo.webp"
+        alt="IEEE FISAT Student Branch"
+        className="h-10 w-auto flex-none sm:h-14"
+      />
+      <Image
+        src="/ieee_sps_kc_logo.png"
+        alt="IEEE Signal Processing Society Kerala Chapter"
+        width={1024}
+        height={682}
+        className="h-10 w-auto flex-none sm:h-14"
+      />
     </div>
   );
 }

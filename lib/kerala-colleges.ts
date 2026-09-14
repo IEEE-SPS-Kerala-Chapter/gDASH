@@ -1,0 +1,75 @@
+/**
+ * Best-effort list of BTech-granting colleges in Kerala (mostly KTU-affiliated,
+ * plus a few well-known autonomous/deemed institutions like CUSAT, Amrita,
+ * and NIT Calicut that students would still expect to find here).
+ *
+ * This was compiled from general knowledge, not scraped from an official
+ * source — KTU's own affiliated-institutions page is JS-rendered and
+ * blocked automated fetching when this was built. It should be treated as
+ * a reasonable starting point, not an authoritative registry: expect gaps,
+ * especially among smaller/newer private colleges. `OTHER_COLLEGE` exists
+ * specifically so a gap here never blocks a real team from registering —
+ * always keep that option in any UI built on this list.
+ */
+export const KERALA_BTECH_COLLEGES = [
+  "Adi Shankara Institute of Engineering and Technology, Kalady",
+  "Ahalia School of Engineering and Technology, Palakkad",
+  "Albertian Institute of Science and Technology, Kochi",
+  "Amal Jyothi College of Engineering, Kottayam",
+  "Amrita School of Engineering, Amritapuri",
+  "Amrita School of Engineering, Kochi",
+  "Baselios Mathews II College of Engineering, Kollam",
+  "College of Engineering, Chengannur",
+  "College of Engineering, Kidangoor",
+  "College of Engineering, Munnar",
+  "College of Engineering, Perumon",
+  "College of Engineering, Trivandrum (CET)",
+  "Cochin University of Science and Technology (CUSAT)",
+  "Government College of Engineering, Kannur",
+  "Government Engineering College, Barton Hill, Thiruvananthapuram",
+  "Government Engineering College, Idukki",
+  "Government Engineering College, Kozhikode",
+  "Government Engineering College, Sreekrishnapuram, Palakkad",
+  "Government Engineering College, Thrissur",
+  "Government Engineering College, Wayanad",
+  "Government Model Engineering College, Thrikkakara",
+  "Government Rajiv Gandhi Institute of Technology, Kottayam",
+  "Ilahia College of Engineering and Technology, Muvattupuzha",
+  "Jyothi Engineering College, Thrissur",
+  "KMCT College of Engineering, Kozhikode",
+  "KMEA Engineering College, Aluva",
+  "LBS Institute of Technology for Women, Thiruvananthapuram",
+  "MES College of Engineering, Kuttippuram",
+  "MEA Engineering College, Perinthalmanna",
+  "Malabar College of Engineering and Technology, Thrissur",
+  "Mar Athanasius College of Engineering, Kothamangalam",
+  "Mar Baselios Christian College of Engineering and Technology, Kuttikkanam",
+  "Mar Baselios College of Engineering and Technology, Thiruvananthapuram",
+  "Mohandas College of Engineering and Technology, Thiruvananthapuram",
+  "Muthoot Institute of Technology and Science, Ernakulam",
+  "Nehru College of Engineering and Research Centre, Thrissur",
+  "NSS College of Engineering, Palakkad",
+  "National Institute of Technology Calicut (NIT-C)",
+  "Rajadhani Institute of Engineering and Technology, Thiruvananthapuram",
+  "Rajagiri School of Engineering and Technology, Kochi",
+  "SCMS School of Engineering and Technology, Ernakulam",
+  "SNGCE - Sree Narayana Gurukulam College of Engineering, Ernakulam",
+  "Saintgits College of Engineering, Kottayam",
+  "Sahrdaya College of Engineering and Technology, Thrissur",
+  "Sarabhai Institute of Science and Technology, Alappuzha",
+  "Sree Buddha College of Engineering, Pattoor",
+  "Sree Chitra Thirunal College of Engineering, Thiruvananthapuram",
+  "Sree Narayana Institute of Technology, Kollam",
+  "TKM College of Engineering, Kollam",
+  "TKM Institute of Technology, Kollam",
+  "Toc H Institute of Science and Technology, Ernakulam",
+  "Travancore Engineering College, Kollam",
+  "University College of Engineering, Kariavattom",
+  "University College of Engineering, Kuttanad",
+  "University College of Engineering, Thodupuzha",
+  "Vidya Academy of Science and Technology, Thrissur",
+  "Viswajyothi College of Engineering and Technology, Ernakulam",
+  "Younus College of Engineering and Technology, Kollam",
+] as const;
+
+export const OTHER_COLLEGE = "Other" as const;

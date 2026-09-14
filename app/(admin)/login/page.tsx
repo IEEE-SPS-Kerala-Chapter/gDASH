@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { BrandLogo, FormCard, Field, TextInput, PrimaryButton, GridBackground, MarqueeStrip } from "@/components/admin/ui";
+import { BrandLogo, FormCard, Field, TextInput, PrimaryButton, GridBackground, LogoHeaderBar } from "@/components/admin/ui";
 import { signIn } from "@/app/actions/auth";
 
 export default function AdminLoginPage() {
@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
 
   return (
     <>
-      <MarqueeStrip />
+      <LogoHeaderBar />
       <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-8 bg-gignite-bg p-4 font-body text-gignite-text">
         <GridBackground />
         <BrandLogo className="relative z-10 h-16" />

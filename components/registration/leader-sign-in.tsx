@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { BrandLogo, GridBackground, MarqueeStrip, PrimaryButton } from "./ui";
+import { BrandLogo, GridBackground, LogoHeaderBar, PrimaryButton } from "./ui";
 
 export function LeaderSignIn({ authError }: { authError?: boolean }) {
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
 
   return (
     <>
-      <MarqueeStrip />
+      <LogoHeaderBar />
       <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-6 bg-gignite-bg p-8 text-center font-body text-gignite-text">
       <GridBackground />
       <BrandLogo className="relative z-10 h-16" />

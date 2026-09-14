@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 export {
   BrandLogo,
   GridBackground,
-  MarqueeStrip,
+  LogoHeaderBar,
   Field,
   TextInput,
   TextArea,
