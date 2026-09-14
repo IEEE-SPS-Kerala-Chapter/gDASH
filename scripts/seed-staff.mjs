@@ -85,7 +85,10 @@ if (existing) {
   console.log(`Created new account: ${email} (id: ${userId})`);
 }
 
-const { error: roleError } = await supabase.from("profiles").update({ role, full_name: fullName }).eq("id", userId);
+const { error: roleError } = await supabase
+  .from("profiles")
+  .update({ role, full_name: fullName, must_reset_password: true })
+  .eq("id", userId);
 if (roleError) {
   console.error(`Account is set up, but couldn't confirm role='${role}':`, roleError.message);
   process.exit(1);

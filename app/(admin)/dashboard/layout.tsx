@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, must_reset_password")
     .eq("id", user.id)
     .single();
 
@@ -23,6 +23,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // bounce instead of an empty/broken dashboard.
   if (!profile || !["admin", "judge", "volunteer"].includes(profile.role)) {
     redirect("/");
+  }
+
+  // Single gate for everything under /dashboard — a staff member who hasn't
+  // reset their (admin-chosen, once-plaintext) initial password yet gets
+  // bounced to do that first. /reset-password is a sibling route, not
+  // nested under /dashboard, so it isn't itself subject to this check.
+  if (profile.must_reset_password) {
+    redirect("/reset-password");
   }
 
   return (
