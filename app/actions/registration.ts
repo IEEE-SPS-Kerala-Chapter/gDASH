@@ -159,6 +159,7 @@ type StatusResult =
       found: true;
       team: { name: string; ai_theme: string; district: string; status: string; created_at: string };
       members: Array<{
+        id: string;
         full_name: string;
         is_leader: boolean;
         college: string;
@@ -197,5 +198,22 @@ export async function getRegistrationStatus(token: string): Promise<StatusResult
     // registration" instead.
     console.error("getRegistrationStatus threw unexpectedly:", err);
     return { found: false, systemError: true };
+  }
+}
+
+/**
+ * Existence-only check for a team member id, backing the QR/ID-card
+ * "Coming Soon" route (/id/[memberId]) — a garbage or malicious id should
+ * genuinely 404, not render identically regardless of validity.
+ */
+export async function checkMemberExists(memberId: string): Promise<boolean> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("member_exists", { p_member_id: memberId });
+    if (error) return false;
+    return Boolean(data);
+  } catch (err) {
+    console.error("checkMemberExists threw unexpectedly:", err);
+    return false;
   }
 }

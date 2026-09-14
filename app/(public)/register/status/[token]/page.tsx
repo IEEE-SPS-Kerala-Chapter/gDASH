@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getRegistrationStatus } from "@/app/actions/registration";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/registration/ui";
+import { IdCard } from "@/components/registration/id-card";
 
 const STATUS_STYLES: Record<string, string> = {
   submitted: "bg-gignite-blue-pale text-gignite-blue",
@@ -80,6 +81,18 @@ export default async function StatusPage({ params }: { params: { token: string }
               {registration.problem_statement}
             </p>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-3 pt-2">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
+            ID cards
+          </span>
+          <p className="m-0 text-xs text-gignite-text/70">
+            Download every team member&apos;s ID card — bring the physical or digital copy to check in on event day.
+          </p>
+          {members.map((m) => (
+            <IdCard key={m.id} teamName={team.name} member={m} />
+          ))}
         </div>
 
         <p className="text-center text-xs text-gignite-text/60">
