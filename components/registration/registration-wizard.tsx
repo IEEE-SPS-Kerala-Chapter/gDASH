@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { submitRegistration } from "@/app/actions/registration";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/registration-draft";
 import {
   WizardHeader,
   ProgressBar,
@@ -118,6 +119,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const [submitting, setSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
+  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const form = useForm<RegistrationForm>({
     // The generic Resolver<T> type that @hookform/resolvers infers from a
     // schema this deep (nested enums/literals) doesn't structurally match
@@ -134,12 +136,48 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const isLastStep = step === STEPS.length - 1;
   const turnstileConfigured = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
+  // Restore a saved draft after mount — not during useForm()/render, since
+  // reading localStorage synchronously there would throw during SSR (this
+  // is a client component, but still goes through SSR for the initial
+  // HTML). One post-hydration flash (empty → restored) is expected and
+  // matches the same "restore in useEffect" pattern already used for the
+  // admin view-mode toggle in teams-browser.tsx.
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft) {
+      form.reset(draft.value);
+      setStep(draft.step);
+    }
+    // Only ever run once, right after mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced autosave on every field change (one shared timer, reset on
+  // each change, so a burst of keystrokes writes once, not per keystroke).
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+      draftSaveTimer.current = setTimeout(() => {
+        saveDraft(value as RegistrationForm, step);
+      }, 500);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   async function handleContinue() {
     const valid = await form.trigger(current.fields as Path<RegistrationForm>[]);
     if (!valid) return;
 
     if (!isLastStep) {
-      setStep((s) => s + 1);
+      const nextStep = step + 1;
+      setStep(nextStep);
+      // A bare step change with no field edits in between wouldn't trigger
+      // the watch()-based autosave above, so save explicitly here too.
+      saveDraft(form.getValues(), nextStep);
       return;
     }
     if (turnstileConfigured && !turnstileToken) {
@@ -158,13 +196,16 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       toast.error(result.error);
       return;
     }
+    clearDraft();
     toast.success("Registration submitted!");
     router.push(`/register/status/${result.accessToken}`);
   }
 
   function handleBack() {
     if (step > 0) {
-      setStep((s) => s - 1);
+      const prevStep = step - 1;
+      setStep(prevStep);
+      saveDraft(form.getValues(), prevStep);
     } else {
       router.push("/");
     }
@@ -176,7 +217,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       : current.key === "members"
         ? `${1 + form.watch("members").length} of 5 added`
         : current.key === "idea"
-          ? "Draft — not saved until submit"
+          ? "Saves as you go"
           : `${[decl?.eligibility, decl?.originality, decl?.rules, decl?.mediaConsent].filter(Boolean).length} of 4 confirmed`;
 
   return (
