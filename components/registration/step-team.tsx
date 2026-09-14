@@ -2,17 +2,25 @@ import { useRouter } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
+import { TEAM_ROLES, OTHER_ROLE } from "@/lib/validations/roles";
+import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { createClient } from "@/lib/supabase/client";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
+import { IdCardUploadField } from "./id-card-upload-field";
 
 export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const router = useRouter();
   const {
     register,
+    watch,
+    setValue,
     formState: { errors },
   } = form;
   const e = errors.team;
+  const college = watch("team.college");
+  const role = watch("team.role");
+  const idCardPath = watch("team.idCardPath");
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -43,18 +51,41 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
         </Select>
       </Field>
 
+      <Field
+        label="3 · College / institution"
+        hint="One college for the whole team — every member should be from here."
+        error={e?.college?.message}
+      >
+        <Select {...register("team.college")} defaultValue="">
+          <option value="" disabled>
+            Choose your college
+          </option>
+          {KERALA_BTECH_COLLEGES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+          <option value={OTHER_COLLEGE}>Other</option>
+        </Select>
+      </Field>
+      {college === OTHER_COLLEGE && (
+        <Field label="College name" error={e?.collegeOther?.message}>
+          <TextInput {...register("team.collegeOther")} placeholder="Enter your college's name" />
+        </Field>
+      )}
+
       <Divider />
       <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
         Team leader
       </span>
 
       <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-[18px]">
-        <Field label="3 · Full name" error={e?.leaderName?.message}>
+        <Field label="4 · Full name" error={e?.leaderName?.message}>
           <TextInput {...register("team.leaderName")} placeholder="Your full name" />
         </Field>
 
         <Field
-          label="4 · Email"
+          label="5 · Email"
           hint={GOOGLE_OAUTH_ENABLED ? undefined : "College email — eligibility is checked against it."}
           error={e?.leaderEmail?.message}
         >
@@ -82,16 +113,30 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
           )}
         </Field>
 
-        <Field label="5 · Phone" error={e?.leaderPhone?.message}>
+        <Field label="6 · Phone" error={e?.leaderPhone?.message}>
           <TextInput type="tel" {...register("team.leaderPhone")} placeholder="+91 98765 43210" />
         </Field>
 
-        <Field label="6 · College / institution" error={e?.college?.message}>
-          <TextInput {...register("team.college")} placeholder="e.g. FISAT, Angamaly" />
+        <Field label="7 · Role in team" error={e?.role?.message}>
+          <Select {...register("team.role")} defaultValue="">
+            <option value="" disabled>
+              Choose your role
+            </option>
+            {TEAM_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </Select>
         </Field>
       </div>
+      {role === OTHER_ROLE && (
+        <Field label="Your role" error={e?.roleOther?.message}>
+          <TextInput {...register("team.roleOther")} placeholder="e.g. Product design" />
+        </Field>
+      )}
 
-      <Field label="7 · District" error={e?.district?.message}>
+      <Field label="8 · District" error={e?.district?.message}>
         <Select {...register("team.district")} defaultValue="">
           <option value="" disabled>
             Choose a district
@@ -103,6 +148,12 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
           ))}
         </Select>
       </Field>
+
+      <IdCardUploadField
+        path={idCardPath}
+        onUploaded={(path) => setValue("team.idCardPath", path, { shouldValidate: true })}
+        error={e?.idCardPath?.message}
+      />
     </FormCard>
   );
 }

@@ -4,6 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
+import { OTHER_ROLE } from "@/lib/validations/roles";
+import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
+
+/** "Other" reveals a free-text field client-side; the server resolves it to
+ * the actual typed value here so the DB never stores the literal "Other". */
+function resolveRole(role: string, other?: string): string {
+  return role === OTHER_ROLE ? (other ?? "").trim() : role;
+}
+
+/** Computed once from the leader's answer and reused for every member row,
+ * so a tampered client payload can't make members disagree on college —
+ * there is exactly one college per team, decided server-side. */
+function resolveCollege(college: string, other?: string): string {
+  return college === OTHER_COLLEGE ? (other ?? "").trim() : college;
+}
 
 type SubmitResult =
   | { success: true; accessToken: string }
@@ -65,6 +80,8 @@ export async function submitRegistration(
       leaderEmail = team.leaderEmail;
     }
 
+    const resolvedCollege = resolveCollege(team.college, team.collegeOther);
+
     const { data: result, error } = await supabase.rpc("submit_registration", {
       p_team_name: team.teamName,
       p_ai_theme: team.aiTheme,
@@ -73,16 +90,19 @@ export async function submitRegistration(
         full_name: team.leaderName,
         email: leaderEmail,
         phone: team.leaderPhone,
-        college: team.college,
+        college: resolvedCollege,
+        role_in_team: resolveRole(team.role, team.roleOther),
+        id_card_path: team.idCardPath,
       },
       p_members: members.map((m) => ({
         full_name: m.fullName,
         email: m.email,
         phone: m.phone,
-        college: m.college,
+        college: resolvedCollege,
         branch: m.branch,
         year: m.year,
-        role_in_team: m.roleInTeam,
+        role_in_team: resolveRole(m.roleInTeam, m.roleInTeamOther),
+        id_card_path: m.idCardPath,
       })),
       p_problem_statement: idea.problemStatement,
       p_proposed_solution: idea.proposedSolution,
@@ -111,10 +131,8 @@ export async function submitRegistration(
       if (error.message?.includes("team name taken")) {
         return { success: false, error: "That team name is taken — try another." };
       }
-      if (error.message?.includes("same college")) {
-        // The Zod schema already catches this client-side — reaching here
-        // means either a stale form state or a direct API call bypassing it.
-        return { success: false, error: "All team members must be from the same college." };
+      if (error.message?.includes("team size must be")) {
+        return { success: false, error: "Teams need between 2 and 5 members." };
       }
       return { success: false, error: "Something went wrong submitting your registration." };
     }

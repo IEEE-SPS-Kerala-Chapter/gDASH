@@ -169,6 +169,60 @@ export async function getDeckDownloadUrl(deckPath: string): Promise<DeckUrlResul
   return { success: true, url: data.signedUrl };
 }
 
+type IdCardPathsResult =
+  | { success: true; paths: Record<string, string | null> }
+  | { success: false; error: string };
+
+/**
+ * Admin-only: member id -> id_card_path for a team. Deliberately NOT part
+ * of TEAM_SELECT/mapTeamRow (unlike deck_path, which does ride along there
+ * for admin/judge/volunteer alike) — a judge or volunteer session should
+ * never receive an id_card_path string at all, even inertly, so this
+ * re-queries team_members directly and is gated stricter than the deck
+ * actions above (admin only, not admin/judge/volunteer).
+ */
+export async function getTeamMemberIdCardPaths(teamId: string): Promise<IdCardPathsResult> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "admin") {
+    return { success: false, error: "Admins only." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("team_members").select("id, id_card_path").eq("team_id", teamId);
+  if (error) {
+    return { success: false, error: "Could not load ID cards." };
+  }
+
+  const paths: Record<string, string | null> = {};
+  for (const row of data ?? []) {
+    paths[row.id] = row.id_card_path;
+  }
+  return { success: true, paths };
+}
+
+/**
+ * Admin-only: a short-lived signed URL for one member's ID-card photo.
+ * Same shape as getDeckDownloadUrl, but gated to admin only — the
+ * member-id-cards bucket has no read policy for anyone either, so this is
+ * the only path in.
+ */
+export async function getMemberIdCardDownloadUrl(idCardPath: string): Promise<DeckUrlResult> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "admin") {
+    return { success: false, error: "Admins only." };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage
+    .from("member-id-cards")
+    .createSignedUrl(idCardPath, 60 * 5); // 5 minutes
+
+  if (error || !data) {
+    return { success: false, error: "Could not generate a download link." };
+  }
+  return { success: true, url: data.signedUrl };
+}
+
 type StatusResult = { success: true } | { success: false; error: string };
 
 /** Admin-only: change a registration's review status. */

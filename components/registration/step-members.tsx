@@ -1,18 +1,20 @@
-import { useState } from "react";
 import { useFieldArray, type UseFormReturn } from "react-hook-form";
-import { normalizeCollegeName, type RegistrationForm } from "@/lib/validations/registration";
+import type { RegistrationForm } from "@/lib/validations/registration";
 import { MEMBER_YEARS } from "@/lib/validations/member";
+import { TEAM_ROLES, OTHER_ROLE } from "@/lib/validations/roles";
 import { Field, TextInput, Select, FormCard } from "./ui";
+import { IdCardUploadField } from "./id-card-upload-field";
 
 const MAX_ADDITIONAL_MEMBERS = 4;
 const emptyMember = {
   fullName: "",
   email: "",
   phone: "",
-  college: "",
   branch: "",
   year: "",
   roleInTeam: "",
+  roleInTeamOther: "",
+  idCardPath: "",
 } as unknown as RegistrationForm["members"][number];
 
 export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> }) {
@@ -20,23 +22,16 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
     register,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = form;
   const { fields, append, remove } = useFieldArray({ control, name: "members" });
   const leaderName = watch("team.leaderName");
   const college = watch("team.college");
+  const collegeOther = watch("team.collegeOther");
+  const displayCollege = college === "Other" ? collegeOther : college;
   const slotsLeft = MAX_ADDITIONAL_MEMBERS - fields.length;
-
-  // Cross-field "same college" validation only actually runs once the
-  // schema resolver re-fires (on blur, or when the step is submitted) — so
-  // on its own, a member could type a mismatched college and see nothing
-  // until they try to move on. Tracking "has this field been left at least
-  // once" here lets us show the same check live, right after they finish
-  // typing it, independent of when/whether RHF's own validation catches up.
-  // Keyed by useFieldArray's stable field.id (not array index) so removing
-  // an earlier member doesn't shift a later member's "touched" state onto
-  // the wrong row.
-  const [collegeTouched, setCollegeTouched] = useState<Record<string, boolean>>({});
+  const membersArrayError = (errors.members as { message?: string } | undefined)?.message;
 
   return (
     <div className="flex flex-col gap-[16px]">
@@ -51,24 +46,14 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
               Leader
             </span>
           </div>
-          <span className="text-[12px] text-gignite-blue">{college}</span>
+          <span className="text-[12px] text-gignite-blue">{displayCollege}</span>
         </div>
       </div>
 
       {fields.map((field, index) => {
         const e = errors.members?.[index];
-        const memberCollege = watch(`members.${index}.college`);
-        const collegeMismatch =
-          Boolean(collegeTouched[field.id]) &&
-          Boolean(college?.trim()) &&
-          Boolean(memberCollege?.trim()) &&
-          normalizeCollegeName(memberCollege) !== normalizeCollegeName(college);
-        const collegeError =
-          e?.college?.message ??
-          (collegeMismatch
-            ? `Doesn't match the team's college (${college}). If it's the same college, try dropping the location, e.g. "FISAT" instead of "FISAT, Angamaly".`
-            : undefined);
-        const collegeReg = register(`members.${index}.college`);
+        const memberRole = watch(`members.${index}.roleInTeam`);
+        const idCardPath = watch(`members.${index}.idCardPath`);
 
         return (
           <FormCard key={field.id}>
@@ -95,18 +80,8 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
               <Field label="Phone" error={e?.phone?.message}>
                 <TextInput type="tel" {...register(`members.${index}.phone`)} />
               </Field>
-              <Field
-                label="College / institution"
-                error={collegeError}
-                hint={college ? `Must match the team's college: ${college}` : undefined}
-              >
-                <TextInput
-                  {...collegeReg}
-                  onBlur={(ev) => {
-                    void collegeReg.onBlur(ev);
-                    setCollegeTouched((prev) => ({ ...prev, [field.id]: true }));
-                  }}
-                />
+              <Field label="College" hint="Same as the team's college">
+                <TextInput value={displayCollege ?? ""} readOnly className="cursor-not-allowed bg-gignite-card text-gignite-text/80" />
               </Field>
             </div>
             <div className="flex gap-[10px]">
@@ -131,11 +106,35 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
               </div>
             </div>
             <Field label="Role in team" error={e?.roleInTeam?.message}>
-              <TextInput {...register(`members.${index}.roleInTeam`)} placeholder="e.g. ML engineer" />
+              <Select {...register(`members.${index}.roleInTeam`)} defaultValue="">
+                <option value="" disabled>
+                  Choose a role
+                </option>
+                {TEAM_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </Select>
             </Field>
+            {memberRole === OTHER_ROLE && (
+              <Field label="Role (specify)" error={e?.roleInTeamOther?.message}>
+                <TextInput {...register(`members.${index}.roleInTeamOther`)} placeholder="e.g. Product design" />
+              </Field>
+            )}
+
+            <IdCardUploadField
+              path={idCardPath}
+              onUploaded={(path) => setValue(`members.${index}.idCardPath`, path, { shouldValidate: true })}
+              error={e?.idCardPath?.message}
+            />
           </FormCard>
         );
       })}
+
+      {membersArrayError && (
+        <span className="text-[13px] leading-[1.45] text-gignite-danger">{membersArrayError}</span>
+      )}
 
       {slotsLeft > 0 && (
         <button

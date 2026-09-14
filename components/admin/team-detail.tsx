@@ -8,6 +8,7 @@ import type { AdminTeam, AdminJudge, AdminRegistration, AdminMember } from "@/ap
 import { updateRegistrationStatus } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { DeckPanel } from "./deck-panel";
+import { IdCardPanel } from "./id-card-panel";
 import { JudgeScoresSummary } from "./judge-scores-summary";
 import { ScoreForm } from "@/components/judge/score-form";
 import { Badge, Panel, Select, SectionLabel, StatusDotBadge } from "@/components/admin/ui";
@@ -76,6 +77,7 @@ export function TeamDetail({
       {reg && isAdmin && (
         <JudgeScoresSummary scores={reg.scores} avgScore={reg.avgScore} assignedCount={reg.assignments.length} />
       )}
+      {isAdmin && <IdCardPanel teamId={team.id} members={team.members} />}
       <MembersPanel members={team.members} />
       {reg && <SubmissionPanel reg={reg} />}
       {reg && isJudge && (
