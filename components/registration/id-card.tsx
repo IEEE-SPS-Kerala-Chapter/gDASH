@@ -88,9 +88,11 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
           </div>
         </div>
 
-        <div className="flex items-center justify-center border-t border-gignite-divider pt-3">
+        <div className="flex items-center justify-between border-t border-gignite-divider pt-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- sponsor mark, same hotlink-free local asset used in LogoHeaderBar */}
+          <img src="/gadgeon-logo.png" alt="Gadgeon Smart Systems" className="h-10 w-auto" />
           {/* eslint-disable-next-line @next/next/no-img-element -- combined IEEE + SPS-KC mark, same hotlink-free local asset used in LogoHeaderBar */}
-          <img src="/ieee_sps_kc_logo.png" alt="IEEE Signal Processing Society Kerala Chapter" className="h-8 w-auto" />
+          <img src="/ieee_sps_kc_logo.png" alt="IEEE Signal Processing Society Kerala Chapter" className="h-7 w-auto" />
         </div>
       </div>
 
