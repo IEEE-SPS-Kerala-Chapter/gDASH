@@ -47,12 +47,11 @@ export function GridBackground({ faded = false }: { faded?: boolean }) {
 
 /**
  * Static 3-logo header bar — Gadgeon far-left (the sponsor, sized up so it
- * reads clearly), the FISAT IEEE Student Branch logo centered (hotlinked
- * from the SB's own site — a placeholder until a real gIGNITE-specific SB
- * asset exists), and the combined IEEE + SPS Kerala Chapter logo far-right.
- * Sits in normal document flow (not fixed/overlaid), so it never covers
- * page content — just pushes it down like a banner. Replaces the earlier
- * scrolling `MarqueeStrip`, which was only ever a placeholder for this.
+ * reads clearly), the FISAT IEEE Student Branch logo centered, and the
+ * combined IEEE + SPS Kerala Chapter logo far-right. Sits in normal
+ * document flow (not fixed/overlaid), so it never covers page content —
+ * just pushes it down like a banner. Replaces the earlier scrolling
+ * `MarqueeStrip`, which was only ever a placeholder for this.
  */
 export function LogoHeaderBar({ className }: { className?: string }) {
   return (
@@ -69,18 +68,18 @@ export function LogoHeaderBar({ className }: { className?: string }) {
         height={64}
         className="h-12 w-auto flex-none sm:h-16"
       />
-      {/* Plain <img>, not next/image — a one-off external host doesn't
-          warrant a next.config.js remotePatterns entry. */}
-      <img
-        src="https://www.ieeefisat.org/assets/img/sblogo.webp"
+      <Image
+        src="/fisat-sb-logo.png"
         alt="IEEE FISAT Student Branch"
+        width={344}
+        height={178}
         className="h-10 w-auto flex-none sm:h-14"
       />
       <Image
         src="/ieee_sps_kc_logo.png"
         alt="IEEE Signal Processing Society Kerala Chapter"
-        width={1024}
-        height={682}
+        width={436}
+        height={141}
         className="h-10 w-auto flex-none sm:h-14"
       />
     </div>
