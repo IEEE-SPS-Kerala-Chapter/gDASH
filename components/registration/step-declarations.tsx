@@ -3,6 +3,8 @@ import type { RegistrationForm } from "@/lib/validations/registration";
 import { FormCard } from "./ui";
 import { cn } from "@/lib/utils";
 
+const RULES_URL = "https://docs.google.com/document/d/1KF-yekcP4ZKF40_f_7cH_JkEJniD6KtcvNObSt2_pSc/edit?usp=sharing";
+
 const DECLARATIONS = [
   {
     key: "eligibility" as const,
@@ -55,6 +57,9 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
                   tabIndex={0}
                   onClick={() => field.onChange(!checked)}
                   onKeyDown={(ev) => {
+                    // Ignore keydowns bubbling up from the nested "Rules to
+                    // follow" link — only the row itself toggles the box.
+                    if (ev.target !== ev.currentTarget) return;
                     if (ev.key === "Enter" || ev.key === " ") {
                       ev.preventDefault();
                       field.onChange(!checked);
@@ -83,6 +88,17 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
                       </span>
                     </div>
                     <span className="text-[13px] leading-[1.5] text-gignite-text/80">{d.body}</span>
+                    {d.key === "rules" && (
+                      <a
+                        href={RULES_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(ev) => ev.stopPropagation()}
+                        className="mt-1 w-fit rounded-[8px] border-[1.5px] border-gignite-blue px-3 py-[6px] font-heading text-[13px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
+                      >
+                        Rules to follow ↗
+                      </a>
+                    )}
                   </div>
                 </div>
               );

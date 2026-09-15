@@ -12,6 +12,7 @@ const ALLOWED_DECK_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ];
+const DECK_TEMPLATE_URL = "https://canva.link/77trykluwr2sb8w";
 
 export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const {
@@ -85,7 +86,20 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
       <Field
         label="19 · Supporting material"
-        hint="Required — use the official gIGNITE pitch deck template."
+        hint={
+          <>
+            Required — make your PDF from{" "}
+            <a
+              href={DECK_TEMPLATE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-gignite-blue underline hover:text-gignite-accent"
+            >
+              the official pitch deck template
+            </a>
+            .
+          </>
+        }
         error={e?.deckPath?.message}
       >
         <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">

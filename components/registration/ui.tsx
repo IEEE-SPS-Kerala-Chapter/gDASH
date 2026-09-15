@@ -94,7 +94,7 @@ export function Field({
   trailing,
 }: {
   label: string;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
   children: ReactNode;
   trailing?: ReactNode;
