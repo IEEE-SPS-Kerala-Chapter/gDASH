@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { resetOwnPassword } from "@/app/actions/auth";
-import { Field, FormCard, PrimaryButton, TextInput } from "@/components/admin/ui";
+import { resetOwnPassword, signOut } from "@/app/actions/auth";
+import { Field, FormCard, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/ui";
 
 export function ResetPasswordForm() {
   const router = useRouter();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -24,6 +25,13 @@ export function ResetPasswordForm() {
     }
     toast.success("Password updated.");
     router.push("/dashboard");
+    router.refresh();
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    await signOut();
+    router.push("/login");
     router.refresh();
   }
 
@@ -56,9 +64,12 @@ export function ResetPasswordForm() {
             autoComplete="new-password"
           />
         </Field>
-        <PrimaryButton type="submit" disabled={submitting} loading={submitting}>
+        <PrimaryButton type="submit" disabled={submitting || signingOut} loading={submitting}>
           {submitting ? "Saving…" : "Set password"}
         </PrimaryButton>
+        <SecondaryButton type="button" onClick={handleSignOut} disabled={submitting || signingOut}>
+          {signingOut ? "Signing out…" : "Sign out instead"}
+        </SecondaryButton>
       </form>
     </FormCard>
   );
