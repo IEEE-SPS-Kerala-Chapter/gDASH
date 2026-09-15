@@ -77,7 +77,7 @@ export default async function StatusPage({ params }: { params: { token: string }
             <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
               Idea
             </span>
-            <p className="m-0 text-sm leading-relaxed text-gignite-text">
+            <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed text-gignite-text">
               {registration.problem_statement}
             </p>
           </div>
