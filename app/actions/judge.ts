@@ -2,8 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
-import { mapTeamRow, TEAM_SELECT, type AdminTeam, type RawTeamRow } from "@/lib/admin-teams";
+import { mapTeamRow, redactMemberContactInfo, TEAM_SELECT, type AdminTeam, type RawTeamRow } from "@/lib/admin-teams";
 import { STAGE1_CRITERIA, isValidStage1Score, type Stage1Scores } from "@/lib/scoring";
+import { logAuditEvent } from "@/lib/audit-log";
 
 /**
  * A judge's own dashboard data: teams assigned to them. Uses the same
@@ -32,7 +33,10 @@ export async function getMyAssignedTeams(): Promise<
   if (error) {
     return { success: false, error: "Could not load your assigned teams." };
   }
-  return { success: true, teams: (data ?? []).map((t) => mapTeamRow(t as unknown as RawTeamRow)) };
+  return {
+    success: true,
+    teams: (data ?? []).map((t) => redactMemberContactInfo(mapTeamRow(t as unknown as RawTeamRow))),
+  };
 }
 
 type ScoreResult = { success: true } | { success: false; error: string };
@@ -84,5 +88,9 @@ export async function submitScore(
   if (error) {
     return { success: false, error: "Could not save your score. Make sure this team is assigned to you." };
   }
+  await logAuditEvent(supabase, "judge.score_submitted", {
+    targetType: "registration",
+    targetId: registrationId,
+  });
   return { success: true };
 }

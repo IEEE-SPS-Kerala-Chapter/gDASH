@@ -6,7 +6,7 @@ import { PageHeading } from "@/components/admin/ui";
 
 export default async function StaffPage() {
   const profile = await getMyProfile();
-  if (profile?.role !== "admin") {
+  if (profile?.role !== "super_admin") {
     redirect("/dashboard");
   }
 

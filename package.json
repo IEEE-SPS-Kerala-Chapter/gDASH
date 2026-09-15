@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed:staff": "node scripts/seed-staff.mjs",
-    "seed:admin": "node scripts/seed-staff.mjs"
+    "seed:admin": "node scripts/seed-staff.mjs",
+    "seed:super-admin": "node scripts/seed-super-admin.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminLevelRole } from "@/lib/roles";
+import { logAuditEvent } from "@/lib/audit-log";
 import {
   TEAM_SELECT,
   mapTeamRow,
@@ -95,13 +97,13 @@ export async function getJudges(): Promise<
 
 type AssignResult = { success: true; assignmentId: string } | { success: false; error: string };
 
-/** Admin-only: assign a judge to review a registration. */
+/** Admin (or super-admin) only: assign a judge to review a registration. */
 export async function assignJudge(registrationId: string, judgeId: string): Promise<AssignResult> {
   const caller = await getCallerRole();
   if (!caller) {
     return { success: false, error: "Please sign in." };
   }
-  if (caller.role !== "admin") {
+  if (!isAdminLevelRole(caller.role)) {
     return { success: false, error: "Only admins can assign judges." };
   }
 
@@ -122,16 +124,21 @@ export async function assignJudge(registrationId: string, judgeId: string): Prom
     }
     return { success: false, error: "Could not assign judge." };
   }
+  await logAuditEvent(supabase, "judge.assigned", {
+    targetType: "registration",
+    targetId: registrationId,
+    metadata: { judgeId },
+  });
   return { success: true, assignmentId: data.id };
 }
 
-/** Admin-only: remove a judge assignment. */
+/** Admin (or super-admin) only: remove a judge assignment. */
 export async function unassignJudge(assignmentId: string): Promise<StatusResult> {
   const caller = await getCallerRole();
   if (!caller) {
     return { success: false, error: "Please sign in." };
   }
-  if (caller.role !== "admin") {
+  if (!isAdminLevelRole(caller.role)) {
     return { success: false, error: "Only admins can unassign judges." };
   }
 
@@ -140,6 +147,10 @@ export async function unassignJudge(assignmentId: string): Promise<StatusResult>
   if (error) {
     return { success: false, error: "Could not remove assignment." };
   }
+  await logAuditEvent(supabase, "judge.unassigned", {
+    targetType: "registration_assignment",
+    targetId: assignmentId,
+  });
   return { success: true };
 }
 
@@ -154,7 +165,7 @@ type DeckUrlResult = { success: true; url: string } | { success: false; error: s
  */
 export async function getDeckDownloadUrl(deckPath: string): Promise<DeckUrlResult> {
   const caller = await getCallerRole();
-  if (!caller || !["admin", "judge", "volunteer"].includes(caller.role)) {
+  if (!caller || !["admin", "judge", "volunteer", "super_admin"].includes(caller.role)) {
     return { success: false, error: "Please sign in as staff." };
   }
 
@@ -183,7 +194,7 @@ type IdCardPathsResult =
  */
 export async function getTeamMemberIdCardPaths(teamId: string): Promise<IdCardPathsResult> {
   const caller = await getCallerRole();
-  if (!caller || caller.role !== "admin") {
+  if (!caller || !isAdminLevelRole(caller.role)) {
     return { success: false, error: "Admins only." };
   }
 
@@ -208,7 +219,7 @@ export async function getTeamMemberIdCardPaths(teamId: string): Promise<IdCardPa
  */
 export async function getMemberIdCardDownloadUrl(idCardPath: string): Promise<DeckUrlResult> {
   const caller = await getCallerRole();
-  if (!caller || caller.role !== "admin") {
+  if (!caller || !isAdminLevelRole(caller.role)) {
     return { success: false, error: "Admins only." };
   }
 
@@ -225,7 +236,7 @@ export async function getMemberIdCardDownloadUrl(idCardPath: string): Promise<De
 
 type StatusResult = { success: true } | { success: false; error: string };
 
-/** Admin-only: change a registration's review status. */
+/** Admin (or super-admin) only: change a registration's review status. */
 export async function updateRegistrationStatus(
   registrationId: string,
   status: string,
@@ -243,7 +254,7 @@ export async function updateRegistrationStatus(
   }
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") {
+  if (!profile || !isAdminLevelRole(profile.role)) {
     return { success: false, error: "Only admins can change registration status." };
   }
 
@@ -253,6 +264,11 @@ export async function updateRegistrationStatus(
   if (error) {
     return { success: false, error: "Could not update status." };
   }
+  await logAuditEvent(supabase, "registration.status_changed", {
+    targetType: "registration",
+    targetId: registrationId,
+    metadata: { status },
+  });
   return { success: true };
 }
 
@@ -265,8 +281,23 @@ function csvField(value: string): string {
   return value;
 }
 
-/** Staff-only: build a CSV of all registrations for offline use (badges, contact lists). */
+/**
+ * Admin (or super-admin) only: build a CSV of all registrations for offline
+ * use (badges, contact lists). Includes leader emails/phones, so — unlike
+ * the plain team reads above, which RLS's is_staff() happily allows for
+ * judges too — this one gates on role explicitly. Judges shouldn't be able
+ * to pull every team's contact info in one shot; it's the same bias/privacy
+ * concern as hiding member contact details on the judge team-detail view.
+ */
 export async function exportRegistrationsCsv(): Promise<CsvResult> {
+  const caller = await getCallerRole();
+  if (!caller) {
+    return { success: false, error: "Please sign in." };
+  }
+  if (!isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can export registrations." };
+  }
+
   const result = await getTeamsForAdmin();
   if (!result.success) {
     return result;
@@ -305,18 +336,21 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
   const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
   const today = new Date().toISOString().slice(0, 10);
 
+  const supabase = await createClient();
+  await logAuditEvent(supabase, "registrations.exported", { metadata: { teamCount: result.teams.length } });
+
   return { success: true, csv, filename: `registrations-${today}.csv` };
 }
 
 export type StaffAccount = { id: string; full_name: string; email: string; role: string; created_at: string };
 
-/** Admin-only: every staff account (admin/judge/volunteer), for the staff management page. */
+/** Super-admin only: every staff account (admin/judge/volunteer/super_admin), for the staff management page. */
 export async function getStaffAccounts(): Promise<
   { success: true; staff: StaffAccount[] } | { success: false; error: string }
 > {
   const caller = await getCallerRole();
-  if (!caller || caller.role !== "admin") {
-    return { success: false, error: "Only admins can view staff accounts." };
+  if (!caller || caller.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can view staff accounts." };
   }
 
   const supabase = await createClient();
@@ -337,14 +371,16 @@ const STAFF_EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 type CreateStaffResult = { success: true } | { success: false; error: string };
 
 /**
- * Admin-only: create a staff account (judge, volunteer, or another admin)
+ * Super-admin only: create a staff account (judge, volunteer, or admin)
  * directly from the dashboard, instead of the terminal-only
  * scripts/seed-staff.mjs. Uses the service-role client for both steps —
  * auth.admin.createUser() always needs it, and there's no "admin can
  * update anyone's profile" RLS policy (profiles_update_own only allows a
  * self-update), so setting the requested role also has to go through it.
- * The password is chosen by the admin and must still be handed to the new
- * staff member out of band — there's no invite-email flow yet.
+ * The password is chosen by the super-admin and must still be handed to
+ * the new staff member out of band — there's no invite-email flow yet.
+ * Deliberately can't create another super_admin from here — that role is
+ * only ever seeded via scripts/seed-super-admin.mjs, not through the UI.
  */
 export async function createStaffAccount(input: {
   email: string;
@@ -353,8 +389,8 @@ export async function createStaffAccount(input: {
   password: string;
 }): Promise<CreateStaffResult> {
   const caller = await getCallerRole();
-  if (!caller || caller.role !== "admin") {
-    return { success: false, error: "Only admins can create staff accounts." };
+  if (!caller || caller.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can create staff accounts." };
   }
 
   const email = input.email.trim().toLowerCase();
@@ -401,6 +437,17 @@ export async function createStaffAccount(input: {
       error: "Account created, but couldn't set its role. Fix it via scripts/seed-staff.mjs.",
     };
   }
+
+  // Logged via the caller's own session client (not the service-role
+  // client above) so log_audit_event()'s auth.uid() resolves to the
+  // super-admin who did this, not an anonymous service-role call.
+  const supabase = await createClient();
+  await logAuditEvent(supabase, "staff.created", {
+    targetType: "profile",
+    targetId: data.user.id,
+    targetLabel: email,
+    metadata: { role: input.role },
+  });
 
   return { success: true };
 }

@@ -21,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // RLS is the real backstop (staff-only SELECT policies on teams/team_members/
   // registrations) — this redirect is just so a non-staff account sees a clean
   // bounce instead of an empty/broken dashboard.
-  if (!profile || !["admin", "judge", "volunteer"].includes(profile.role)) {
+  if (!profile || !["admin", "judge", "volunteer", "super_admin"].includes(profile.role)) {
     redirect("/");
   }
 

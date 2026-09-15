@@ -4,11 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
+import { roleLabel, isAdminLevelRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 /**
@@ -78,7 +79,7 @@ export function DashboardShell({
             <div className="h-3 w-3 flex-none rounded-[3px] bg-gignite-accent" />
             <span className="font-heading text-[18px] font-bold tracking-[-0.01em] text-white">gIGNITE</span>
             <span className="pt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#9FB1DA]">
-              {role}
+              {roleLabel(role)}
             </span>
           </div>
           <nav className="flex flex-col gap-1">
@@ -86,16 +87,24 @@ export function DashboardShell({
               <Users className="h-[17px] w-[17px]" />
               <span>Teams</span>
             </Link>
-            {role === "admin" && (
+            {role === "super_admin" && (
               <Link href="/dashboard/staff" className={navItemClass(pathname === "/dashboard/staff")}>
                 <UserCog className="h-[17px] w-[17px]" />
                 <span>Staff</span>
               </Link>
             )}
-            <button type="button" onClick={handleExport} disabled={exporting} className={navItemClass(false)}>
-              <Download className="h-[17px] w-[17px]" />
-              <span>{exporting ? "Exporting…" : "Export"}</span>
-            </button>
+            {role === "super_admin" && (
+              <Link href="/dashboard/audit-logs" className={navItemClass(pathname === "/dashboard/audit-logs")}>
+                <ScrollText className="h-[17px] w-[17px]" />
+                <span>Audit logs</span>
+              </Link>
+            )}
+            {isAdminLevelRole(role) && (
+              <button type="button" onClick={handleExport} disabled={exporting} className={navItemClass(false)}>
+                <Download className="h-[17px] w-[17px]" />
+                <span>{exporting ? "Exporting…" : "Export"}</span>
+              </button>
+            )}
           </nav>
         </div>
         <div className="flex flex-col gap-3.5">
@@ -109,7 +118,7 @@ export function DashboardShell({
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-[13px] font-semibold text-white">{name}</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9FB1DA]">{role}</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9FB1DA]">{roleLabel(role)}</span>
             </div>
           </div>
         </div>
@@ -121,7 +130,7 @@ export function DashboardShell({
         <header className="flex items-center justify-between border-b border-gignite-border bg-gignite-card px-5 py-3.5 lg:hidden">
           <div className="flex items-center gap-3">
             <BrandLogo className="h-7" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-text/70">{role}</span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-text/70">{roleLabel(role)}</span>
           </div>
           <button
             type="button"

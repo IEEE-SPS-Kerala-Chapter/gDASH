@@ -4,8 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { createStaffAccount, type StaffAccount } from "@/app/actions/admin";
 import { Badge, Field, FormCard, Panel, PrimaryButton, SecondaryButton, SectionLabel, Select, TextInput } from "@/components/admin/ui";
-
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", judge: "Judge", volunteer: "Volunteer" };
+import { ROLE_LABELS } from "@/lib/roles";
 
 const PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 

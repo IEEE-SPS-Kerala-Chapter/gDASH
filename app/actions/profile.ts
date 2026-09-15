@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type MyProfile = {
-  role: "admin" | "judge" | "volunteer" | string;
+  role: "super_admin" | "admin" | "judge" | "volunteer" | string;
   fullName: string;
   mustResetPassword: boolean;
 };

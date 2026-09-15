@@ -35,3 +35,7 @@ next-env.d.ts
 
 # Generated diagrams (not source-controlled)
 architecture-diagram.pdf
+
+# Super-admin bootstrap script — deliberately not source-controlled, see
+# its own header comment for why.
+scripts/seed-super-admin.mjs

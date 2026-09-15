@@ -18,6 +18,7 @@ import {
   REGISTRATION_STATUS_PILL,
 } from "@/lib/registration-status";
 import { teamDisplayCode } from "@/lib/team-code";
+import { isAdminLevelRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
 /** Per the Claude Design file "gIGNITE Team Detail Page.dc.html" — full
@@ -40,7 +41,7 @@ export function TeamDetail({
   const router = useRouter();
   const reg = team.registration;
   const leader = team.members.find((m) => m.is_leader);
-  const isAdmin = viewerRole === "admin";
+  const isAdmin = isAdminLevelRole(viewerRole);
   const isJudge = viewerRole === "judge";
 
   async function handleStatusChange(status: string) {
@@ -78,7 +79,7 @@ export function TeamDetail({
         <JudgeScoresSummary scores={reg.scores} avgScore={reg.avgScore} assignedCount={reg.assignments.length} />
       )}
       {isAdmin && <IdCardPanel teamId={team.id} members={team.members} />}
-      <MembersPanel members={team.members} />
+      <MembersPanel members={team.members} showContactDetails={isAdmin} />
       {reg && <SubmissionPanel reg={reg} />}
       {reg && isJudge && (
         <section className="flex flex-col gap-2">
@@ -120,7 +121,7 @@ export function TeamDetail({
           <span className="text-gignite-text/40">/</span>
           <span className="font-semibold text-black">{team.name}</span>
         </div>
-        {leader && (
+        {leader && isAdmin && (
           <a
             href={`mailto:${leader.email}`}
             className="rounded-[9px] border-[1.5px] border-gignite-blue px-4 py-2 font-heading text-[14px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
@@ -235,7 +236,7 @@ export function TeamDetail({
   );
 }
 
-function MembersPanel({ members }: { members: AdminMember[] }) {
+function MembersPanel({ members, showContactDetails }: { members: AdminMember[]; showContactDetails: boolean }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
       <div className="flex items-center justify-between gap-4">
@@ -253,14 +254,20 @@ function MembersPanel({ members }: { members: AdminMember[] }) {
                 <span className="text-[15px] font-semibold text-black">{m.full_name}</span>
                 {m.is_leader && <Badge className="text-[9px]">Leader</Badge>}
               </div>
-              <span className="truncate text-[13px] text-gignite-text">{m.email}</span>
-              <span className="text-[13px] text-gignite-text/80">{m.phone}</span>
-              <span className="text-[13px] text-gignite-blue">
-                {m.college}
-                {m.branch ? ` · ${m.branch}` : ""}
-                {m.year ? ` · ${m.year}` : ""}
-              </span>
-              {m.role_in_team && <span className="text-[13px] text-gignite-text/80">{m.role_in_team}</span>}
+              {showContactDetails ? (
+                <>
+                  <span className="truncate text-[13px] text-gignite-text">{m.email}</span>
+                  <span className="text-[13px] text-gignite-text/80">{m.phone}</span>
+                  <span className="text-[13px] text-gignite-blue">
+                    {m.college}
+                    {m.branch ? ` · ${m.branch}` : ""}
+                    {m.year ? ` · ${m.year}` : ""}
+                  </span>
+                  {m.role_in_team && <span className="text-[13px] text-gignite-text/80">{m.role_in_team}</span>}
+                </>
+              ) : (
+                <span className="text-[13px] text-gignite-blue">{m.college}</span>
+              )}
             </div>
           </div>
         ))}

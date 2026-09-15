@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { staffLoginSchema, resetPasswordSchema } from "@/lib/validations/auth";
+import { logAuditEvent } from "@/lib/audit-log";
 
 type SignInResult = { success: true } | { success: false; error: string };
 
@@ -19,6 +20,7 @@ export async function signIn(data: { email: string; password: string }): Promise
   if (error) {
     return { success: false, error: "Incorrect email or password." };
   }
+  await logAuditEvent(supabase, "auth.signed_in");
   return { success: true };
 }
 
@@ -77,5 +79,6 @@ export async function resetOwnPassword(input: { newPassword: string; confirmPass
     return { success: false, error: "Password updated, but couldn't clear the reset flag. Contact an admin." };
   }
 
+  await logAuditEvent(supabase, "auth.password_reset");
   return { success: true };
 }

@@ -168,3 +168,18 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
     registration,
   };
 }
+
+/**
+ * Judges only ever get name + college in the UI (no member contact info, to
+ * avoid any bias) — but the query above still pulls email/phone for
+ * everyone, since RLS's is_staff() covers judges too. Strip those fields
+ * here, server-side, before the team ever reaches a judge's browser, rather
+ * than relying on the UI alone to not render them (that data would still
+ * sit in the page payload otherwise, visible to anyone inspecting it).
+ */
+export function redactMemberContactInfo(team: AdminTeam): AdminTeam {
+  return {
+    ...team,
+    members: team.members.map((m) => ({ ...m, email: "", phone: "" })),
+  };
+}
