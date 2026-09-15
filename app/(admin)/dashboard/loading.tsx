@@ -1,8 +1,4 @@
-import { cn } from "@/lib/utils";
-
-function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-md bg-gignite-divider", className)} />;
-}
+import { Skeleton } from "@/components/admin/ui";
 
 export default function DashboardLoading() {
   return (

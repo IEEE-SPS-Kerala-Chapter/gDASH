@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Spinner } from "./ui";
 
 const MAX_ID_CARD_BYTES = 8 * 1024 * 1024;
 const ALLOWED_ID_CARD_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -72,7 +73,7 @@ export function IdCardUploadField({
           onChange={(ev) => handleFile(ev.target.files?.[0])}
         />
         <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-gignite-blue-pale font-mono text-[10px] font-medium text-gignite-blue">
-          ID
+          {state.status === "uploading" ? <Spinner /> : "ID"}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-[14px] font-semibold text-black">

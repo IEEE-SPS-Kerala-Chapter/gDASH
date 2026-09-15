@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { createClient } from "@/lib/supabase/client";
-import { Field, TextArea, FormCard } from "./ui";
+import { Field, TextArea, FormCard, Spinner } from "./ui";
 import { cn } from "@/lib/utils";
 
 const MAX_DECK_BYTES = 20 * 1024 * 1024;
@@ -92,7 +92,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
             onChange={(ev) => handleFile(ev.target.files?.[0])}
           />
           <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-gignite-blue-pale font-mono text-[10px] font-medium text-gignite-blue">
-            PPT
+            {uploadState.status === "uploading" ? <Spinner /> : "PPT"}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[14px] font-semibold text-black">

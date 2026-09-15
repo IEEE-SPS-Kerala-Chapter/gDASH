@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { memberDisplayCode } from "@/lib/member-code";
-import { BrandLogo } from "./ui";
+import { BrandLogo, Spinner } from "./ui";
 
 export type IdCardMember = {
   id: string;
@@ -83,7 +83,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
               // eslint-disable-next-line @next/next/no-img-element -- a generated data: URL, not an optimizable remote asset
               <img src={qrDataUrl} alt="Scan at check-in" className="h-full w-full" />
             ) : (
-              <span className="font-mono text-[10px] text-gignite-text/50">QR…</span>
+              <Spinner className="text-gignite-text/40" />
             )}
           </div>
         </div>
@@ -98,8 +98,9 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
         type="button"
         onClick={handleDownload}
         disabled={downloading || !qrDataUrl}
-        className="rounded-[10px] border-[1.5px] border-gignite-border-strong bg-transparent px-4 py-2 font-body text-[13px] font-semibold text-gignite-blue transition-colors hover:border-gignite-blue disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-gignite-border-strong bg-transparent px-4 py-2 font-body text-[13px] font-semibold text-gignite-blue transition-colors hover:border-gignite-blue disabled:cursor-not-allowed disabled:opacity-50"
       >
+        {downloading && <Spinner />}
         {downloading ? "Preparing…" : "Download ID card"}
       </button>
     </div>

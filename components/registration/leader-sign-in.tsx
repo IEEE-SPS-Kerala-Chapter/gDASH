@@ -40,7 +40,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
       )}
 
       <div className="relative z-10 w-full max-w-xs">
-        <PrimaryButton type="button" onClick={handleSignIn} disabled={loading}>
+        <PrimaryButton type="button" onClick={handleSignIn} disabled={loading} loading={loading}>
           {loading ? "Redirecting…" : "Continue with Google"}
         </PrimaryButton>
       </div>

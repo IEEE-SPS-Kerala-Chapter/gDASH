@@ -147,22 +147,52 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   },
 );
 
+/**
+ * Small themed spinner — a single ring in the current text color, so it
+ * reads correctly whether it's sitting on the black text of an active
+ * PrimaryButton or the blue of an inline "Loading…" label. Used anywhere a
+ * network round trip (sign-in, submit, an admin fetch-on-mount panel) would
+ * otherwise leave the screen looking stuck with no feedback.
+ */
+export function Spinner({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "inline-block h-4 w-4 flex-none animate-spin rounded-full border-2 border-current border-t-transparent",
+        className,
+      )}
+    />
+  );
+}
+
+/** Pulsing placeholder block for route-level loading.tsx skeletons and any
+ * other "content not ready yet" panel — pairs with Spinner above for the
+ * two loading idioms used across the app (a full skeleton for a whole
+ * screen/section still loading its shape, a spinner for a button/inline
+ * action in flight). */
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("animate-pulse rounded-md bg-gignite-divider", className)} />;
+}
+
 export function PrimaryButton({
   children,
   disabled,
+  loading,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) {
   return (
     <button
       {...props}
       disabled={disabled}
       className={cn(
-        "w-full rounded-[11px] px-6 py-4 font-heading text-[17px] font-bold transition-colors",
+        "flex w-full items-center justify-center gap-2.5 rounded-[11px] px-6 py-4 font-heading text-[17px] font-bold transition-colors",
         disabled
           ? "cursor-not-allowed bg-gignite-border text-gignite-muted shadow-none"
           : "bg-gignite-accent text-black shadow-[0_3px_0_rgba(150,67,11,0.45)] hover:bg-gignite-accent-hover",
       )}
     >
+      {loading && <Spinner />}
       {children}
     </button>
   );

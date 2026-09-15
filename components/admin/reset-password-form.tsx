@@ -56,7 +56,7 @@ export function ResetPasswordForm() {
             autoComplete="new-password"
           />
         </Field>
-        <PrimaryButton type="submit" disabled={submitting}>
+        <PrimaryButton type="submit" disabled={submitting} loading={submitting}>
           {submitting ? "Saving…" : "Set password"}
         </PrimaryButton>
       </form>

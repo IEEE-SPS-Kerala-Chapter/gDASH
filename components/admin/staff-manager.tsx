@@ -110,7 +110,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
             password to them yourself.
           </p>
           <div className="w-fit">
-            <PrimaryButton type="submit" disabled={submitting}>
+            <PrimaryButton type="submit" disabled={submitting} loading={submitting}>
               {submitting ? "Creating…" : "Create account"}
             </PrimaryButton>
           </div>

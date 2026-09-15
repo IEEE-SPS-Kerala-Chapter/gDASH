@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                 />
               </Field>
-              <PrimaryButton type="submit" disabled={loading}>
+              <PrimaryButton type="submit" disabled={loading} loading={loading}>
                 {loading ? "Signing in…" : "Sign in"}
               </PrimaryButton>
             </form>

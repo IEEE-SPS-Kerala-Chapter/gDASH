@@ -285,7 +285,11 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
           <div className="flex flex-col gap-3 lg:max-w-[760px] lg:flex-row-reverse lg:items-center">
             <div className="lg:flex-1">
-              <PrimaryButton type="submit" disabled={submitting || (isLastStep && !readyToSubmit)}>
+              <PrimaryButton
+                type="submit"
+                disabled={submitting || (isLastStep && !readyToSubmit)}
+                loading={submitting}
+              >
                 {submitting ? "Submitting…" : current.cta}
               </PrimaryButton>
             </div>

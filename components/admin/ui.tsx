@@ -21,6 +21,8 @@ export {
   SecondaryButton,
   FormCard,
   Divider,
+  Spinner,
+  Skeleton,
 } from "@/components/registration/ui";
 
 export function PageHeading({ title, subtitle }: { title: string; subtitle?: string }) {

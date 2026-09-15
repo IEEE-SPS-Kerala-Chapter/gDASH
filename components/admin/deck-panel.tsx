@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getDeckDownloadUrl } from "@/app/actions/admin";
 import { deckFileName } from "@/lib/deck-file-name";
+import { Spinner } from "@/components/admin/ui";
 
 /**
  * The uploaded-deck panel on the team detail page: filename, upload date,
@@ -62,7 +63,10 @@ export function DeckPanel({ deckPath, uploadedAt }: { deckPath: string; uploaded
       </div>
       <div className="h-[520px] overflow-hidden rounded-[10px] border border-gignite-divider bg-gignite-bg">
         {state.status === "loading" && (
-          <div className="flex h-full items-center justify-center text-[14px] text-gignite-text/60">Loading deck…</div>
+          <div className="flex h-full items-center justify-center gap-2.5 text-[14px] text-gignite-text/60">
+            <Spinner />
+            Loading deck…
+          </div>
         )}
         {state.status === "error" && (
           <div className="flex h-full items-center justify-center text-[14px] text-gignite-danger">{state.message}</div>

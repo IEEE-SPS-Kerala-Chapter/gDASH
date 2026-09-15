@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getTeamMemberIdCardPaths, getMemberIdCardDownloadUrl } from "@/app/actions/admin";
 import type { AdminMember } from "@/app/actions/admin";
-import { SectionLabel } from "@/components/admin/ui";
+import { SectionLabel, Spinner } from "@/components/admin/ui";
 
 type RowState = { status: "idle" } | { status: "loading" } | { status: "error"; message: string };
 
@@ -60,7 +60,10 @@ export function IdCardPanel({ teamId, members }: { teamId: string; members: Admi
                 <div className="text-gignite-text/70">{m.is_leader ? "Leader" : "Member"}</div>
               </div>
               {paths === null ? (
-                <span className="font-mono text-[12px] text-gignite-text/50">Loading…</span>
+                <span className="flex items-center gap-2 font-mono text-[12px] text-gignite-text/50">
+                  <Spinner className="h-3 w-3" />
+                  Loading…
+                </span>
               ) : !hasCard ? (
                 <span className="font-mono text-[12px] text-gignite-text/50">Not uploaded</span>
               ) : row.status === "error" ? (
@@ -70,8 +73,9 @@ export function IdCardPanel({ teamId, members }: { teamId: string; members: Admi
                   type="button"
                   onClick={() => reveal(m.id)}
                   disabled={row.status === "loading"}
-                  className="border-b-[1.5px] border-gignite-blue/35 pb-0.5 text-[14px] font-semibold text-gignite-blue transition-colors hover:border-gignite-accent hover:text-gignite-accent disabled:opacity-50"
+                  className="flex items-center gap-2 border-b-[1.5px] border-gignite-blue/35 pb-0.5 text-[14px] font-semibold text-gignite-blue transition-colors hover:border-gignite-accent hover:text-gignite-accent disabled:opacity-50"
                 >
+                  {row.status === "loading" && <Spinner className="h-3 w-3" />}
                   {row.status === "loading" ? "Opening…" : "View ID card ↗"}
                 </button>
               )}
