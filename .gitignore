@@ -32,3 +32,6 @@ next-env.d.ts
 .vercel
 .env*
 .claude
+
+# Generated diagrams (not source-controlled)
+architecture-diagram.pdf
