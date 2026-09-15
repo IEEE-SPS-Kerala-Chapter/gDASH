@@ -34,9 +34,20 @@ export const teamDetailsSchema = z
     // One college for the whole team, collected once from the leader — see
     // resolveCollege() in app/actions/registration.ts, which copies this
     // same value onto every member row server-side.
-    college: z.union([z.enum(KERALA_BTECH_COLLEGES), z.literal(OTHER_COLLEGE)], {
-      message: "Choose your college",
-    }),
+    //
+    // The custom message is set on EACH branch, not on the union itself:
+    // @hookform/resolvers' zod4 adapter ignores a union-level message and
+    // instead surfaces whichever branch came closest to matching — and
+    // Zod v4's default mismatch message for z.enum lists every valid value,
+    // which without this would render as "Invalid option" followed by every
+    // college name, in red, under the field.
+    college: z.union(
+      [
+        z.enum(KERALA_BTECH_COLLEGES, { message: "Choose your college" }),
+        z.literal(OTHER_COLLEGE, { message: "Choose your college" }),
+      ],
+      { message: "Choose your college" },
+    ),
     collegeOther: z.string().trim().max(120).optional(),
     district: z.enum(KERALA_DISTRICTS, { message: "Choose a district" }),
     role: z.enum(TEAM_ROLES, { message: "Choose your role in the team" }),
