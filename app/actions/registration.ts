@@ -91,7 +91,8 @@ export async function submitRegistration(
         email: leaderEmail,
         phone: team.leaderPhone,
         college: resolvedCollege,
-        role_in_team: resolveRole(team.role, team.roleOther),
+        branch: team.branch,
+        year: team.year,
         id_card_path: team.idCardPath,
       },
       p_members: members.map((m) => ({
@@ -109,7 +110,7 @@ export async function submitRegistration(
       p_ai_approach: idea.aiApproach,
       p_expected_impact: idea.expectedImpact,
       p_supporting_link: idea.supportingLink ?? "",
-      p_deck_path: idea.deckPath ?? "",
+      p_deck_path: idea.deckPath,
       p_declaration_eligibility: declarations.eligibility,
       p_declaration_originality: declarations.originality,
       p_declaration_rules: declarations.rules,

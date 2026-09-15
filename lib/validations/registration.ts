@@ -24,7 +24,7 @@ export const ideaSchema = z.object({
     .url("Enter a valid URL")
     .optional()
     .or(z.literal("")),
-  deckPath: z.string().optional(),
+  deckPath: z.string().min(1, "Upload your supporting material"),
 });
 
 export const declarationsSchema = z.object({

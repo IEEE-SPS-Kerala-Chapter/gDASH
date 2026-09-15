@@ -2,7 +2,7 @@ import { useRouter } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
-import { TEAM_ROLES, OTHER_ROLE } from "@/lib/validations/roles";
+import { MEMBER_YEARS } from "@/lib/validations/member";
 import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { createClient } from "@/lib/supabase/client";
 import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
@@ -19,7 +19,6 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   } = form;
   const e = errors.team;
   const college = watch("team.college");
-  const role = watch("team.role");
   const idCardPath = watch("team.idCardPath");
 
   async function handleSignOut() {
@@ -116,27 +115,31 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
         <Field label="6 · Phone" error={e?.leaderPhone?.message}>
           <TextInput type="tel" {...register("team.leaderPhone")} placeholder="+91 98765 43210" />
         </Field>
-
-        <Field label="7 · Role in team" error={e?.role?.message}>
-          <Select {...register("team.role")} defaultValue="">
-            <option value="" disabled>
-              Choose your role
-            </option>
-            {TEAM_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </Select>
-        </Field>
       </div>
-      {role === OTHER_ROLE && (
-        <Field label="Your role" error={e?.roleOther?.message}>
-          <TextInput {...register("team.roleOther")} placeholder="e.g. Product design" />
-        </Field>
-      )}
 
-      <Field label="8 · District" error={e?.district?.message}>
+      <div className="flex gap-[10px]">
+        <div className="min-w-0 flex-1">
+          <Field label="7 · Branch" error={e?.branch?.message}>
+            <TextInput {...register("team.branch")} placeholder="e.g. CSE" />
+          </Field>
+        </div>
+        <div className="min-w-0 flex-1">
+          <Field label="8 · Year" error={e?.year?.message}>
+            <Select {...register("team.year")} defaultValue="">
+              <option value="" disabled>
+                Choose
+              </option>
+              {MEMBER_YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+      </div>
+
+      <Field label="9 · District" error={e?.district?.message}>
         <Select {...register("team.district")} defaultValue="">
           <option value="" disabled>
             Choose a district

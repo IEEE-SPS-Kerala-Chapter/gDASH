@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TEAM_ROLES, OTHER_ROLE } from "./roles";
+import { MEMBER_YEARS } from "./member";
 import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
 
 export const AI_THEMES = [
@@ -50,16 +50,13 @@ export const teamDetailsSchema = z
     ),
     collegeOther: z.string().trim().max(120).optional(),
     district: z.enum(KERALA_DISTRICTS, { message: "Choose a district" }),
-    role: z.enum(TEAM_ROLES, { message: "Choose your role in the team" }),
-    roleOther: z.string().trim().max(60).optional(),
+    branch: z.string().trim().min(2, "Enter a branch, e.g. CSE").max(60),
+    year: z.enum(MEMBER_YEARS, { message: "Choose a year" }),
     idCardPath: z.string().min(1, "Upload your ID card"),
   })
   .superRefine((data, ctx) => {
     if (data.college === OTHER_COLLEGE && !data.collegeOther?.trim()) {
       ctx.addIssue({ code: "custom", path: ["collegeOther"], message: "Enter your college's name" });
-    }
-    if (data.role === OTHER_ROLE && !data.roleOther?.trim()) {
-      ctx.addIssue({ code: "custom", path: ["roleOther"], message: "Enter your role" });
     }
   });
 

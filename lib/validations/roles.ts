@@ -1,8 +1,8 @@
-/** Shared by both the leader (team.ts) and additional-member (member.ts)
- * schemas, so there's one canonical role list instead of two that could
- * drift apart. "Other" reveals a free-text field in the UI. */
+/** Shared by additional-member schemas (member.ts) — the leader no longer
+ * picks a role here (they're already marked as leader), so "Team Leader"
+ * isn't a selectable option for anyone. "Other" reveals a free-text field
+ * in the UI. */
 export const TEAM_ROLES = [
-  "Team Leader",
   "Frontend Developer",
   "Backend Developer",
   "Full-Stack Developer",

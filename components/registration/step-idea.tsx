@@ -73,7 +73,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
       <Field
         label="17 · AI approach / technology"
-        hint="Models, data and why they fit — judges weight this at 25%."
+        hint="Models, data and why they fit."
         error={e?.aiApproach?.message}
       >
         <TextArea rows={3} {...register("idea.aiApproach")} />
@@ -83,7 +83,11 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
         <TextArea rows={3} {...register("idea.expectedImpact")} />
       </Field>
 
-      <Field label="19 · Supporting material" error={e?.supportingLink?.message}>
+      <Field
+        label="19 · Supporting material"
+        hint="Required — use the official gIGNITE pitch deck template."
+        error={e?.deckPath?.message}
+      >
         <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">
           <input
             type="file"
@@ -103,7 +107,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
                   : "Upload your deck"}
             </span>
             <span className="text-[12px] text-gignite-text/70">
-              {uploadState.status === "error" ? uploadState.message : "PDF or PPTX · 20 MB max · optional"}
+              {uploadState.status === "error" ? uploadState.message : "PDF or PPTX · 20 MB max"}
             </span>
           </div>
         </label>
