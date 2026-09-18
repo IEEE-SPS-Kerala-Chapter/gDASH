@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { submitRegistration } from "@/app/actions/registration";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/registration-draft";
+import { createClient } from "@/lib/supabase/client";
 import {
   WizardHeader,
   ProgressBar,
@@ -118,6 +119,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,6 +214,15 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     }
   }
 
+  // Available from any step, not just Team — a leader who signed in with
+  // the wrong account shouldn't have to navigate back to Step 1 to fix it.
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.refresh();
+  }
+
   const hint =
     current.key === "team"
       ? "Saves as you go"
@@ -256,6 +267,22 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
             aria-hidden="true"
             className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
           />
+
+          {leaderEmail && (
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-gignite-blue-pale px-4 py-2 text-[13px] text-gignite-blue lg:max-w-[760px]">
+              <span>
+                Signed in as <span className="font-semibold">{leaderEmail}</span>
+              </span>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="flex-none font-semibold hover:text-gignite-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {signingOut ? "Signing out…" : "Sign out"}
+              </button>
+            </div>
+          )}
 
           <div className="flex flex-col gap-[9px] lg:hidden">
             <ProgressBar step={step} />

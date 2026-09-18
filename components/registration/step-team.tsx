@@ -1,16 +1,13 @@
-import { useRouter } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
 import { MEMBER_YEARS } from "@/lib/validations/member";
 import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
-import { createClient } from "@/lib/supabase/client";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
 
 export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
-  const router = useRouter();
   const {
     register,
     watch,
@@ -20,12 +17,6 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const e = errors.team;
   const college = watch("team.college");
   const idCardPath = watch("team.idCardPath");
-
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.refresh();
-  }
 
   return (
     <FormCard>
@@ -97,14 +88,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
                 className="cursor-not-allowed bg-gignite-card text-gignite-text/80"
               />
               <span className="text-[13px] leading-[1.45] text-gignite-text/70">
-                Verified.{" "}
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="font-semibold text-gignite-blue hover:text-gignite-accent"
-                >
-                  Not you? Sign out
-                </button>
+                Verified — wrong account? Use the sign out link above.
               </span>
             </>
           ) : (
