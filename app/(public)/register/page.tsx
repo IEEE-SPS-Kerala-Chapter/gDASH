@@ -2,18 +2,18 @@ import { RegistrationWizard } from "@/components/registration/registration-wizar
 import { LeaderSignIn } from "@/components/registration/leader-sign-in";
 import { BrandLogo, GridBackground, LogoHeaderBar } from "@/components/registration/ui";
 import { createClient } from "@/lib/supabase/server";
-import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
+import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 
 export default async function RegisterPage({
   searchParams,
 }: {
   searchParams: { auth_error?: string };
 }) {
-  // --- Google OAuth gate (disabled — see lib/config.ts) ---
-  // Kept intact, not deleted, so re-enabling later is just flipping the
-  // flag. While disabled, skip the session lookup entirely and always
+  // --- Leader verification gate (see lib/config.ts) ---
+  // Kept intact even while disabled, so re-enabling later is just flipping
+  // the flag. While disabled, skip the session lookup entirely and always
   // render the wizard directly with an editable leader email.
-  if (GOOGLE_OAUTH_ENABLED) {
+  if (LEADER_VERIFICATION_ENABLED) {
     const supabase = await createClient();
     const {
       data: { user },

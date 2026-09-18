@@ -5,7 +5,7 @@ import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
 import { MEMBER_YEARS } from "@/lib/validations/member";
 import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { createClient } from "@/lib/supabase/client";
-import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
+import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
 
@@ -85,10 +85,10 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
         <Field
           label="5 · Email"
-          hint={GOOGLE_OAUTH_ENABLED ? undefined : "College email — eligibility is checked against it."}
+          hint={LEADER_VERIFICATION_ENABLED ? undefined : "College email — eligibility is checked against it."}
           error={e?.leaderEmail?.message}
         >
-          {GOOGLE_OAUTH_ENABLED ? (
+          {LEADER_VERIFICATION_ENABLED ? (
             <>
               <TextInput
                 type="email"
@@ -97,7 +97,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
                 className="cursor-not-allowed bg-gignite-card text-gignite-text/80"
               />
               <span className="text-[13px] leading-[1.45] text-gignite-text/70">
-                Verified via Google.{" "}
+                Verified.{" "}
                 <button
                   type="button"
                   onClick={handleSignOut}

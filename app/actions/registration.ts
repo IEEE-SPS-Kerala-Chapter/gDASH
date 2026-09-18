@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { verifyTurnstile } from "@/lib/turnstile";
-import { GOOGLE_OAUTH_ENABLED } from "@/lib/config";
+import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 
@@ -61,19 +61,21 @@ export async function submitRegistration(
   try {
     const supabase = await createClient();
 
-    // When Google OAuth is enabled (see lib/config.ts), the leader's email
-    // is only meaningful as "verified" if it actually came from the
+    // When leader verification is enabled (see lib/config.ts), the leader's
+    // email is only meaningful as "verified" if it actually came from the
     // authenticated session — never from whatever the client posted, since
     // a tampered payload could otherwise claim any email as "signed in."
-    // While disabled, this whole check is skipped and the submitted email
-    // is trusted directly, same as before OAuth existed.
+    // Works the same regardless of which provider produced the session
+    // (Google OAuth or the email magic link). While disabled, this whole
+    // check is skipped and the submitted email is trusted directly, same
+    // as before verification existed.
     let leaderEmail: string;
-    if (GOOGLE_OAUTH_ENABLED) {
+    if (LEADER_VERIFICATION_ENABLED) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user?.email) {
-        return { success: false, error: "Please sign in with Google to register as team leader." };
+        return { success: false, error: "Please verify your email to register as team leader." };
       }
       leaderEmail = user.email;
     } else {
