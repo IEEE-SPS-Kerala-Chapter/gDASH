@@ -21,9 +21,22 @@ export const KERALA_DISTRICTS = [
 
 const phoneRegex = /^\+?[0-9]{10,13}$/;
 
+// Mirrors the teams_name_charset CHECK constraint in
+// supabase/migrations/20260922000000_team_name_validation.sql — letters,
+// digits, spaces, and a small safe punctuation set, with at least one
+// letter (so "123" or "---" alone can't be a team name).
+const TEAM_NAME_CHARSET_RE = /^[A-Za-z0-9 '&.-]+$/;
+const TEAM_NAME_HAS_LETTER_RE = /[A-Za-z]/;
+
 export const teamDetailsSchema = z
   .object({
-    teamName: z.string().trim().min(3, "Team name must be at least 3 characters").max(50),
+    teamName: z
+      .string()
+      .trim()
+      .min(3, "Team name must be at least 3 characters")
+      .max(50)
+      .regex(TEAM_NAME_CHARSET_RE, "Only letters, numbers, spaces, and ' & . - are allowed")
+      .refine((v) => TEAM_NAME_HAS_LETTER_RE.test(v), "Team name must include at least one letter"),
     aiTheme: z.enum(AI_THEMES, { message: "Choose an AI theme" }),
     leaderName: z.string().trim().min(2, "Enter the leader's full name").max(80),
     leaderEmail: z.string().trim().toLowerCase().email("Enter a valid email address"),

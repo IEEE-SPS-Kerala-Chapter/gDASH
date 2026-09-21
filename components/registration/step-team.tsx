@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
 import { MEMBER_YEARS } from "@/lib/validations/member";
 import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
+import { useDuplicateContactCheck, useTeamNameCheck } from "@/lib/registration-duplicate-check";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
 
@@ -17,11 +19,27 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const e = errors.team;
   const college = watch("team.college");
   const idCardPath = watch("team.idCardPath");
+  const leaderEmail = watch("team.leaderEmail");
+  const { checkValue, onBlurCheck } = useDuplicateContactCheck(form);
+  const { onBlur: onTeamNameBlur } = useTeamNameCheck(form);
+
+  // The leader's email is read-only (pre-filled from the verified session)
+  // when LEADER_VERIFICATION_ENABLED, so it never fires a blur event a user
+  // triggers themselves — check it as soon as it's known instead. Harmless
+  // to also run this when verification is off; it just checks whatever the
+  // leader typed once they move on.
+  useEffect(() => {
+    if (leaderEmail) void checkValue("team.leaderEmail", "email", leaderEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaderEmail]);
 
   return (
     <FormCard>
       <Field label="1 · Team name" error={e?.teamName?.message}>
-        <TextInput {...register("team.teamName")} placeholder="e.g. Neural Nadi" />
+        <TextInput
+          {...register("team.teamName", { onBlur: onTeamNameBlur })}
+          placeholder="e.g. Neural Nadi"
+        />
       </Field>
 
       <Field
@@ -97,7 +115,11 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
         </Field>
 
         <Field label="6 · Phone" error={e?.leaderPhone?.message}>
-          <TextInput type="tel" {...register("team.leaderPhone")} placeholder="+91 98765 43210" />
+          <TextInput
+            type="tel"
+            {...register("team.leaderPhone", { onBlur: onBlurCheck("team.leaderPhone", "phone") })}
+            placeholder="+91 98765 43210"
+          />
         </Field>
       </div>
 

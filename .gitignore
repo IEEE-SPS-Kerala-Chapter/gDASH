@@ -33,8 +33,9 @@ next-env.d.ts
 .env*
 .claude
 
-# Generated diagrams (not source-controlled)
+# Generated diagrams and client deliverables (not source-controlled)
 architecture-diagram.pdf
+client-docs/
 
 # Super-admin bootstrap script — deliberately not source-controlled, see
 # its own header comment for why.

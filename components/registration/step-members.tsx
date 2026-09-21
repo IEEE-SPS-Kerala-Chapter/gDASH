@@ -2,6 +2,7 @@ import { useFieldArray, type UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { MEMBER_YEARS } from "@/lib/validations/member";
 import { TEAM_ROLES, OTHER_ROLE } from "@/lib/validations/roles";
+import { useDuplicateContactCheck } from "@/lib/registration-duplicate-check";
 import { Field, TextInput, Select, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
 
@@ -26,6 +27,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
     formState: { errors },
   } = form;
   const { fields, append, remove } = useFieldArray({ control, name: "members" });
+  const { onBlurCheck } = useDuplicateContactCheck(form);
   const leaderName = watch("team.leaderName");
   const college = watch("team.college");
   const collegeOther = watch("team.collegeOther");
@@ -75,10 +77,16 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
                 <TextInput {...register(`members.${index}.fullName`)} />
               </Field>
               <Field label="Email" error={e?.email?.message}>
-                <TextInput type="email" {...register(`members.${index}.email`)} />
+                <TextInput
+                  type="email"
+                  {...register(`members.${index}.email`, { onBlur: onBlurCheck(`members.${index}.email`, "email") })}
+                />
               </Field>
               <Field label="Phone" error={e?.phone?.message}>
-                <TextInput type="tel" {...register(`members.${index}.phone`)} />
+                <TextInput
+                  type="tel"
+                  {...register(`members.${index}.phone`, { onBlur: onBlurCheck(`members.${index}.phone`, "phone") })}
+                />
               </Field>
               <Field label="College" hint="Same as the team's college">
                 <TextInput value={displayCollege ?? ""} readOnly className="cursor-not-allowed bg-gignite-card text-gignite-text/80" />

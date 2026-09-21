@@ -70,6 +70,7 @@ export async function submitRegistration(
     // check is skipped and the submitted email is trusted directly, same
     // as before verification existed.
     let leaderEmail: string;
+    let leaderUserId: string | null = null;
     if (LEADER_VERIFICATION_ENABLED) {
       const {
         data: { user },
@@ -78,6 +79,7 @@ export async function submitRegistration(
         return { success: false, error: "Please verify your email to register as team leader." };
       }
       leaderEmail = user.email;
+      leaderUserId = user.id;
     } else {
       leaderEmail = team.leaderEmail;
     }
@@ -131,11 +133,29 @@ export async function submitRegistration(
           error: "A team member can only join one team, and can't be part of another.",
         };
       }
+      if (error.message?.includes("member phone already registered")) {
+        return {
+          success: false,
+          error: "A team member's phone number is already registered with another team.",
+        };
+      }
       if (error.message?.includes("team name taken")) {
         return { success: false, error: "That team name is taken — try another." };
       }
+      if (error.message?.includes("team name too similar to an existing team")) {
+        const similarTo = error.message.split(":").slice(1).join(":").trim();
+        return {
+          success: false,
+          error: similarTo
+            ? `That team name is too similar to an existing team ("${similarTo}") — try something more distinct.`
+            : "That team name is too similar to an existing team — try something more distinct.",
+        };
+      }
       if (error.message?.includes("team size must be")) {
         return { success: false, error: "Teams need between 2 and 5 members." };
+      }
+      if (error.message?.includes("registration is closed")) {
+        return { success: false, error: "Registration is closed. Contact the organizers if you think this is a mistake." };
       }
       return { success: false, error: "Something went wrong submitting your registration." };
     }
@@ -143,6 +163,17 @@ export async function submitRegistration(
     const accessToken = (result as { access_token?: string } | null)?.access_token;
     if (!accessToken) {
       return { success: false, error: "Registration didn't return a status link. Contact the organizers." };
+    }
+
+    // A real submission exists now — clear the draft so there's nothing
+    // left to resume, and so a later visit to /register never re-offers an
+    // already-submitted team's data. Best-effort: a failure here shouldn't
+    // undo a successful submission, just leaves a harmless stale row.
+    if (leaderUserId) {
+      const { error: draftError } = await supabase.from("registration_drafts").delete().eq("leader_id", leaderUserId);
+      if (draftError) {
+        console.error("Could not clear registration draft after submit:", draftError.message);
+      }
     }
 
     return { success: true, accessToken };
@@ -218,5 +249,127 @@ export async function checkMemberExists(memberId: string): Promise<boolean> {
   } catch (err) {
     console.error("checkMemberExists threw unexpectedly:", err);
     return false;
+  }
+}
+
+type DraftResult = { success: true } | { success: false; error: string };
+
+/**
+ * Explicit "Save draft" — upserts the signed-in leader's one server-side
+ * draft row (one per leader, see registration_drafts' unique leader_id).
+ * Only ever called when a leader session exists (the button only renders
+ * then); with no signed-in user there's no identity to key a server-side
+ * draft on, so this just returns a clear error rather than silently no-op.
+ */
+export async function saveRegistrationDraft(value: RegistrationForm, step: number): Promise<DraftResult> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: "Please sign in to save a draft." };
+    }
+
+    const { error } = await supabase
+      .from("registration_drafts")
+      .upsert({ leader_id: user.id, value, step }, { onConflict: "leader_id" });
+
+    if (error) {
+      return { success: false, error: "Could not save your draft." };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error("saveRegistrationDraft threw unexpectedly:", err);
+    return { success: false, error: "Could not save your draft." };
+  }
+}
+
+export type LoadedDraft = { value: RegistrationForm; step: number } | null;
+
+/**
+ * The signed-in leader's saved draft, if any — loaded whenever they return
+ * to /register, so it's there "whenever they log in," not just in the
+ * browser they last used (see lib/registration-draft.ts for that local,
+ * same-browser fallback).
+ */
+export async function loadRegistrationDraft(): Promise<LoadedDraft> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from("registration_drafts")
+      .select("value, step")
+      .eq("leader_id", user.id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return { value: data.value as RegistrationForm, step: data.step };
+  } catch (err) {
+    console.error("loadRegistrationDraft threw unexpectedly:", err);
+    return null;
+  }
+}
+
+export type ContactAvailability = { emailTaken: boolean; phoneTaken: boolean };
+
+/**
+ * Live pre-submit check: does this email/phone already belong to a team from
+ * a previous submission? Complements registrationFormSchema's superRefine,
+ * which only catches a duplicate *within* the current, still-unsubmitted
+ * form — this one asks the database, so a collision with someone else's
+ * past registration surfaces while the leader is still filling the form,
+ * not only after the final submit.
+ */
+export async function checkContactAvailability(input: {
+  email?: string;
+  phone?: string;
+}): Promise<ContactAvailability> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("check_duplicate_contact", {
+      p_email: input.email?.trim() || null,
+      p_phone: input.phone?.trim() || null,
+    });
+    if (error || !data) return { emailTaken: false, phoneTaken: false };
+    const result = data as { email_taken?: boolean; phone_taken?: boolean };
+    return { emailTaken: Boolean(result.email_taken), phoneTaken: Boolean(result.phone_taken) };
+  } catch (err) {
+    console.error("checkContactAvailability threw unexpectedly:", err);
+    return { emailTaken: false, phoneTaken: false };
+  }
+}
+
+export type TeamNameAvailability =
+  | { available: true; reason: null; similarTo: null }
+  | { available: false; reason: "taken" | "similar"; similarTo: string | null };
+
+const TEAM_NAME_AVAILABLE: TeamNameAvailability = { available: true, reason: null, similarTo: null };
+
+/**
+ * Live pre-submit check for the team name field: is it already taken
+ * (exact, whitespace/case-insensitive), or too close to an existing name
+ * to pass the hard similarity block inside submit_registration()? Mirrors
+ * checkContactAvailability's role for email/phone.
+ */
+export async function checkTeamNameAvailability(teamName: string): Promise<TeamNameAvailability> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("check_team_name_available", { p_team_name: teamName.trim() });
+    if (error || !data) return TEAM_NAME_AVAILABLE;
+    const result = data as { available?: boolean; reason?: "taken" | "similar" | null; similar_to?: string | null };
+    if (result.available !== false) return TEAM_NAME_AVAILABLE;
+    return {
+      available: false,
+      reason: result.reason === "similar" ? "similar" : "taken",
+      similarTo: result.similar_to ?? null,
+    };
+  } catch (err) {
+    console.error("checkTeamNameAvailability threw unexpectedly:", err);
+    return TEAM_NAME_AVAILABLE;
   }
 }

@@ -6,7 +6,7 @@ import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
-import { submitRegistration } from "@/app/actions/registration";
+import { submitRegistration, saveRegistrationDraft, loadRegistrationDraft } from "@/app/actions/registration";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/registration-draft";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -119,6 +119,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
@@ -145,12 +146,28 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   // HTML). One post-hydration flash (empty → restored) is expected and
   // matches the same "restore in useEffect" pattern already used for the
   // admin view-mode toggle in teams-browser.tsx.
+  //
+  // The server-side draft (tied to the signed-in leader, not one browser)
+  // takes priority when one exists — that's the copy that's "there
+  // whenever they log in," even on a different device. The local one is
+  // just a same-session fallback for when there's no session yet, or the
+  // server round trip fails.
   useEffect(() => {
-    const draft = loadDraft();
-    if (draft) {
-      form.reset(draft.value);
-      setStep(draft.step);
-    }
+    (async () => {
+      if (leaderEmail) {
+        const serverDraft = await loadRegistrationDraft();
+        if (serverDraft) {
+          form.reset(serverDraft.value);
+          setStep(serverDraft.step);
+          return;
+        }
+      }
+      const draft = loadDraft();
+      if (draft) {
+        form.reset(draft.value);
+        setStep(draft.step);
+      }
+    })();
     // Only ever run once, right after mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -211,6 +228,21 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       saveDraft(form.getValues(), prevStep);
     } else {
       router.push("/");
+    }
+  }
+
+  // Explicit, deliberate save — unlike the silent local autosave above,
+  // this is the durable, cross-device copy tied to the leader's signed-in
+  // identity (see saveRegistrationDraft). Never validates first: the whole
+  // point of a draft is that it can hold incomplete/invalid progress.
+  async function handleSaveDraft() {
+    setSavingDraft(true);
+    const result = await saveRegistrationDraft(form.getValues(), step);
+    setSavingDraft(false);
+    if (result.success) {
+      toast.success("Draft saved");
+    } else {
+      toast.error(result.error);
     }
   }
 
@@ -327,6 +359,11 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
                   ← Back
                 </SecondaryButton>
               </div>
+            )}
+            {leaderEmail && (
+              <SecondaryButton type="button" onClick={handleSaveDraft} disabled={savingDraft}>
+                {savingDraft ? "Saving…" : "Save draft"}
+              </SecondaryButton>
             )}
           </div>
         </form>
