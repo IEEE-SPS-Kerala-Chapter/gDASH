@@ -134,16 +134,6 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Local-only ID-card previews for the Review step — keyed by form field
-  // path ("team.idCardPath" / "members.0.idCardPath"). Holds blob: URLs
-  // built from the raw File the browser already has in memory the moment
-  // it's picked (see IdCardUploadField's onFileSelected), never anything
-  // fetched from storage — that bucket has no read policy for anyone but
-  // staff, and this never needs one, since the file's still right here.
-  // A ref because the URLs themselves don't need to trigger a render; only
-  // previewVersion below does, whenever the map actually changes.
-  const filePreviewUrls = useRef<Map<string, string>>(new Map());
-  const [previewVersion, setPreviewVersion] = useState(0);
   const form = useForm<RegistrationForm>({
     // The generic Resolver<T> type that @hookform/resolvers infers from a
     // schema this deep (nested enums/literals) doesn't structurally match
@@ -207,31 +197,6 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
-
-  // Revokes every blob: URL on unmount, not just on replacement below —
-  // otherwise they'd leak for the lifetime of the tab.
-  useEffect(() => {
-    return () => {
-      filePreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, []);
-
-  function registerFilePreview(key: string, file: File) {
-    const existing = filePreviewUrls.current.get(key);
-    if (existing) URL.revokeObjectURL(existing);
-    filePreviewUrls.current.set(key, URL.createObjectURL(file));
-    // The map itself is a ref (mutating it doesn't re-render) — this is
-    // just the signal that tells the Review step's consumers to re-read it.
-    setPreviewVersion((v) => v + 1);
-  }
-
-  function getFilePreviewUrl(key: string): string | null {
-    // Reads previewVersion purely so this function's identity (and thus
-    // anything memoized on it) changes when the map does — the value
-    // itself is never used, only the read matters.
-    void previewVersion;
-    return filePreviewUrls.current.get(key) ?? null;
-  }
 
   function jumpToStep(key: string) {
     const index = STEPS.findIndex((s) => s.key === key);
@@ -385,19 +350,10 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
           <StepTitle title={current.title} subtitle={current.subtitle} />
 
           <div className="lg:max-w-[760px]">
-            {current.key === "team" && (
-              <StepTeam form={form} onIdCardFileSelected={(file) => registerFilePreview("team.idCardPath", file)} />
-            )}
-            {current.key === "members" && (
-              <StepMembers
-                form={form}
-                onIdCardFileSelected={(index, file) => registerFilePreview(`members.${index}.idCardPath`, file)}
-              />
-            )}
+            {current.key === "team" && <StepTeam form={form} />}
+            {current.key === "members" && <StepMembers form={form} />}
             {current.key === "idea" && <StepIdea form={form} />}
-            {current.key === "review" && (
-              <StepReview form={form} onEdit={jumpToStep} getFilePreviewUrl={getFilePreviewUrl} />
-            )}
+            {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} />}
             {current.key === "declarations" && <StepDeclarations form={form} />}
           </div>
 

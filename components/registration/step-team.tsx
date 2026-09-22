@@ -9,14 +9,7 @@ import { useDuplicateContactCheck, useTeamNameCheck } from "@/lib/registration-d
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
 
-export function StepTeam({
-  form,
-  onIdCardFileSelected,
-}: {
-  form: UseFormReturn<RegistrationForm>;
-  /** Wires the leader's picked file into the review step's local preview — see registration-wizard.tsx. */
-  onIdCardFileSelected?: (file: File) => void;
-}) {
+export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const {
     register,
     watch,
@@ -168,7 +161,6 @@ export function StepTeam({
       <IdCardUploadField
         path={idCardPath}
         onUploaded={(path) => setValue("team.idCardPath", path, { shouldValidate: true })}
-        onFileSelected={onIdCardFileSelected}
         error={e?.idCardPath?.message}
       />
     </FormCard>

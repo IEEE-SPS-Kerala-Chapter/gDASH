@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
@@ -372,4 +373,39 @@ export async function checkTeamNameAvailability(teamName: string): Promise<TeamN
     console.error("checkTeamNameAvailability threw unexpectedly:", err);
     return TEAM_NAME_AVAILABLE;
   }
+}
+
+type IdCardPreviewResult = { success: true; url: string } | { success: false; error: string };
+
+/**
+ * A short-lived signed URL for a just-uploaded ID card, so the Review step
+ * (components/registration/step-review.tsx) can show it back to the leader
+ * before they submit — including after resuming a saved draft, when the
+ * browser no longer has the original File in memory.
+ *
+ * Deliberately callable by anyone (no auth/staff check, unlike every other
+ * use of the service-role client in this codebase — see createAdminClient's
+ * own doc comment). Registration itself is authless-capable by design (see
+ * init_schema.sql), and this needs to work in that mode too, not just when
+ * LEADER_VERIFICATION_ENABLED. The path itself is the credential instead:
+ * IdCardUploadField writes it as `${crypto.randomUUID()}-${file.name}`, so
+ * knowing it already means either being the uploader (it's only ever handed
+ * back to their own browser's form state) or being staff (who have their
+ * own separate, gated path to the same files via getMemberIdCardDownloadUrl
+ * in app/actions/admin.ts) — same trust model teams.access_token already
+ * uses elsewhere in this schema. It's also never returned by
+ * get_registration_by_token, so it can't leak via the public status page.
+ */
+export async function getIdCardPreviewUrl(path: string): Promise<IdCardPreviewResult> {
+  if (!path) {
+    return { success: false, error: "No ID card uploaded yet." };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from("member-id-cards").createSignedUrl(path, 60 * 5); // 5 minutes
+
+  if (error || !data) {
+    return { success: false, error: "Could not load ID card preview." };
+  }
+  return { success: true, url: data.signedUrl };
 }

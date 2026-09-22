@@ -25,14 +25,11 @@ type UploadState =
 export function IdCardUploadField({
   path,
   onUploaded,
-  onFileSelected,
   error,
 }: {
   /** Current storage path, if already uploaded — used to seed the "done" label after a draft restore. */
   path?: string;
   onUploaded: (path: string) => void;
-  /** The raw picked File, for an instant local preview (see StepReview) — never uploaded anywhere itself, that's onUploaded's job. */
-  onFileSelected?: (file: File) => void;
   error?: string;
 }) {
   const [state, setState] = useState<UploadState>(
@@ -50,7 +47,6 @@ export function IdCardUploadField({
       return;
     }
 
-    onFileSelected?.(file);
     setState({ status: "uploading", name: file.name });
     const supabase = createClient();
     const uploadPath = `${crypto.randomUUID()}-${file.name}`;

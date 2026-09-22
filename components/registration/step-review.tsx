@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
+import { getIdCardPreviewUrl } from "@/app/actions/registration";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { OTHER_ROLE } from "@/lib/validations/roles";
-import { FormCard, Divider } from "./ui";
+import { FormCard, Divider, Spinner } from "./ui";
 
 function EditLink({ onClick }: { onClick: () => void }) {
   return (
@@ -29,28 +31,52 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
  * The uploaded file is the participant's own college/government ID, not the
  * gIGNITE ID card the system generates after submission (that one only
  * exists once a real team_members row does — see components/registration/
- * id-card.tsx). previewUrl is a local blob: URL created from the raw File
- * the browser still has in memory (see registerFilePreview in
- * registration-wizard.tsx) — nothing is fetched from storage, since the
- * member-id-cards bucket has no read policy for anyone but staff. A blob URL
- * only exists for a file picked *this session*; a path restored from a
- * saved draft has no File object to preview, hence the fallback label.
+ * id-card.tsx). Fetches a short-lived signed URL for `path` from Supabase
+ * Storage via getIdCardPreviewUrl — works whether the file was picked this
+ * session or the path came back from a resumed draft, unlike an
+ * in-browser-memory preview, which only the former ever has.
  */
-function IdCardThumb({ label, path, previewUrl }: { label: string; path: string; previewUrl: string | null }) {
+function IdCardThumb({ label, path }: { label: string; path: string }) {
+  const [state, setState] = useState<{ status: "idle" } | { status: "loading" } | { status: "ready"; url: string } | { status: "error" }>(
+    { status: "idle" },
+  );
+
+  useEffect(() => {
+    if (!path) {
+      setState({ status: "idle" });
+      return;
+    }
+    let cancelled = false;
+    setState({ status: "loading" });
+    getIdCardPreviewUrl(path).then((result) => {
+      if (cancelled) return;
+      setState(result.success ? { status: "ready", url: result.url } : { status: "error" });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
   return (
     <div className="flex items-center gap-3 rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-card p-3">
-      {previewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a local blob: URL, not an optimizable remote asset
-        <img src={previewUrl} alt={`${label} ID card`} className="h-14 w-14 flex-none rounded-[8px] object-cover" />
+      {state.status === "ready" ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable remote asset
+        <img src={state.url} alt={`${label} ID card`} className="h-14 w-14 flex-none rounded-[8px] object-cover" />
       ) : (
         <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[8px] bg-gignite-blue-pale font-mono text-[10px] text-gignite-blue">
-          ID
+          {state.status === "loading" ? <Spinner /> : "ID"}
         </div>
       )}
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate text-[13px] font-semibold text-black">{label}</span>
         <span className="text-[12px] text-gignite-text/70">
-          {previewUrl ? "Uploaded" : path ? "Uploaded — restored from a saved draft, no live preview" : "Not uploaded"}
+          {state.status === "ready"
+            ? "Uploaded"
+            : state.status === "error"
+              ? "Uploaded — preview unavailable right now"
+              : path
+                ? "Loading preview…"
+                : "Not uploaded"}
         </span>
       </div>
     </div>
@@ -60,11 +86,9 @@ function IdCardThumb({ label, path, previewUrl }: { label: string; path: string;
 export function StepReview({
   form,
   onEdit,
-  getFilePreviewUrl,
 }: {
   form: UseFormReturn<RegistrationForm>;
   onEdit: (stepKey: string) => void;
-  getFilePreviewUrl: (key: string) => string | null;
 }) {
   const { team, members, idea } = form.getValues();
   const displayCollege = team.college === OTHER_COLLEGE ? team.collegeOther : team.college;
@@ -85,11 +109,7 @@ export function StepReview({
         <ReviewRow label="Email" value={team.leaderEmail} />
         <ReviewRow label="Phone" value={team.leaderPhone} />
         <ReviewRow label="Branch / Year" value={[team.branch, team.year].filter(Boolean).join(" · ")} />
-        <IdCardThumb
-          label={`${team.leaderName || "Leader"}'s ID card`}
-          path={team.idCardPath}
-          previewUrl={getFilePreviewUrl("team.idCardPath")}
-        />
+        <IdCardThumb label={`${team.leaderName || "Leader"}'s ID card`} path={team.idCardPath} />
       </FormCard>
 
       <FormCard>
@@ -108,11 +128,7 @@ export function StepReview({
               <ReviewRow label="Phone" value={m.phone} />
               <ReviewRow label="Role" value={role ?? ""} />
               <ReviewRow label="Branch / Year" value={[m.branch, m.year].filter(Boolean).join(" · ")} />
-              <IdCardThumb
-                label={`${m.fullName || `Member ${i + 2}`}'s ID card`}
-                path={m.idCardPath}
-                previewUrl={getFilePreviewUrl(`members.${i}.idCardPath`)}
-              />
+              <IdCardThumb label={`${m.fullName || `Member ${i + 2}`}'s ID card`} path={m.idCardPath} />
             </div>
           );
         })}
