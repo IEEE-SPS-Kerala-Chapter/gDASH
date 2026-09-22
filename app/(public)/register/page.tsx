@@ -1,5 +1,5 @@
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
-import { LeaderSignIn } from "@/components/registration/leader-sign-in";
+import { LeaderSignIn, StaffSessionBlocked } from "@/components/registration/leader-sign-in";
 import { BrandLogo, GridBackground, LogoHeaderBar } from "@/components/registration/ui";
 import { createClient } from "@/lib/supabase/server";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
@@ -52,6 +52,18 @@ export default async function RegisterPage({
 
     if (!user?.email) {
       return <LeaderSignIn authError={Boolean(searchParams.auth_error)} />;
+    }
+
+    // Staff and participant leaders share the same Supabase Auth session.
+    // Without this check, a staff member signed in at /login would land
+    // here on their own staff session and get silently treated as a
+    // verified leader — is_staff() (safe to call as anon/authenticated,
+    // no grant needed: SQL functions default to PUBLIC execute) tells the
+    // two apart now that only staff get a `profiles` row (see
+    // 20260922020000_fix_staff_trigger_role_intent.sql).
+    const { data: isStaff } = await supabase.rpc("is_staff");
+    if (isStaff) {
+      return <StaffSessionBlocked email={user.email} />;
     }
 
     return (
