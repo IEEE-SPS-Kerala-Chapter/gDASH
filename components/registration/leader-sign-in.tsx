@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { checkContactAvailability } from "@/app/actions/registration";
 import { BrandLogo, Field, GridBackground, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 30;
 
 /**
- * Staff and participant leaders share the same Supabase Auth session (same
- * project, same cookies) — so a staff member signed in at /login who then
- * visits /register would otherwise sail straight past the leader-sign-in
- * gate on their own staff session, registering a team under their admin
- * identity without ever verifying via Google or a magic link. This blocks
- * that instead of silently treating a staff session as a verified leader.
+ * Shared "your session can't be used here — sign out" screen. Two callers:
+ * a staff account visiting /register (StaffSessionBlocked) and a leader
+ * whose verified email already belongs to a past submission
+ * (AlreadyRegisteredBlocked) — see both below.
  */
-export function StaffSessionBlocked({ email }: { email: string }) {
+function SessionBlocked({ title, message }: { title: string; message: ReactNode }) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -34,11 +33,8 @@ export function StaffSessionBlocked({ email }: { email: string }) {
         <GridBackground />
         <BrandLogo className="relative z-10 h-16" />
         <div className="relative z-10 flex max-w-sm flex-col gap-2">
-          <h1 className="font-heading text-2xl font-bold text-black">You&apos;re signed in as staff</h1>
-          <p className="text-gignite-text/80">
-            <span className="font-semibold">{email}</span> is a staff account, not a team leader.
-            Sign out here, then verify with Google or a sign-in link as the team leader to register.
-          </p>
+          <h1 className="font-heading text-2xl font-bold text-black">{title}</h1>
+          <p className="text-gignite-text/80">{message}</p>
         </div>
         <div className="relative z-10 w-full max-w-xs">
           <PrimaryButton type="button" onClick={handleSignOut} disabled={signingOut} loading={signingOut}>
@@ -47,6 +43,50 @@ export function StaffSessionBlocked({ email }: { email: string }) {
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * Staff and participant leaders share the same Supabase Auth session (same
+ * project, same cookies) — so a staff member signed in at /login who then
+ * visits /register would otherwise sail straight past the leader-sign-in
+ * gate on their own staff session, registering a team under their admin
+ * identity without ever verifying via Google or a magic link. This blocks
+ * that instead of silently treating a staff session as a verified leader.
+ */
+export function StaffSessionBlocked({ email }: { email: string }) {
+  return (
+    <SessionBlocked
+      title="You're signed in as staff"
+      message={
+        <>
+          <span className="font-semibold">{email}</span> is a staff account, not a team leader. Sign
+          out here, then verify with Google or a sign-in link as the team leader to register.
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * A magic-link sign-in can't be blocked before it's sent (nothing to check
+ * against yet), and a Google sign-in can't be checked before the redirect
+ * at all — the email is only known once the session lands back here. This
+ * is that check for both paths: if the now-verified email already belongs
+ * to a submitted team (as leader or member), block the wizard instead of
+ * letting them start a second registration under the same identity.
+ */
+export function AlreadyRegisteredBlocked({ email }: { email: string }) {
+  return (
+    <SessionBlocked
+      title="This email is already registered"
+      message={
+        <>
+          <span className="font-semibold">{email}</span> already belongs to a submitted team. Sign
+          out and use a different email or Google account to register a new team.
+        </>
+      }
+    />
   );
 }
 
@@ -117,12 +157,30 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
   );
 }
 
+const ALREADY_REGISTERED_MESSAGE = "This email is already registered with another team.";
+
 function EmailSignIn({ onBack }: { onBack: () => void }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
+  // Guards a slow response from overwriting a newer one — only the result
+  // for the latest-checked value is ever applied.
+  const latestChecked = useRef("");
+
+  async function handleEmailBlur(rawValue: string) {
+    const value = rawValue.trim().toLowerCase();
+    latestChecked.current = value;
+    if (!EMAIL_PATTERN.test(value)) return;
+    const { emailTaken } = await checkContactAvailability({ email: value });
+    if (latestChecked.current !== value) return;
+    if (emailTaken) {
+      setError(ALREADY_REGISTERED_MESSAGE);
+    } else if (error === ALREADY_REGISTERED_MESSAGE) {
+      setError(null);
+    }
+  }
 
   function startCooldown() {
     setCooldown(RESEND_COOLDOWN_SECONDS);
@@ -146,6 +204,15 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
     }
     setError(null);
     setLoading(true);
+    // Re-checked here, not just on blur — a paste-and-Enter never fires the
+    // blur handler, and this is the last chance to catch it before an email
+    // actually goes out.
+    const { emailTaken } = await checkContactAvailability({ email: trimmed });
+    if (emailTaken) {
+      setError(ALREADY_REGISTERED_MESSAGE);
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
     const { error: sendError } = await supabase.auth.signInWithOtp({
       email: trimmed,
@@ -206,6 +273,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onBlur={(e) => void handleEmailBlur(e.target.value)}
           placeholder="you@college.ac.in"
           autoFocus
         />

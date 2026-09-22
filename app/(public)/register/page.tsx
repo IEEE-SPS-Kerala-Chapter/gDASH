@@ -1,10 +1,11 @@
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
-import { LeaderSignIn, StaffSessionBlocked } from "@/components/registration/leader-sign-in";
+import { LeaderSignIn, StaffSessionBlocked, AlreadyRegisteredBlocked } from "@/components/registration/leader-sign-in";
 import { BrandLogo, GridBackground, LogoHeaderBar } from "@/components/registration/ui";
 import { createClient } from "@/lib/supabase/server";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { getRegistrationWindow } from "@/app/actions/registration-window";
 import { isRegistrationCurrentlyOpen } from "@/lib/registration-window";
+import { checkContactAvailability } from "@/app/actions/registration";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,18 @@ export default async function RegisterPage({
     const { data: isStaff } = await supabase.rpc("is_staff");
     if (isStaff) {
       return <StaffSessionBlocked email={user.email} />;
+    }
+
+    // The email sign-in form checks this before a magic link even goes out
+    // (see components/registration/leader-sign-in.tsx), but Google can't be
+    // checked until the redirect lands back here with a verified email — a
+    // leader whose email already belongs to a submitted team shouldn't be
+    // able to start a second registration under the same identity either
+    // way. A draft in progress (registration_drafts, not yet in
+    // team_members) doesn't trip this — only an actual past submission does.
+    const { emailTaken } = await checkContactAvailability({ email: user.email });
+    if (emailTaken) {
+      return <AlreadyRegisteredBlocked email={user.email} />;
     }
 
     return (
