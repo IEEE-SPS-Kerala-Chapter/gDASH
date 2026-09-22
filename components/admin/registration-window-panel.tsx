@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { updateRegistrationWindow, type RegistrationWindow } from "@/app/actions/registration-window";
-import { Field, FormCard, PrimaryButton, SegmentedToggle, TextArea, TextInput } from "@/components/admin/ui";
+import { Badge, Field, FormCard, PrimaryButton, Switch, TextArea, TextInput } from "@/components/admin/ui";
 
 function isoToLocalInput(iso: string | null): string {
   if (!iso) return "";
@@ -54,14 +54,10 @@ export function RegistrationWindowPanel({ initial }: { initial: RegistrationWind
       </p>
 
       <Field label="Status">
-        <SegmentedToggle
-          value={isOpen ? "open" : "closed"}
-          onChange={(v) => setIsOpen(v === "open")}
-          options={[
-            { value: "open", label: "Open" },
-            { value: "closed", label: "Closed" },
-          ]}
-        />
+        <div className="flex items-center gap-3">
+          <Switch checked={isOpen} onChange={setIsOpen} ariaLabel="Registration open" />
+          <Badge variant={isOpen ? "success" : "danger"}>{isOpen ? "Open" : "Closed"}</Badge>
+        </div>
       </Field>
 
       <Field label="Closes at (optional)" hint="Leave blank for no scheduled closing date. Your local time.">

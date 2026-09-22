@@ -143,6 +143,44 @@ export function SegmentedToggle<T extends string>({
   );
 }
 
+/**
+ * Compact on/off switch for a single boolean setting (e.g. registration
+ * open/closed) — SegmentedToggle reads better for 2-4 named options picked
+ * from a filter bar, but stretches into an oversized strip for a plain
+ * yes/no, most of it empty space. Pair with a Badge to also label the
+ * current state in words, not just position.
+ */
+export function Switch({
+  checked,
+  onChange,
+  ariaLabel,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  ariaLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={ariaLabel}
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "relative inline-flex h-6 w-11 flex-none items-center rounded-full transition-colors",
+        checked ? "bg-gignite-success" : "bg-gignite-border-strong",
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block h-[18px] w-[18px] flex-none translate-x-[3px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] transition-transform",
+          checked && "translate-x-[20px]",
+        )}
+      />
+    </button>
+  );
+}
+
 /** Small pill button, for row-level actions like "Remove" or a chip's "×". */
 export function ChipButton({
   children,
