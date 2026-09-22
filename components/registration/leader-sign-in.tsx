@@ -109,6 +109,11 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
       options: {
         shouldCreateUser: true,
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/register`,
+        // Tags the new auth.users row so handle_new_user() can tell a
+        // participant leader apart from staff signing in the same
+        // provider="email" way (password) — see
+        // 20260922020000_fix_staff_trigger_role_intent.sql.
+        data: { role_intent: "leader" },
       },
     });
     setLoading(false);
