@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,6 +13,9 @@
      surfaces share one fixed light palette by design (no separate dark
      theme), so .dark intentionally mirrors :root. */
   :root {
+    --font-heading: "Space Grotesk", "Segoe UI", sans-serif;
+    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", Consolas, monospace;
     --background: 42.9 46.7% 88.2%; /* gignite.bg */
     --foreground: 0 0% 17.3%; /* gignite.text */
     --card: 0 0% 100%; /* gignite.surface */
