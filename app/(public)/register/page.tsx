@@ -6,6 +6,8 @@ import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { getRegistrationWindow } from "@/app/actions/registration-window";
 import { isRegistrationCurrentlyOpen } from "@/lib/registration-window";
 
+export const dynamic = "force-dynamic";
+
 function ClosedScreen({ message }: { message?: string | null }) {
   return (
     <>
