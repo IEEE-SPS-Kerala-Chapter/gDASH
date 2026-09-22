@@ -1,0 +1,70 @@
+
+> gdash@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/12) ...
+   Generating static pages (3/12) 
+   Generating static pages (6/12) 
+getRegistrationWindow threw unexpectedly: n [Error]: Dynamic server usage: Route /register couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\chunks\671.js:23:10309)
+    at n (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\app\(public)\register\page.js:46:35422)
+    at c (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\app\(public)\register\page.js:46:20732)
+    at d (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\app\(public)\register\page.js:46:19398)
+    at em (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /register couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+getRegistrationWindow threw unexpectedly: n [Error]: Dynamic server usage: Route /register couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at l (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\chunks\948.js:1:37218)
+    at d (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\chunks\671.js:23:10309)
+    at n (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\app\(public)\register\page.js:46:35422)
+    at c (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\app\(public)\register\page.js:46:20732)
+    at d (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\.next\server\app\(public)\register\page.js:46:19398)
+    at em (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:134808)
+    at e (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:137693)
+    at e_ (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:138168)
+    at Array.toJSON (C:\Users\abhin\OneDrive\Documents\GitHub\gDASH\node_modules\next\dist\compiled\next-server\app-page.runtime.prod.js:12:135777)
+    at stringify (<anonymous>) {
+  description: "Route /register couldn't be rendered statically because it used `cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (9/12) 
+ ✓ Generating static pages (12/12)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    194 B          92.7 kB
+├ ○ /_not-found                          138 B          87.5 kB
+├ ƒ /auth/callback                       0 B                0 B
+├ ƒ /dashboard                           9.3 kB          149 kB
+├ ƒ /dashboard/audit-logs                4.14 kB         115 kB
+├ ƒ /dashboard/staff                     4.71 kB         116 kB
+├ ƒ /dashboard/teams/[teamId]            6.17 kB         130 kB
+├ ƒ /id/[memberId]                       194 B          92.7 kB
+├ ○ /login                               3.63 kB         115 kB
+├ ƒ /register                            98.8 kB         234 kB
+├ ƒ /register/status/[token]             16.7 kB         127 kB
+└ ƒ /reset-password                      3.65 kB         115 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/117-5ab5da485a22340e.js       31.7 kB
+  ├ chunks/fd9d1056-b9b281d6c2728617.js  53.6 kB
+  └ other shared chunks (total)          1.95 kB
+
+
+ƒ Middleware                             87 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
