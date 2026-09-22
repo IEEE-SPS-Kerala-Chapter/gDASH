@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { mapTeamRow, redactMemberContactInfo, TEAM_SELECT, type AdminTeam, type RawTeamRow } from "@/lib/admin-teams";
-import { STAGE1_CRITERIA, isValidStage1Score, type Stage1Scores } from "@/lib/scoring";
+import { STAGE1_CRITERIA, isValidStage1Score, isCompleteStage1Scores, type Stage1Scores, type PartialStage1Scores } from "@/lib/scoring";
 import { logAuditEvent } from "@/lib/audit-log";
 
 /**
@@ -41,12 +41,77 @@ export async function getMyAssignedTeams(): Promise<
 
 type ScoreResult = { success: true } | { success: false; error: string };
 
+function validatePartialScores(scores: PartialStage1Scores): string | null {
+  for (const criterion of STAGE1_CRITERIA) {
+    const v = scores[criterion.key];
+    if (v !== undefined && v !== null && !isValidStage1Score(v)) {
+      return `${criterion.label} must be a whole number from 1 to 10.`;
+    }
+  }
+  return null;
+}
+
 /**
- * Judge-only: submit or update this judge's Stage 1 score for a
- * registration. Re-validates the 1-10 range and role here for a clean
- * error message; judge_scores' CHECK constraints and RLS (insert/update
- * require an actual registration_assignments row for this judge) are the
- * real backstop regardless of what the client sends.
+ * Judge-only: save a possibly-incomplete Stage 1 evaluation, to continue
+ * later — see supabase/migrations/20260923020000_judge_score_drafts.sql.
+ * Unlike submitScore, a criterion left out of `scores` is saved as
+ * genuinely unscored (null), not defaulted to anything, and comments can
+ * be saved alone with zero criteria filled in.
+ */
+export async function saveScoreDraft(
+  registrationId: string,
+  scores: PartialStage1Scores,
+  comments: string,
+): Promise<ScoreResult> {
+  const caller = await getCallerRole();
+  if (!caller) {
+    return { success: false, error: "Please sign in." };
+  }
+  if (caller.role !== "judge") {
+    return { success: false, error: "Only judges can score." };
+  }
+
+  const scoreError = validatePartialScores(scores);
+  if (scoreError) {
+    return { success: false, error: scoreError };
+  }
+  if (comments.length > 2000) {
+    return { success: false, error: "Comments must be 2000 characters or fewer." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("judge_scores").upsert(
+    {
+      registration_id: registrationId,
+      judge_id: caller.userId,
+      problem_relevance: scores.problem_relevance ?? null,
+      technical_implementation: scores.technical_implementation ?? null,
+      innovation_creativity: scores.innovation_creativity ?? null,
+      feasibility_scalability: scores.feasibility_scalability ?? null,
+      completion_functionality: scores.completion_functionality ?? null,
+      comments: comments.trim() === "" ? null : comments.trim(),
+      status: "draft",
+    },
+    { onConflict: "registration_id,judge_id" },
+  );
+
+  if (error) {
+    return { success: false, error: "Could not save your draft. Make sure this team is assigned to you." };
+  }
+  await logAuditEvent(supabase, "judge.score_draft_saved", {
+    targetType: "registration",
+    targetId: registrationId,
+  });
+  return { success: true };
+}
+
+/**
+ * Judge-only: submit this judge's final Stage 1 score for a registration —
+ * unlike saveScoreDraft, every criterion must be complete. Still editable
+ * afterwards (see ScoreForm) via either action again; judge_scores' CHECK
+ * constraints and RLS (insert/update require an actual
+ * registration_assignments row for this judge) are the real backstop
+ * regardless of what the client sends.
  */
 export async function submitScore(
   registrationId: string,
@@ -60,11 +125,8 @@ export async function submitScore(
   if (caller.role !== "judge") {
     return { success: false, error: "Only judges can submit scores." };
   }
-
-  for (const criterion of STAGE1_CRITERIA) {
-    if (!isValidStage1Score(scores[criterion.key])) {
-      return { success: false, error: `${criterion.label} must be a whole number from 1 to 10.` };
-    }
+  if (!isCompleteStage1Scores(scores)) {
+    return { success: false, error: "Score every criterion before submitting." };
   }
   if (comments.length > 2000) {
     return { success: false, error: "Comments must be 2000 characters or fewer." };
@@ -81,6 +143,7 @@ export async function submitScore(
       feasibility_scalability: scores.feasibility_scalability,
       completion_functionality: scores.completion_functionality,
       comments: comments.trim() === "" ? null : comments.trim(),
+      status: "submitted",
     },
     { onConflict: "registration_id,judge_id" },
   );

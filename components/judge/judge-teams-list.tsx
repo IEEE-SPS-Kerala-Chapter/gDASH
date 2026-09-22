@@ -21,7 +21,8 @@ const GRID_COLS = "grid grid-cols-[26px_minmax(0,1.4fr)_1fr_1fr] items-center ga
 export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
   const router = useRouter();
   const [viewMode, setViewMode] = useState<"list" | "card">("card");
-  const scoredCount = teams.filter((t) => t.registration?.scores.length).length;
+  // A saved draft isn't "fully scored" — only count a genuine submission.
+  const scoredCount = teams.filter((t) => t.registration?.scores[0]?.status === "submitted").length;
   const progressPct = teams.length > 0 ? Math.round((scoredCount / teams.length) * 100) : 0;
 
   useEffect(() => {
@@ -82,16 +83,19 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
             </div>
             {teams.map((team) => {
               const myScore = team.registration?.scores[0];
+              const submitted = myScore?.status === "submitted";
               return (
                 <div
                   key={team.id}
                   className={`${GRID_COLS} cursor-pointer border-b border-gignite-divider px-5 py-4 last:border-b-0 hover:bg-gignite-bg/30`}
                   onClick={() => router.push(`/dashboard/teams/${team.id}`)}
                 >
-                  {myScore ? (
+                  {submitted ? (
                     <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-gignite-blue text-[11px] font-semibold text-white">
                       ✓
                     </div>
+                  ) : myScore ? (
+                    <div className="h-[22px] w-[22px] rounded-full border-[1.5px] border-dashed border-gignite-warn" />
                   ) : (
                     <div className="h-[22px] w-[22px] rounded-full border-[1.5px] border-gignite-border-strong" />
                   )}
@@ -100,8 +104,16 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
                     <span className="truncate text-[13px] text-gignite-text/60">{team.district}</span>
                   </div>
                   <Badge className="w-fit">{team.ai_theme}</Badge>
-                  <span className={`font-mono text-[13px] ${myScore ? "text-gignite-blue" : "text-gignite-text/60"}`}>
-                    {myScore ? `${myScore.weighted.toFixed(1)} / 10` : "Not scored"}
+                  <span
+                    className={`font-mono text-[13px] ${
+                      submitted ? "text-gignite-blue" : myScore ? "text-gignite-warn" : "text-gignite-text/60"
+                    }`}
+                  >
+                    {submitted && myScore?.weighted != null
+                      ? `${myScore.weighted.toFixed(1)} / 10`
+                      : myScore
+                        ? "Draft saved"
+                        : "Not scored"}
                   </span>
                 </div>
               );
@@ -112,6 +124,7 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {teams.map((team) => {
             const myScore = team.registration?.scores[0];
+            const submitted = myScore?.status === "submitted";
             const excerpt = team.registration?.problem_statement ?? "";
             return (
               <Panel
@@ -120,10 +133,12 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
                 onClick={() => router.push(`/dashboard/teams/${team.id}`)}
               >
                 <div className="flex-none pt-0.5">
-                  {myScore ? (
+                  {submitted ? (
                     <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-gignite-blue text-[13px] font-semibold text-white">
                       ✓
                     </div>
+                  ) : myScore ? (
+                    <div className="h-[26px] w-[26px] rounded-full border-[1.5px] border-dashed border-gignite-warn" />
                   ) : (
                     <div className="h-[26px] w-[26px] rounded-full border-[1.5px] border-gignite-border-strong" />
                   )}
@@ -141,9 +156,15 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
                   <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
                     <Badge>{team.ai_theme}</Badge>
                     <span
-                      className={`font-mono text-[12px] ${myScore ? "text-gignite-blue" : "text-gignite-text/60"}`}
+                      className={`font-mono text-[12px] ${
+                        submitted ? "text-gignite-blue" : myScore ? "text-gignite-warn" : "text-gignite-text/60"
+                      }`}
                     >
-                      {myScore ? `Scored ${myScore.weighted.toFixed(1)}/10` : "Not scored"}
+                      {submitted && myScore?.weighted != null
+                        ? `Scored ${myScore.weighted.toFixed(1)}/10`
+                        : myScore
+                          ? "Draft saved"
+                          : "Not scored"}
                     </span>
                   </div>
                 </div>

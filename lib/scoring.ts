@@ -49,6 +49,17 @@ export type Stage1CriterionKey = (typeof STAGE1_CRITERIA)[number]["key"];
 
 export type Stage1Scores = Record<Stage1CriterionKey, number>;
 
+/** A criterion may genuinely be unscored while a judge is still drafting — see judge_score_drafts.sql. */
+export type PartialStage1Scores = Partial<Record<Stage1CriterionKey, number>>;
+
+/** True once every criterion has a valid 1-10 value — the gate for submitScore(), not saveScoreDraft(). */
+export function isCompleteStage1Scores(scores: PartialStage1Scores): scores is Stage1Scores {
+  return STAGE1_CRITERIA.every((c) => {
+    const v = scores[c.key];
+    return v !== undefined && v !== null && isValidStage1Score(v);
+  });
+}
+
 const TOTAL_WEIGHT = STAGE1_CRITERIA.reduce((sum, c) => sum + c.weight, 0); // 100
 
 /** Weighted average across the Stage 1 parameters, on a 1–10 scale. */

@@ -130,7 +130,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         registrationId={team.registration.id}
         assignments={team.registration.assignments}
         judges={judges}
-        scoredJudgeIds={team.registration.scores.map((s) => s.judgeId)}
+        scoredJudgeIds={team.registration.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
         onChange={(a) => handleAssignmentsChange(team.id, a)}
       />
     ) : (

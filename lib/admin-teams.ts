@@ -4,7 +4,7 @@
  * only export async functions) because TEAM_SELECT and mapTeamRow are a
  * plain constant and a plain function, not server actions themselves.
  */
-import { computeWeightedScore, type Stage1Scores } from "@/lib/scoring";
+import { computeWeightedScore, isCompleteStage1Scores, type PartialStage1Scores } from "@/lib/scoring";
 
 export type AdminMember = {
   id: string;
@@ -30,18 +30,26 @@ export type AdminAssignment = {
   judge_name: string;
 };
 
-/** One judge's Stage 1 score for a registration — see lib/scoring.ts for the weights. */
+/**
+ * One judge's Stage 1 score for a registration — see lib/scoring.ts for the
+ * weights. A criterion is null while status is "draft" (see
+ * supabase/migrations/20260923020000_judge_score_drafts.sql) — "submitted"
+ * guarantees all five are filled, by construction of submitScore().
+ * weighted is null for a draft for the same reason: nothing complete to
+ * compute it from yet.
+ */
 export type AdminJudgeScore = {
   id: string;
   judgeId: string;
   judgeName: string;
-  problemRelevance: number;
-  technicalImplementation: number;
-  innovationCreativity: number;
-  feasibilityScalability: number;
-  completionFunctionality: number;
+  status: "draft" | "submitted";
+  problemRelevance: number | null;
+  technicalImplementation: number | null;
+  innovationCreativity: number | null;
+  feasibilityScalability: number | null;
+  completionFunctionality: number | null;
   comments: string | null;
-  weighted: number;
+  weighted: number | null;
 };
 
 export type AdminRegistration = {
@@ -88,7 +96,7 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
        declaration_eligibility, declaration_originality, declaration_rules, declaration_media_consent,
        registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
        judge_scores (
-         id, judge_id, problem_relevance, technical_implementation, innovation_creativity,
+         id, judge_id, status, problem_relevance, technical_implementation, innovation_creativity,
          feasibility_scalability, completion_functionality, comments,
          profiles ( full_name )
        )
@@ -97,11 +105,12 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
 type RawJudgeScore = {
   id: string;
   judge_id: string;
-  problem_relevance: number;
-  technical_implementation: number;
-  innovation_creativity: number;
-  feasibility_scalability: number;
-  completion_functionality: number;
+  status: "draft" | "submitted";
+  problem_relevance: number | null;
+  technical_implementation: number | null;
+  innovation_creativity: number | null;
+  feasibility_scalability: number | null;
+  completion_functionality: number | null;
   comments: string | null;
   profiles: { full_name: string } | null;
 };
@@ -128,26 +137,32 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
   let registration: AdminRegistration | null = null;
   if (rawReg) {
     const scores: AdminJudgeScore[] = (rawReg.judge_scores ?? []).map((s) => {
-      const stage1: Stage1Scores = {
-        problem_relevance: s.problem_relevance,
-        technical_implementation: s.technical_implementation,
-        innovation_creativity: s.innovation_creativity,
-        feasibility_scalability: s.feasibility_scalability,
-        completion_functionality: s.completion_functionality,
+      const stage1: PartialStage1Scores = {
+        problem_relevance: s.problem_relevance ?? undefined,
+        technical_implementation: s.technical_implementation ?? undefined,
+        innovation_creativity: s.innovation_creativity ?? undefined,
+        feasibility_scalability: s.feasibility_scalability ?? undefined,
+        completion_functionality: s.completion_functionality ?? undefined,
       };
       return {
         id: s.id,
         judgeId: s.judge_id,
         judgeName: s.profiles?.full_name ?? "Unknown",
+        status: s.status,
         problemRelevance: s.problem_relevance,
         technicalImplementation: s.technical_implementation,
         innovationCreativity: s.innovation_creativity,
         feasibilityScalability: s.feasibility_scalability,
         completionFunctionality: s.completion_functionality,
         comments: s.comments,
-        weighted: computeWeightedScore(stage1),
+        weighted: isCompleteStage1Scores(stage1) ? computeWeightedScore(stage1) : null,
       };
     });
+    // A still-drafting judge's incomplete score shouldn't pull the team's
+    // average toward whatever they've entered so far — only a submitted
+    // (and therefore complete, by construction of submitScore()) score
+    // counts toward it.
+    const submittedScores = scores.filter((s) => s.status === "submitted" && s.weighted !== null);
     registration = {
       ...rawReg,
       assignments: (rawReg.registration_assignments ?? []).map((a) => ({
@@ -156,7 +171,10 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
         judge_name: a.profiles?.full_name ?? "Unknown",
       })),
       scores,
-      avgScore: scores.length > 0 ? scores.reduce((sum, s) => sum + s.weighted, 0) / scores.length : null,
+      avgScore:
+        submittedScores.length > 0
+          ? submittedScores.reduce((sum, s) => sum + (s.weighted as number), 0) / submittedScores.length
+          : null,
     };
   }
   return {

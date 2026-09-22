@@ -215,7 +215,7 @@ export function TeamDetail({
                   registrationId={reg.id}
                   assignments={reg.assignments}
                   judges={judges}
-                  scoredJudgeIds={reg.scores.map((s) => s.judgeId)}
+                  scoredJudgeIds={reg.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
                   onChange={(assignments) =>
                     setTeam((prev) => (prev.registration ? { ...prev, registration: { ...prev.registration, assignments } } : prev))
                   }
