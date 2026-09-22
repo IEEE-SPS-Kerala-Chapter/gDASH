@@ -342,6 +342,71 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
   return { success: true, csv, filename: `registrations-${today}.csv` };
 }
 
+type DeleteResult = { success: true } | { success: false; error: string };
+
+/**
+ * Super-admin only: permanently delete a team's entire registration (team,
+ * members, idea, judge assignments and scores — all cascade from the
+ * `teams` row, see teams_delete_super_admin's own comment). Deliberately
+ * stricter than isAdminLevelRole: a regular admin can change status or
+ * assign judges but not destroy a submission outright.
+ *
+ * Storage cleanup (uploaded decks/ID cards) is best-effort after the DB
+ * delete succeeds — those files live outside Postgres, so nothing cascades
+ * them automatically, but a cleanup failure there shouldn't make the
+ * (already-successful) deletion look like it failed.
+ */
+export async function deleteRegistration(teamId: string): Promise<DeleteResult> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can delete a registration." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: team } = await supabase.from("teams").select("name").eq("id", teamId).single();
+  if (!team) {
+    return { success: false, error: "Team not found." };
+  }
+
+  const [{ data: members }, { data: registration }] = await Promise.all([
+    supabase.from("team_members").select("id_card_path").eq("team_id", teamId),
+    supabase.from("registrations").select("deck_path").eq("team_id", teamId).maybeSingle(),
+  ]);
+
+  // RLS's teams_delete_super_admin policy enforces is_super_admin() again
+  // at the DB level regardless — the caller.role check above is just for a
+  // clean error message before doing any of the reads above.
+  const { error } = await supabase.from("teams").delete().eq("id", teamId);
+  if (error) {
+    return { success: false, error: "Could not delete registration." };
+  }
+
+  await logAuditEvent(supabase, "registration.deleted", {
+    targetType: "team",
+    targetId: teamId,
+    targetLabel: team.name,
+    metadata: { memberCount: members?.length ?? 0 },
+  });
+
+  const idCardPaths = (members ?? []).map((m) => m.id_card_path).filter((p): p is string => Boolean(p));
+  const admin = createAdminClient();
+  if (idCardPaths.length > 0) {
+    const { error: storageError } = await admin.storage.from("member-id-cards").remove(idCardPaths);
+    if (storageError) {
+      console.error(`Could not clean up ID cards for deleted team ${teamId}:`, storageError.message);
+    }
+  }
+  if (registration?.deck_path) {
+    const { error: deckError } = await admin.storage.from("registration-decks").remove([registration.deck_path]);
+    if (deckError) {
+      console.error(`Could not clean up deck for deleted team ${teamId}:`, deckError.message);
+    }
+  }
+
+  return { success: true };
+}
+
 export type StaffAccount = { id: string; full_name: string; email: string; role: string; created_at: string };
 
 /** Super-admin only: every staff account (admin/judge/volunteer/super_admin), for the staff management page. */

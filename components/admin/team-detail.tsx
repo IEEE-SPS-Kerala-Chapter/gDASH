@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AdminTeam, AdminJudge, AdminRegistration, AdminMember } from "@/app/actions/admin";
-import { updateRegistrationStatus } from "@/app/actions/admin";
+import { updateRegistrationStatus, deleteRegistration } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
@@ -43,6 +43,10 @@ export function TeamDetail({
   const leader = team.members.find((m) => m.is_leader);
   const isAdmin = isAdminLevelRole(viewerRole);
   const isJudge = viewerRole === "judge";
+  const isSuperAdmin = viewerRole === "super_admin";
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   async function handleStatusChange(status: string) {
     if (!reg) return;
@@ -57,6 +61,18 @@ export function TeamDetail({
         : prev,
     );
     toast.success("Status updated.");
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const result = await deleteRegistration(team.id);
+    setDeleting(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Registration deleted.");
+    router.push("/dashboard");
   }
 
   const teamCode = teamDisplayCode(team.id);
@@ -225,6 +241,67 @@ export function TeamDetail({
                 />
               )}
             </Panel>
+
+            {isSuperAdmin && (
+              <Panel className="flex flex-col gap-3 border-gignite-danger p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <SectionLabel>Danger zone</SectionLabel>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-accent">
+                    Super admin only
+                  </span>
+                </div>
+                {!deleteConfirmOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    className="rounded-[9px] border-[1.5px] border-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-danger transition-colors hover:bg-gignite-danger hover:text-white"
+                  >
+                    Delete registration
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-gignite-danger bg-gignite-card p-4">
+                    <div className="flex gap-2.5">
+                      <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-gignite-danger text-[11px] font-bold text-white">
+                        !
+                      </span>
+                      <span className="flex-1 text-[14px] leading-[1.55] text-gignite-text">
+                        This permanently deletes <span className="font-semibold text-black">{team.name}</span> —
+                        the team, all {team.members.length} member{team.members.length === 1 ? "" : "s"}, the
+                        submitted idea, and any judge scores. This cannot be undone. Type the team name to confirm.
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder={team.name}
+                      className="w-full rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-3 py-2 text-[14px] text-gignite-text outline-none focus:border-gignite-danger"
+                    />
+                    <div className="flex gap-2.5">
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleteConfirmText !== team.name || deleting}
+                        className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {deleting ? "Deleting…" : "Permanently delete"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteConfirmOpen(false);
+                          setDeleteConfirmText("");
+                        }}
+                        disabled={deleting}
+                        className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </Panel>
+            )}
           </div>
         </div>
       ) : (
