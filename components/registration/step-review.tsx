@@ -4,6 +4,7 @@ import type { RegistrationForm } from "@/lib/validations/registration";
 import { getIdCardPreviewUrl } from "@/app/actions/registration";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { OTHER_ROLE } from "@/lib/validations/roles";
+import { cn } from "@/lib/utils";
 import { FormCard, Divider, Spinner } from "./ui";
 
 function EditLink({ onClick }: { onClick: () => void }) {
@@ -40,6 +41,7 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
   const [state, setState] = useState<{ status: "idle" } | { status: "loading" } | { status: "ready"; url: string } | { status: "error" }>(
     { status: "idle" },
   );
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!path) {
@@ -57,29 +59,79 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
     };
   }, [path]);
 
+  const ready = state.status === "ready";
+
   return (
-    <div className="flex items-center gap-3 rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-card p-3">
-      {state.status === "ready" ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable remote asset
-        <img src={state.url} alt={`${label} ID card`} className="h-14 w-14 flex-none rounded-[8px] object-cover" />
-      ) : (
-        <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[8px] bg-gignite-blue-pale font-mono text-[10px] text-gignite-blue">
-          {state.status === "loading" ? <Spinner /> : "ID"}
+    <>
+      <div
+        role={ready ? "button" : undefined}
+        tabIndex={ready ? 0 : undefined}
+        onClick={ready ? () => setExpanded(true) : undefined}
+        onKeyDown={
+          ready
+            ? (ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                  ev.preventDefault();
+                  setExpanded(true);
+                }
+              }
+            : undefined
+        }
+        className={cn(
+          "flex items-center gap-3 rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-card p-3",
+          ready && "cursor-pointer transition-colors hover:border-gignite-blue",
+        )}
+      >
+        {state.status === "ready" ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable remote asset
+          <img src={state.url} alt={`${label} ID card`} className="h-14 w-14 flex-none rounded-[8px] object-cover" />
+        ) : (
+          <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[8px] bg-gignite-blue-pale font-mono text-[10px] text-gignite-blue">
+            {state.status === "loading" ? <Spinner /> : "ID"}
+          </div>
+        )}
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-[13px] font-semibold text-black">{label}</span>
+          <span className="text-[12px] text-gignite-text/70">
+            {state.status === "ready"
+              ? "Uploaded — tap to view full size"
+              : state.status === "error"
+                ? "Uploaded — preview unavailable right now"
+                : path
+                  ? "Loading preview…"
+                  : "Not uploaded"}
+          </span>
+        </div>
+      </div>
+
+      {expanded && ready && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close"
+          onClick={() => setExpanded(false)}
+          onKeyDown={(ev) => {
+            if (ev.key === "Escape" || ev.key === "Enter" || ev.key === " ") setExpanded(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable remote asset */}
+          <img
+            src={(state as { status: "ready"; url: string }).url}
+            alt={`${label} ID card, full size`}
+            className="max-h-full max-w-full rounded-[10px] object-contain shadow-2xl"
+          />
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            aria-label="Close"
+            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[16px] font-semibold text-black"
+          >
+            ×
+          </button>
         </div>
       )}
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="truncate text-[13px] font-semibold text-black">{label}</span>
-        <span className="text-[12px] text-gignite-text/70">
-          {state.status === "ready"
-            ? "Uploaded"
-            : state.status === "error"
-              ? "Uploaded — preview unavailable right now"
-              : path
-                ? "Loading preview…"
-                : "Not uploaded"}
-        </span>
-      </div>
-    </div>
+    </>
   );
 }
 

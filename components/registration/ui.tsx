@@ -236,10 +236,13 @@ export function DesktopSidebar({
   steps,
   step,
   onHome,
+  onStepClick,
 }: {
   steps: readonly { key: string; nav: string }[];
   step: number;
   onHome: () => void;
+  /** Jump to a step already reached (done or current) — not to one still upcoming, since it may depend on fields not filled yet. */
+  onStepClick?: (index: number) => void;
 }) {
   return (
     <div className="sticky top-10 hidden w-[300px] flex-none flex-col gap-10 lg:flex">
@@ -250,8 +253,18 @@ export function DesktopSidebar({
       <div className="flex flex-col gap-1">
         {steps.map((s, i) => {
           const state = i < step ? "done" : i === step ? "current" : "upcoming";
+          const clickable = state !== "upcoming" && Boolean(onStepClick);
           return (
-            <div key={s.key} className="flex items-center gap-3 py-2">
+            <button
+              key={s.key}
+              type="button"
+              disabled={!clickable}
+              onClick={() => onStepClick?.(i)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg py-2 text-left",
+                clickable ? "cursor-pointer hover:bg-gignite-surface" : "cursor-default",
+              )}
+            >
               <div
                 className={cn(
                   "flex h-6 w-6 flex-none items-center justify-center rounded-full font-mono text-[11px] font-medium",
@@ -270,7 +283,7 @@ export function DesktopSidebar({
               >
                 {s.nav}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>

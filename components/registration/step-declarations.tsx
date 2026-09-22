@@ -1,9 +1,8 @@
 import { Controller, type UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
+import { RULES_URL } from "@/lib/config";
 import { FormCard } from "./ui";
 import { cn } from "@/lib/utils";
-
-const RULES_URL = "https://docs.google.com/document/d/1KF-yekcP4ZKF40_f_7cH_JkEJniD6KtcvNObSt2_pSc/edit?usp=sharing";
 
 const DECLARATIONS = [
   {

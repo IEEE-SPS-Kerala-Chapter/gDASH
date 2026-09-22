@@ -9,6 +9,7 @@ import { registrationFormSchema, type RegistrationForm } from "@/lib/validations
 import { submitRegistration, saveRegistrationDraft, loadRegistrationDraft } from "@/app/actions/registration";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/registration-draft";
 import { createClient } from "@/lib/supabase/client";
+import { RULES_URL } from "@/lib/config";
 import {
   WizardHeader,
   ProgressBar,
@@ -234,6 +235,17 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       return;
     }
     clearDraft();
+    // The status page is looked up entirely by the access token in its own
+    // URL — it needs no session at all — so there's no reason to leave the
+    // leader signed in past this point. Matters most on a shared/public
+    // device (e.g. a registration desk): without this, the next person to
+    // open /register here would silently inherit this session. Best-effort:
+    // a failure here shouldn't block a successful submission's redirect.
+    try {
+      await createClient().auth.signOut();
+    } catch (err) {
+      console.error("Sign-out after submit failed:", err);
+    }
     toast.success("Registration submitted!");
     router.push(`/register/status/${result.accessToken}`);
   }
@@ -285,7 +297,12 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-10 lg:max-w-[1320px] lg:flex-row lg:items-start lg:gap-20">
-      <DesktopSidebar steps={STEPS} step={step} onHome={() => router.push("/")} />
+      <DesktopSidebar
+        steps={STEPS}
+        step={step}
+        onHome={() => router.push("/")}
+        onStepClick={(i) => jumpToStep(STEPS[i].key)}
+      />
 
       <div
         className={
@@ -348,6 +365,20 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
           </div>
 
           <StepTitle title={current.title} subtitle={current.subtitle} />
+
+          {/* Declarations already surfaces this inline, right next to the
+              actual required checkbox — showing it again up here too would
+              just be a second, redundant copy on that one screen. */}
+          {current.key !== "declarations" && (
+            <a
+              href={RULES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-fit rounded-[8px] border-[1.5px] border-gignite-blue px-3 py-[6px] font-heading text-[13px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
+            >
+              Rules to follow ↗
+            </a>
+          )}
 
           <div className="lg:max-w-[760px]">
             {current.key === "team" && <StepTeam form={form} />}
