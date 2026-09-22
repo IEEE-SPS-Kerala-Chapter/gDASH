@@ -71,6 +71,7 @@ export type AdminRegistration = {
 export type AdminTeam = {
   id: string;
   name: string;
+  entry_code: string;
   ai_theme: string;
   district: string;
   status: string;
@@ -79,7 +80,7 @@ export type AdminTeam = {
   registration: AdminRegistration | null;
 };
 
-export const TEAM_SELECT = `id, name, ai_theme, district, status, created_at,
+export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, created_at,
      team_members ( id, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
      registrations (
        id, problem_statement, proposed_solution, ai_approach, expected_impact,
@@ -113,6 +114,7 @@ type RawRegistration = Omit<AdminRegistration, "assignments" | "scores" | "avgSc
 export type RawTeamRow = {
   id: string;
   name: string;
+  entry_code: string;
   ai_theme: string;
   district: string;
   status: string;
@@ -160,6 +162,7 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
   return {
     id: t.id,
     name: t.name,
+    entry_code: t.entry_code,
     ai_theme: t.ai_theme,
     district: t.district,
     status: t.status,

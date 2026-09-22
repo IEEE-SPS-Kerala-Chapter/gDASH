@@ -191,7 +191,7 @@ export async function submitRegistration(
 type StatusResult =
   | {
       found: true;
-      team: { name: string; ai_theme: string; district: string; status: string; created_at: string };
+      team: { name: string; entry_code: string; ai_theme: string; district: string; status: string; created_at: string };
       members: Array<{
         id: string;
         full_name: string;

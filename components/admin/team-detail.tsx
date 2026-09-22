@@ -17,7 +17,6 @@ import {
   REGISTRATION_STATUS_LABELS,
   REGISTRATION_STATUS_PILL,
 } from "@/lib/registration-status";
-import { teamDisplayCode } from "@/lib/team-code";
 import { isAdminLevelRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -75,7 +74,7 @@ export function TeamDetail({
     router.push("/dashboard");
   }
 
-  const teamCode = teamDisplayCode(team.id);
+  const teamCode = team.entry_code;
   const submittedLabel = reg
     ? new Date(reg.created_at).toLocaleString("en-IN", {
         timeZone: "Asia/Kolkata",

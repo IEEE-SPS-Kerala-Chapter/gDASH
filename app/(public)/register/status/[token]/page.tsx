@@ -53,6 +53,9 @@ export default async function StatusPage({ params }: { params: { token: string }
               <p className="m-0 text-sm text-gignite-text/70">
                 {team.ai_theme} · {team.district}
               </p>
+              <span className="mt-1 inline-block rounded-full bg-gignite-blue-pale px-2.5 py-0.5 font-mono text-[11px] font-semibold text-gignite-blue">
+                {team.entry_code}
+              </span>
             </div>
             <span className={cn("rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-[0.08em]", statusStyle)}>
               {registration.status.replace("_", " ")}
