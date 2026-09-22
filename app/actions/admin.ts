@@ -516,3 +516,53 @@ export async function createStaffAccount(input: {
 
   return { success: true };
 }
+
+type DeleteStaffResult = { success: true } | { success: false; error: string };
+
+/**
+ * Super-admin only: permanently delete a staff account (admin/judge/
+ * volunteer). Deletes via auth.admin.deleteUser() rather than just the
+ * profiles row — profiles.id references auth.users(id) on delete cascade,
+ * so this also cascades to that staff member's registration_assignments
+ * and judge_scores (both reference profiles(id) on delete cascade too).
+ * For a judge, that means their submitted scores go with them, not just
+ * the account — the UI warns about this before confirming.
+ *
+ * Can't delete a super_admin from here (mirrors createStaffAccount, which
+ * can't create one either — that role only ever changes hands via
+ * scripts/seed-super-admin.mjs) or the caller's own account, which would
+ * otherwise leave the platform without a super-admin session to undo it.
+ */
+export async function deleteStaffAccount(userId: string): Promise<DeleteStaffResult> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can delete staff accounts." };
+  }
+  if (userId === caller.userId) {
+    return { success: false, error: "You can't delete your own account." };
+  }
+
+  const supabase = await createClient();
+  const { data: target } = await supabase.from("profiles").select("email, role").eq("id", userId).single();
+  if (!target) {
+    return { success: false, error: "Account not found." };
+  }
+  if (target.role === "super_admin") {
+    return { success: false, error: "Can't delete a super-admin account here." };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) {
+    return { success: false, error: "Could not delete the account." };
+  }
+
+  await logAuditEvent(supabase, "staff.deleted", {
+    targetType: "profile",
+    targetId: userId,
+    targetLabel: target.email,
+    metadata: { role: target.role },
+  });
+
+  return { success: true };
+}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { createStaffAccount, type StaffAccount } from "@/app/actions/admin";
+import { createStaffAccount, deleteStaffAccount, type StaffAccount } from "@/app/actions/admin";
 import { Badge, Field, FormCard, Panel, PrimaryButton, SecondaryButton, SectionLabel, Select, TextInput } from "@/components/admin/ui";
 import { ROLE_LABELS } from "@/lib/roles";
 
@@ -22,6 +22,8 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
   const [password, setPassword] = useState(() => generatePassword());
   const [submitting, setSubmitting] = useState(false);
   const [justCreated, setJustCreated] = useState<{ email: string; password: string } | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState<StaffAccount | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -43,6 +45,21 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
     setRole("judge");
     setPassword(generatePassword());
     toast.success("Account created.");
+  }
+
+  async function handleConfirmedDelete() {
+    if (!confirmingDelete) return;
+    const target = confirmingDelete;
+    setDeleting(true);
+    const result = await deleteStaffAccount(target.id);
+    setDeleting(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    setStaff((prev) => prev.filter((s) => s.id !== target.id));
+    setConfirmingDelete(null);
+    toast.success("Account deleted.");
   }
 
   async function copyCredentials() {
@@ -120,12 +137,64 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
         <SectionLabel>Existing staff ({staff.length})</SectionLabel>
         <Panel className="flex flex-col divide-y divide-gignite-divider">
           {staff.map((s) => (
-            <div key={s.id} className="flex items-center justify-between gap-3 p-3 text-[14px]">
-              <div>
-                <div className="font-semibold text-black">{s.full_name}</div>
-                <div className="text-gignite-text/70">{s.email}</div>
+            <div key={s.id} className="flex flex-col gap-3 p-3 text-[14px]">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-black">{s.full_name}</div>
+                  <div className="text-gignite-text/70">{s.email}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge>{ROLE_LABELS[s.role] ?? s.role}</Badge>
+                  {/* Super-admin accounts can't be deleted here at all — the
+                      server rejects it too (see deleteStaffAccount), this
+                      just avoids offering a button that would always fail. */}
+                  {s.role !== "super_admin" && (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${s.full_name}`}
+                      onClick={() => setConfirmingDelete(s)}
+                      className="rounded-[7px] border-[1.5px] border-gignite-danger/50 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-gignite-danger transition-colors hover:border-gignite-danger hover:bg-gignite-danger hover:text-white"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
-              <Badge>{ROLE_LABELS[s.role] ?? s.role}</Badge>
+
+              {confirmingDelete?.id === s.id && (
+                <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-gignite-danger bg-gignite-card p-4">
+                  <div className="flex gap-2.5">
+                    <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-gignite-danger text-[11px] font-bold text-white">
+                      !
+                    </span>
+                    <span className="flex-1 text-[14px] leading-[1.55] text-gignite-text">
+                      Permanently delete <span className="font-semibold text-black">{s.full_name}</span>&apos;s{" "}
+                      {ROLE_LABELS[s.role] ?? s.role} account?{" "}
+                      {s.role === "judge"
+                        ? "Any scores they've already submitted are deleted with it, not just the account."
+                        : "This cannot be undone."}
+                    </span>
+                  </div>
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleConfirmedDelete}
+                      disabled={deleting}
+                      className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deleting ? "Deleting…" : "Delete account"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingDelete(null)}
+                      disabled={deleting}
+                      className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
+                    >
+                      Keep
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </Panel>
