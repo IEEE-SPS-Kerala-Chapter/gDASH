@@ -18,7 +18,14 @@ const emptyMember = {
   idCardPath: "",
 } as unknown as RegistrationForm["members"][number];
 
-export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> }) {
+export function StepMembers({
+  form,
+  onIdCardFileSelected,
+}: {
+  form: UseFormReturn<RegistrationForm>;
+  /** Wires a member's picked file into the review step's local preview, keyed by index — see registration-wizard.tsx. */
+  onIdCardFileSelected?: (index: number, file: File) => void;
+}) {
   const {
     register,
     control,
@@ -134,6 +141,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
             <IdCardUploadField
               path={idCardPath}
               onUploaded={(path) => setValue(`members.${index}.idCardPath`, path, { shouldValidate: true })}
+              onFileSelected={onIdCardFileSelected ? (file) => onIdCardFileSelected(index, file) : undefined}
               error={e?.idCardPath?.message}
             />
           </FormCard>

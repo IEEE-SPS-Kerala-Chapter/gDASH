@@ -278,10 +278,10 @@ export function DesktopSidebar({
   );
 }
 
-export function ProgressBar({ step }: { step: number }) {
+export function ProgressBar({ step, total }: { step: number; total: number }) {
   return (
     <div className="flex gap-[5px]">
-      {[0, 1, 2, 3].map((i) => (
+      {Array.from({ length: total }, (_, i) => i).map((i) => (
         <div
           key={i}
           className={cn(

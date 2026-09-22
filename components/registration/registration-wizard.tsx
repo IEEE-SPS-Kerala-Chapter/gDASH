@@ -21,6 +21,7 @@ import {
 import { StepTeam } from "./step-team";
 import { StepMembers } from "./step-members";
 import { StepIdea } from "./step-idea";
+import { StepReview } from "./step-review";
 import { StepDeclarations } from "./step-declarations";
 import { TurnstileWidget } from "./turnstile-widget";
 
@@ -28,7 +29,7 @@ const STEPS = [
   {
     key: "team",
     nav: "Team",
-    label: "Step 1 of 4 · Team",
+    label: "Step 1 of 5 · Team",
     title: "Team details",
     subtitle: "You're registering as team leader. Members come next.",
     cta: "Continue to members",
@@ -49,7 +50,7 @@ const STEPS = [
   {
     key: "members",
     nav: "Members",
-    label: "Step 2 of 4 · Members",
+    label: "Step 2 of 5 · Members",
     title: "Your team",
     subtitle: "Between 2 and 5 members total, all from the same college.",
     cta: "Continue to your idea",
@@ -58,10 +59,10 @@ const STEPS = [
   {
     key: "idea",
     nav: "Idea",
-    label: "Step 3 of 4 · Idea",
+    label: "Step 3 of 5 · Idea",
     title: "Your idea",
     subtitle: "These four answers become your Stage 1 deck. No prototype needed.",
-    cta: "Continue to declarations",
+    cta: "Continue to review",
     fields: [
       "idea.problemStatement",
       "idea.proposedSolution",
@@ -72,9 +73,18 @@ const STEPS = [
     ] satisfies Path<RegistrationForm>[],
   },
   {
+    key: "review",
+    nav: "Review",
+    label: "Step 4 of 5 · Review",
+    title: "Review everything",
+    subtitle: "Check every section before declarations — use Edit to jump back and fix anything.",
+    cta: "Continue to declarations",
+    fields: [] satisfies Path<RegistrationForm>[],
+  },
+  {
     key: "declarations",
     nav: "Declarations",
-    label: "Step 4 of 4 · Declarations",
+    label: "Step 5 of 5 · Declarations",
     title: "Before you submit",
     subtitle: "The leader confirms these on behalf of the whole team.",
     cta: "Submit registration",
@@ -124,6 +134,16 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Local-only ID-card previews for the Review step — keyed by form field
+  // path ("team.idCardPath" / "members.0.idCardPath"). Holds blob: URLs
+  // built from the raw File the browser already has in memory the moment
+  // it's picked (see IdCardUploadField's onFileSelected), never anything
+  // fetched from storage — that bucket has no read policy for anyone but
+  // staff, and this never needs one, since the file's still right here.
+  // A ref because the URLs themselves don't need to trigger a render; only
+  // previewVersion below does, whenever the map actually changes.
+  const filePreviewUrls = useRef<Map<string, string>>(new Map());
+  const [previewVersion, setPreviewVersion] = useState(0);
   const form = useForm<RegistrationForm>({
     // The generic Resolver<T> type that @hookform/resolvers infers from a
     // schema this deep (nested enums/literals) doesn't structurally match
@@ -187,6 +207,38 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // Revokes every blob: URL on unmount, not just on replacement below —
+  // otherwise they'd leak for the lifetime of the tab.
+  useEffect(() => {
+    return () => {
+      filePreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
+
+  function registerFilePreview(key: string, file: File) {
+    const existing = filePreviewUrls.current.get(key);
+    if (existing) URL.revokeObjectURL(existing);
+    filePreviewUrls.current.set(key, URL.createObjectURL(file));
+    // The map itself is a ref (mutating it doesn't re-render) — this is
+    // just the signal that tells the Review step's consumers to re-read it.
+    setPreviewVersion((v) => v + 1);
+  }
+
+  function getFilePreviewUrl(key: string): string | null {
+    // Reads previewVersion purely so this function's identity (and thus
+    // anything memoized on it) changes when the map does — the value
+    // itself is never used, only the read matters.
+    void previewVersion;
+    return filePreviewUrls.current.get(key) ?? null;
+  }
+
+  function jumpToStep(key: string) {
+    const index = STEPS.findIndex((s) => s.key === key);
+    if (index === -1) return;
+    setStep(index);
+    saveDraft(form.getValues(), index);
+  }
 
   async function handleContinue() {
     const valid = await form.trigger(current.fields as Path<RegistrationForm>[]);
@@ -262,7 +314,9 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
         ? `${1 + form.watch("members").length} of 5 added`
         : current.key === "idea"
           ? "Saves as you go"
-          : `${[decl?.eligibility, decl?.originality, decl?.rules, decl?.mediaConsent].filter(Boolean).length} of 4 confirmed`;
+          : current.key === "review"
+            ? "Nothing submitted yet"
+            : `${[decl?.eligibility, decl?.originality, decl?.rules, decl?.mediaConsent].filter(Boolean).length} of 4 confirmed`;
 
   return (
     <div className="mx-auto flex w-full max-w-[460px] flex-col gap-10 lg:max-w-[1320px] lg:flex-row lg:items-start lg:gap-20">
@@ -317,7 +371,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
           )}
 
           <div className="flex flex-col gap-[9px] lg:hidden">
-            <ProgressBar step={step} />
+            <ProgressBar step={step} total={STEPS.length} />
             <StepMeta label={current.label} hint={hint} />
           </div>
 
@@ -331,9 +385,19 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
           <StepTitle title={current.title} subtitle={current.subtitle} />
 
           <div className="lg:max-w-[760px]">
-            {current.key === "team" && <StepTeam form={form} />}
-            {current.key === "members" && <StepMembers form={form} />}
+            {current.key === "team" && (
+              <StepTeam form={form} onIdCardFileSelected={(file) => registerFilePreview("team.idCardPath", file)} />
+            )}
+            {current.key === "members" && (
+              <StepMembers
+                form={form}
+                onIdCardFileSelected={(index, file) => registerFilePreview(`members.${index}.idCardPath`, file)}
+              />
+            )}
             {current.key === "idea" && <StepIdea form={form} />}
+            {current.key === "review" && (
+              <StepReview form={form} onEdit={jumpToStep} getFilePreviewUrl={getFilePreviewUrl} />
+            )}
             {current.key === "declarations" && <StepDeclarations form={form} />}
           </div>
 
