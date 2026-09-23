@@ -29,6 +29,20 @@ import { StepReview } from "./step-review";
 import { StepDeclarations } from "./step-declarations";
 import { TurnstileWidget } from "./turnstile-widget";
 
+// Tab-scoped record of the last successful submission, so a stale copy of
+// this form (e.g. restored by the browser's Back button) sends the leader
+// to their status page instead of showing an empty form again.
+const SUBMITTED_KEY = "gignite-submitted";
+
+function readSubmitted(): { email: string; statusUrl: string } | null {
+  try {
+    const raw = sessionStorage.getItem(SUBMITTED_KEY);
+    return raw ? (JSON.parse(raw) as { email: string; statusUrl: string }) : null;
+  } catch {
+    return null;
+  }
+}
+
 const STEPS = [
   {
     key: "team",
@@ -173,6 +187,13 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   // just a same-session fallback for when there's no session yet, or the
   // server round trip fails.
   useEffect(() => {
+    // Only for the same leader: on a shared device, the next person signs in
+    // with their own email and gets a fresh form as normal.
+    const submitted = readSubmitted();
+    if (submitted && leaderEmail && submitted.email === leaderEmail.toLowerCase()) {
+      router.replace(submitted.statusUrl);
+      return;
+    }
     (async () => {
       try {
         if (leaderEmail) {
@@ -261,6 +282,12 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     // registration" button back on screen during sign-out and navigation.
     setOpeningStatus(true);
     clearDraft();
+    const statusUrl = `/register/status/${result.accessToken}`;
+    try {
+      sessionStorage.setItem(SUBMITTED_KEY, JSON.stringify({ email: leaderEmail.toLowerCase(), statusUrl }));
+    } catch {
+      // Private browsing etc. — the replace() below still keeps Back off this form.
+    }
     // The status page is looked up entirely by the access token in its own
     // URL — it needs no session at all — so there's no reason to leave the
     // leader signed in past this point. Matters most on a shared/public
@@ -273,7 +300,9 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       console.error("Sign-out after submit failed:", err);
     }
     toast.success("Registration submitted!");
-    router.push(`/register/status/${result.accessToken}`);
+    // replace, not push: the status page takes this form's place in the
+    // browser history, so Back can't return to a stale, empty copy of it.
+    router.replace(statusUrl);
   }
 
   function handleBack() {
