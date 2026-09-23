@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MEMBER_YEARS } from "./member";
+import { emailField } from "./email";
 import { KERALA_BTECH_COLLEGES, OTHER_COLLEGE } from "@/lib/kerala-colleges";
 
 export const AI_THEMES = [
@@ -34,12 +35,12 @@ export const teamDetailsSchema = z
       .string()
       .trim()
       .min(3, "Team name must be at least 3 characters")
-      .max(50)
+      .max(50, "Team name can be at most 50 characters")
       .regex(TEAM_NAME_CHARSET_RE, "Only letters, numbers, spaces, and ' & . - are allowed")
       .refine((v) => TEAM_NAME_HAS_LETTER_RE.test(v), "Team name must include at least one letter"),
     aiTheme: z.enum(AI_THEMES, { message: "Choose an AI theme" }),
-    leaderName: z.string().trim().min(2, "Enter the leader's full name").max(80),
-    leaderEmail: z.string().trim().toLowerCase().email("Enter a valid email address"),
+    leaderName: z.string().trim().min(2, "Enter the leader's full name").max(80, "Name can be at most 80 characters"),
+    leaderEmail: emailField("Enter your email address"),
     leaderPhone: z
       .string()
       .trim()
@@ -61,9 +62,9 @@ export const teamDetailsSchema = z
       ],
       { message: "Choose your college" },
     ),
-    collegeOther: z.string().trim().max(120).optional(),
+    collegeOther: z.string().trim().max(120, "College name can be at most 120 characters").optional(),
     district: z.enum(KERALA_DISTRICTS, { message: "Choose a district" }),
-    branch: z.string().trim().min(2, "Enter a branch, e.g. CSE").max(60),
+    branch: z.string().trim().min(2, "Enter a branch, e.g. CSE").max(60, "Branch can be at most 60 characters"),
     year: z.enum(MEMBER_YEARS, { message: "Choose a year" }),
     idCardPath: z.string().min(1, "Upload your ID card"),
   })

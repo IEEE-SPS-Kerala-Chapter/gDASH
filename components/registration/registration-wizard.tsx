@@ -79,7 +79,7 @@ const STEPS = [
     nav: "Idea",
     label: "Step 3 of 5 · Idea",
     title: "Your idea",
-    subtitle: "These four answers become your Stage 1 deck. No prototype needed.",
+    subtitle: "Answer four questions and upload your pitch deck. No prototype needed.",
     cta: "Continue to review",
     fields: [
       "idea.problemStatement",
@@ -306,13 +306,10 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   }
 
   function handleBack() {
-    if (step > 0) {
-      const prevStep = step - 1;
-      setStep(prevStep);
-      saveDraft(form.getValues(), prevStep);
-    } else {
-      router.push("/");
-    }
+    if (step === 0) return;
+    const prevStep = step - 1;
+    setStep(prevStep);
+    saveDraft(form.getValues(), prevStep);
   }
 
   // Explicit, deliberate save — unlike the silent local autosave above,
@@ -370,9 +367,12 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
         }
       >
         <div className="lg:hidden">
-          <WizardHeader onBack={handleBack} canGoBack />
+          <WizardHeader onBack={handleBack} canGoBack={step > 0} />
         </div>
         <form
+          // Our own messages (lib/validations/email.ts) instead of the
+          // browser's built-in email check, which differs per browser.
+          noValidate
           onSubmit={(ev) => {
             ev.preventDefault();
             void handleContinue();

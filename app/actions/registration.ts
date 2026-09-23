@@ -86,6 +86,12 @@ export async function submitRegistration(
     }
 
     const resolvedCollege = resolveCollege(team.college, team.collegeOther);
+    // Everyone on the form, labelled the way the wizard shows them — used to
+    // name the person in a "already on another team" error below.
+    const people: ContactPerson[] = [
+      { label: `the team leader (${team.leaderName})`, email: leaderEmail, phone: team.leaderPhone },
+      ...members.map((m, i) => ({ label: `Member ${i + 2} (${m.fullName})`, email: m.email, phone: m.phone })),
+    ];
 
     const { data: result, error } = await supabase.rpc("submit_registration", {
       p_team_name: team.teamName,
@@ -129,15 +135,21 @@ export async function submitRegistration(
       // case too and always reported "team name taken", even when the real
       // conflict was a duplicate member email.
       if (error.message?.includes("member email already registered")) {
+        const who = await findAlreadyRegistered(supabase, people, "email");
         return {
           success: false,
-          error: "A team member can only join one team, and can't be part of another.",
+          error: who
+            ? `The email for ${who.label}, ${who.value}, is already registered with another team. Each person can only be on one team.`
+            : "One of your team's emails is already registered with another team. Each person can only be on one team.",
         };
       }
       if (error.message?.includes("member phone already registered")) {
+        const who = await findAlreadyRegistered(supabase, people, "phone");
         return {
           success: false,
-          error: "A team member's phone number is already registered with another team.",
+          error: who
+            ? `The phone number for ${who.label}, ${who.value}, is already registered with another team.`
+            : "One of your team's phone numbers is already registered with another team.",
         };
       }
       if (error.message?.includes("team name taken")) {
@@ -187,6 +199,32 @@ export async function submitRegistration(
     console.error("submitRegistration threw unexpectedly:", err);
     return { success: false, error: "Something went wrong submitting your registration. Please try again." };
   }
+}
+
+type ContactPerson = { label: string; email: string; phone: string };
+
+/**
+ * submit_registration() only says *that* an email/phone is already on
+ * another team, not whose — this checks each person in turn so the error
+ * can name them. Only runs after that failure, never on the happy path.
+ */
+async function findAlreadyRegistered(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  people: ContactPerson[],
+  kind: "email" | "phone",
+): Promise<{ label: string; value: string } | null> {
+  for (const person of people) {
+    const value = kind === "email" ? person.email : person.phone;
+    const { data } = await supabase.rpc("check_duplicate_contact", {
+      p_email: kind === "email" ? value.trim() : null,
+      p_phone: kind === "phone" ? value.trim() : null,
+    });
+    const result = data as { email_taken?: boolean; phone_taken?: boolean } | null;
+    if (kind === "email" ? result?.email_taken : result?.phone_taken) {
+      return { label: person.label, value };
+    }
+  }
+  return null;
 }
 
 type StatusResult =

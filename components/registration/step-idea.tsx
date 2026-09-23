@@ -6,6 +6,7 @@ import type { RegistrationForm } from "@/lib/validations/registration";
 import { createClient } from "@/lib/supabase/client";
 import { Field, TextArea, FormCard, Spinner } from "./ui";
 import { cn } from "@/lib/utils";
+import { displayFileName } from "@/lib/upload-file-name";
 
 const MAX_DECK_BYTES = 20 * 1024 * 1024;
 const ALLOWED_DECK_TYPES = [
@@ -22,12 +23,11 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
     formState: { errors },
   } = form;
   const e = errors.idea;
-  const problem = watch("idea.problemStatement") ?? "";
   const deckPath = watch("idea.deckPath");
 
   const [uploadState, setUploadState] = useState<
     { status: "idle" } | { status: "uploading"; name: string } | { status: "done"; name: string } | { status: "error"; message: string }
-  >(deckPath ? { status: "done", name: deckPath.split("/").pop() ?? "deck" } : { status: "idle" });
+  >(deckPath ? { status: "done", name: displayFileName(deckPath) } : { status: "idle" });
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -53,42 +53,40 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
     setUploadState({ status: "done", name: file.name });
   }
 
-  const len = problem.length;
-  const problemColor = len > 1500 ? "text-gignite-danger" : len > 1275 ? "text-gignite-warn" : "text-gignite-muted";
+  const values = {
+    problemStatement: watch("idea.problemStatement") ?? "",
+    proposedSolution: watch("idea.proposedSolution") ?? "",
+    aiApproach: watch("idea.aiApproach") ?? "",
+    expectedImpact: watch("idea.expectedImpact") ?? "",
+  };
 
   return (
     <FormCard>
-      <Field label="15 · Problem statement" error={e?.problemStatement?.message}>
+      <Field label="Problem statement" error={e?.problemStatement?.message}>
         <TextArea rows={4} {...register("idea.problemStatement")} />
-        <div className="flex items-start justify-between gap-3">
-          <span className="flex-1 text-[13px] leading-[1.45] text-gignite-text/70">
-            Who has this problem today, and how do they cope?
-          </span>
-          <span className={cn("flex-none font-mono text-[12px]", problemColor)}>{len} / 1500</span>
-        </div>
+        <CharCount guidance="Who has this problem today, and how do they cope?" value={values.problemStatement} min={50} />
       </Field>
 
-      <Field label="16 · Proposed solution" error={e?.proposedSolution?.message}>
+      <Field label="Proposed solution" error={e?.proposedSolution?.message}>
         <TextArea rows={4} {...register("idea.proposedSolution")} />
+        <CharCount guidance="What you'll build and how it solves the problem." value={values.proposedSolution} min={50} />
       </Field>
 
-      <Field
-        label="17 · AI approach / technology"
-        hint="Models, data and why they fit."
-        error={e?.aiApproach?.message}
-      >
+      <Field label="AI approach / technology" error={e?.aiApproach?.message}>
         <TextArea rows={3} {...register("idea.aiApproach")} />
+        <CharCount guidance="Models, data and why they fit." value={values.aiApproach} min={30} />
       </Field>
 
-      <Field label="18 · Expected impact" error={e?.expectedImpact?.message}>
+      <Field label="Expected impact" error={e?.expectedImpact?.message}>
         <TextArea rows={3} {...register("idea.expectedImpact")} />
+        <CharCount guidance="Who benefits, and how you'd measure it." value={values.expectedImpact} min={30} />
       </Field>
 
       <Field
-        label="19 · Supporting material"
+        label="Supporting material"
         hint={
           <>
-            Required — make your PDF from{" "}
+            Required — build your deck from{" "}
             <a
               href={DECK_TEMPLATE_URL}
               target="_blank"
@@ -97,7 +95,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
             >
               the official pitch deck template
             </a>
-            .
+            , then upload it as a PDF or PPTX.
           </>
         }
         error={e?.deckPath?.message}
@@ -110,7 +108,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
             onChange={(ev) => handleFile(ev.target.files?.[0])}
           />
           <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-gignite-blue-pale font-mono text-[10px] font-medium text-gignite-blue">
-            {uploadState.status === "uploading" ? <Spinner /> : "PPT"}
+            {uploadState.status === "uploading" ? <Spinner /> : deckBadge(uploadState)}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[14px] font-semibold text-black">
@@ -128,4 +126,36 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
       </Field>
     </FormCard>
   );
+}
+
+const IDEA_MAX_CHARS = 1500;
+
+/** Guidance on the left; live count on the right, with the minimum shown up front rather than only as an error. */
+function CharCount({ guidance, value, min }: { guidance: string; value: string; min: number }) {
+  const len = value.length;
+  const color =
+    len > IDEA_MAX_CHARS
+      ? "text-gignite-danger"
+      : len > IDEA_MAX_CHARS * 0.85
+        ? "text-gignite-warn"
+        : len > 0 && len < min
+          ? "text-gignite-warn"
+          : "text-gignite-muted";
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <span className="flex-1 text-[13px] leading-[1.45] text-gignite-text/70">{guidance}</span>
+      <span className={cn("flex-none font-mono text-[12px]", color)}>
+        {len < min ? `min ${min} · ` : ""}
+        {len} / {IDEA_MAX_CHARS}
+      </span>
+    </div>
+  );
+}
+
+function deckBadge(state: { status: string; name?: string }): string {
+  if (state.status !== "done" || !state.name) return "DECK";
+  const lower = state.name.toLowerCase();
+  if (lower.endsWith(".pdf")) return "PDF";
+  if (lower.endsWith(".pptx")) return "PPTX";
+  return "DECK";
 }

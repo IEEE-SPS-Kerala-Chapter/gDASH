@@ -76,7 +76,15 @@ export default async function RegisterPage({
     // team_members) doesn't trip this — only an actual past submission does.
     const { emailTaken } = await checkContactAvailability({ email: user.email });
     if (emailTaken) {
-      return <AlreadyRegisteredBlocked email={user.email} />;
+      // Their verified session is enough to hand back their own team's
+      // status link — the only way back to it if they lost it.
+      const { data: statusToken } = await supabase.rpc("get_my_registration_status_token");
+      return (
+        <AlreadyRegisteredBlocked
+          email={user.email}
+          statusUrl={typeof statusToken === "string" && statusToken ? `/register/status/${statusToken}` : null}
+        />
+      );
     }
 
     return (

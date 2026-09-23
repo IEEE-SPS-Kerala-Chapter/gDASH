@@ -1,6 +1,7 @@
 import { Controller, type UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
 import { RULES_URL } from "@/lib/config";
+import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { FormCard } from "./ui";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,8 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
   const teamName = watch("team.teamName");
   const aiTheme = watch("team.aiTheme");
   const college = watch("team.college");
+  const collegeOther = watch("team.collegeOther");
+  const displayCollege = college === OTHER_COLLEGE ? collegeOther : college;
   const memberCount = 1 + (watch("members")?.length ?? 0);
 
   return (
@@ -113,13 +116,13 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
         <div className="flex flex-col gap-[6px]">
           <SummaryRow label="Team" value={`${teamName || "—"} · ${memberCount} member${memberCount === 1 ? "" : "s"}`} />
           <SummaryRow label="Theme" value={aiTheme || "—"} />
-          <SummaryRow label="College" value={college || "—"} />
+          <SummaryRow label="College" value={displayCollege || "—"} />
         </div>
       </div>
 
       <p className="m-0 text-center text-[12px] leading-[1.5] text-gignite-text/70">
         {decl?.eligibility && decl?.originality && decl?.rules
-          ? "You can edit everything until Stage 1 entries close."
+          ? "Submitted registrations can't be edited, so check the Review step before you submit."
           : "Confirm the three required declarations to submit."}
       </p>
     </div>

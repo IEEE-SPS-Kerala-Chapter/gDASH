@@ -35,16 +35,17 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
   return (
     <FormCard>
-      <Field label="1 · Team name" error={e?.teamName?.message}>
+      <Field label="Team name" error={e?.teamName?.message}>
         <TextInput
           {...register("team.teamName", { onBlur: onTeamNameBlur })}
+          maxLength={50}
           placeholder="e.g. Neural Nadi"
         />
       </Field>
 
       <Field
-        label="2 · AI theme"
-        hint="One theme per team. Changeable until entries close."
+        label="AI theme"
+        hint="One theme per team."
         error={e?.aiTheme?.message}
       >
         <Select {...register("team.aiTheme")} defaultValue="">
@@ -60,7 +61,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
       </Field>
 
       <Field
-        label="3 · College / institution"
+        label="College / institution"
         hint="One college for the whole team — every member should be from here."
         error={e?.college?.message}
       >
@@ -78,7 +79,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
       </Field>
       {college === OTHER_COLLEGE && (
         <Field label="College name" error={e?.collegeOther?.message}>
-          <TextInput {...register("team.collegeOther")} placeholder="Enter your college's name" />
+          <TextInput {...register("team.collegeOther")} maxLength={120} placeholder="Enter your college's name" />
         </Field>
       )}
 
@@ -88,12 +89,12 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
       </span>
 
       <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-[18px]">
-        <Field label="4 · Full name" error={e?.leaderName?.message}>
-          <TextInput {...register("team.leaderName")} placeholder="Your full name" />
+        <Field label="Full name" error={e?.leaderName?.message}>
+          <TextInput {...register("team.leaderName")} maxLength={80} placeholder="Your full name" />
         </Field>
 
         <Field
-          label="5 · Email"
+          label="Email"
           hint={LEADER_VERIFICATION_ENABLED ? undefined : "College email — eligibility is checked against it."}
           error={e?.leaderEmail?.message}
         >
@@ -114,7 +115,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
           )}
         </Field>
 
-        <Field label="6 · Phone" error={e?.leaderPhone?.message}>
+        <Field label="Phone" error={e?.leaderPhone?.message}>
           <TextInput
             type="tel"
             {...register("team.leaderPhone", { onBlur: onBlurCheck("team.leaderPhone", "phone") })}
@@ -125,12 +126,12 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
       <div className="flex gap-[10px]">
         <div className="min-w-0 flex-1">
-          <Field label="7 · Branch" error={e?.branch?.message}>
-            <TextInput {...register("team.branch")} placeholder="e.g. CSE" />
+          <Field label="Branch" error={e?.branch?.message}>
+            <TextInput {...register("team.branch")} maxLength={60} placeholder="e.g. CSE" />
           </Field>
         </div>
         <div className="min-w-0 flex-1">
-          <Field label="8 · Year" error={e?.year?.message}>
+          <Field label="Year" error={e?.year?.message}>
             <Select {...register("team.year")} defaultValue="">
               <option value="" disabled>
                 Choose
@@ -145,7 +146,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
         </div>
       </div>
 
-      <Field label="9 · District" error={e?.district?.message}>
+      <Field label="District" error={e?.district?.message}>
         <Select {...register("team.district")} defaultValue="">
           <option value="" disabled>
             Choose a district

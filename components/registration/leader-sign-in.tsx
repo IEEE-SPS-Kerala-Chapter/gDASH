@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { checkContactAvailability } from "@/app/actions/registration";
+import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
 import { BrandLogo, Field, GridBackground, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -15,7 +16,16 @@ const RESEND_COOLDOWN_SECONDS = 30;
  * whose verified email already belongs to a past submission
  * (AlreadyRegisteredBlocked) — see both below.
  */
-function SessionBlocked({ title, message }: { title: string; message: ReactNode }) {
+function SessionBlocked({
+  title,
+  message,
+  statusUrl,
+}: {
+  title: string;
+  message: ReactNode;
+  /** When set, the main action is opening this status page; signing out becomes secondary. */
+  statusUrl?: string | null;
+}) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -36,10 +46,21 @@ function SessionBlocked({ title, message }: { title: string; message: ReactNode 
           <h1 className="font-heading text-2xl font-bold text-black">{title}</h1>
           <p className="text-gignite-text/80">{message}</p>
         </div>
-        <div className="relative z-10 w-full max-w-xs">
-          <PrimaryButton type="button" onClick={handleSignOut} disabled={signingOut} loading={signingOut}>
-            {signingOut ? "Signing out…" : "Sign out"}
-          </PrimaryButton>
+        <div className="relative z-10 flex w-full max-w-xs flex-col gap-3">
+          {statusUrl && (
+            <PrimaryButton type="button" onClick={() => router.push(statusUrl)} disabled={signingOut}>
+              View your registration status
+            </PrimaryButton>
+          )}
+          {statusUrl ? (
+            <SecondaryButton type="button" onClick={handleSignOut} disabled={signingOut}>
+              {signingOut ? "Signing out…" : "Sign out"}
+            </SecondaryButton>
+          ) : (
+            <PrimaryButton type="button" onClick={handleSignOut} disabled={signingOut} loading={signingOut}>
+              {signingOut ? "Signing out…" : "Sign out"}
+            </PrimaryButton>
+          )}
         </div>
       </main>
     </>
@@ -76,14 +97,16 @@ export function StaffSessionBlocked({ email }: { email: string }) {
  * to a submitted team (as leader or member), block the wizard instead of
  * letting them start a second registration under the same identity.
  */
-export function AlreadyRegisteredBlocked({ email }: { email: string }) {
+export function AlreadyRegisteredBlocked({ email, statusUrl }: { email: string; statusUrl?: string | null }) {
   return (
     <SessionBlocked
       title="This email is already registered"
+      statusUrl={statusUrl}
       message={
         <>
-          <span className="font-semibold">{email}</span> already belongs to a submitted team. Sign
-          out and use a different email or Google account to register a new team.
+          <span className="font-semibold">{email}</span> already belongs to a submitted team.
+          {statusUrl ? " You can view your team's registration status and ID cards below." : ""} To
+          register a different team, sign out and use a different email or Google account.
         </>
       }
     />
@@ -93,17 +116,27 @@ export function AlreadyRegisteredBlocked({ email }: { email: string }) {
 export function LeaderSignIn({ authError }: { authError?: boolean }) {
   const [mode, setMode] = useState<"choose" | "email">("choose");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState(false);
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
+    setGoogleError(false);
     const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=/register` },
-    });
-    // Browser navigates away to Google here; setGoogleLoading(false) never
-    // runs on success. It only matters if signInWithOAuth itself throws
-    // before redirecting (e.g. the provider isn't configured yet).
+    // On success the browser navigates away to Google, so nothing below
+    // runs. signInWithOAuth reports a failure to start (network, provider
+    // misconfigured) by returning an error rather than throwing — without
+    // this, the button stayed on "Redirecting…" forever.
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/register` },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error("Google sign-in failed to start:", err);
+      setGoogleLoading(false);
+      setGoogleError(true);
+    }
   }
 
   return (
@@ -119,7 +152,16 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
             really theirs. Everyone else on the team is added by the leader — no account needed for
             them.
           </p>
+          <p className="text-[14px] text-gignite-text/70">
+            Already registered? Sign in with the same email to view your team&apos;s status.
+          </p>
         </div>
+
+        {googleError && (
+          <p className="relative z-10 max-w-sm rounded-lg bg-gignite-blue-pale px-4 py-2 text-sm text-gignite-blue">
+            Couldn&apos;t open Google sign-in. Check your connection and try again, or continue with email.
+          </p>
+        )}
 
         {authError && (
           <p className="relative z-10 max-w-sm rounded-lg bg-gignite-blue-pale px-4 py-2 text-sm text-gignite-blue">
@@ -198,8 +240,15 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
-    if (!EMAIL_PATTERN.test(trimmed)) {
-      setError("Enter a valid email address");
+    const problem = !trimmed
+      ? "Enter your email address"
+      : /\s/.test(trimmed)
+        ? EMAIL_SPACES_MESSAGE
+        : !EMAIL_PATTERN.test(trimmed)
+          ? EMAIL_INVALID_MESSAGE
+          : null;
+    if (problem) {
+      setError(problem);
       return;
     }
     setError(null);
@@ -267,7 +316,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-left">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-left">
       <Field label="Email" error={error ?? undefined}>
         <TextInput
           type="email"

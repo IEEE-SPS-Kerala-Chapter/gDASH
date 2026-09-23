@@ -74,7 +74,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
 
             <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-4">
               <Field label="Full name" error={e?.fullName?.message}>
-                <TextInput {...register(`members.${index}.fullName`)} />
+                <TextInput {...register(`members.${index}.fullName`)} maxLength={80} />
               </Field>
               <Field label="Email" error={e?.email?.message}>
                 <TextInput
@@ -95,7 +95,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
             <div className="flex gap-[10px]">
               <div className="min-w-0 flex-1">
                 <Field label="Branch" error={e?.branch?.message}>
-                  <TextInput {...register(`members.${index}.branch`)} placeholder="e.g. CSE" />
+                  <TextInput {...register(`members.${index}.branch`)} maxLength={60} placeholder="e.g. CSE" />
                 </Field>
               </div>
               <div className="min-w-0 flex-1">
@@ -127,7 +127,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
             </Field>
             {memberRole === OTHER_ROLE && (
               <Field label="Role (specify)" error={e?.roleInTeamOther?.message}>
-                <TextInput {...register(`members.${index}.roleInTeamOther`)} placeholder="e.g. Product design" />
+                <TextInput {...register(`members.${index}.roleInTeamOther`)} maxLength={60} placeholder="e.g. Product design" />
               </Field>
             )}
 

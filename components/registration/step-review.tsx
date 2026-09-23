@@ -167,7 +167,7 @@ export function StepReview({
       <FormCard>
         <div className="flex items-center justify-between">
           <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
-            Members ({members.length})
+            Other members ({members.length}) · team of {members.length + 1}
           </span>
           <EditLink onClick={() => onEdit("members")} />
         </div>

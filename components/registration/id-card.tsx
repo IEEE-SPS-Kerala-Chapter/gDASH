@@ -72,8 +72,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="text-[17px] font-semibold text-black">{member.full_name}</span>
             <span className="text-[13px] text-gignite-blue">
-              {member.role_in_team}
-              {member.is_leader ? " · Team Leader" : ""}
+              {[member.role_in_team, member.is_leader ? "Team Leader" : null].filter(Boolean).join(" · ")}
             </span>
             <span className="text-[13px] text-gignite-text/80">{teamName}</span>
             <span className="text-[12px] text-gignite-text/70">{member.college}</span>

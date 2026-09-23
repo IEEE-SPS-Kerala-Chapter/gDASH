@@ -1,12 +1,8 @@
-import { BrandLogo } from "@/components/registration/ui";
+import { redirect } from "next/navigation";
 
+// There's no separate landing page — the site's front door is registration.
+// (This used to be a leftover developer placeholder that participants could
+// reach from the registration form's Back arrow and logo.)
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gignite-bg p-8 text-center">
-      <BrandLogo className="h-16 lg:h-24" />
-      <p className="text-gignite-text/70">
-        Hackathon registration platform — skeleton running. Landing page comes in Phase 4.
-      </p>
-    </main>
-  );
+  redirect("/register");
 }

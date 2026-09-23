@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "./ui";
+import { displayFileName } from "@/lib/upload-file-name";
 
 const MAX_ID_CARD_BYTES = 8 * 1024 * 1024;
 const ALLOWED_ID_CARD_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -33,7 +34,7 @@ export function IdCardUploadField({
   error?: string;
 }) {
   const [state, setState] = useState<UploadState>(
-    path ? { status: "done", name: path.split("/").pop() ?? "ID card" } : { status: "idle" },
+    path ? { status: "done", name: displayFileName(path) } : { status: "idle" },
   );
 
   async function handleFile(file: File | undefined) {
@@ -63,7 +64,7 @@ export function IdCardUploadField({
   return (
     <div className="flex flex-col gap-[7px]">
       <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">
-        ID card (for identification — visible only to organizers)
+        College ID card (for eligibility checks — visible only to organizers)
       </label>
       <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">
         <input
@@ -81,7 +82,7 @@ export function IdCardUploadField({
               ? `Uploading ${state.name}…`
               : state.status === "done"
                 ? `Uploaded: ${state.name}`
-                : "Upload a photo of your college/government ID"}
+                : "Upload a clear photo of your college ID card"}
           </span>
           <span className="text-[12px] text-gignite-text/70">
             {state.status === "error" ? state.message : "JPG, PNG, or WEBP · 8 MB max"}
