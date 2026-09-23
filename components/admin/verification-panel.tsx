@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { VerificationStatus } from "@/app/actions/admin";
+import type { AdminRegistration, RegistrationReviewState, VerificationStatus } from "@/app/actions/admin";
 import { setVerificationStatus } from "@/app/actions/admin";
 import { Badge, Panel, SectionLabel, TextArea } from "@/components/admin/ui";
 import {
@@ -11,44 +12,48 @@ import {
   VERIFICATION_STATUS_LABELS,
 } from "@/lib/registration-status";
 
-export type VerificationState = {
-  status: VerificationStatus;
-  note: string | null;
-  decidedAt: string | null;
-  decidedByName: string | null;
-};
-
 /**
  * Admin-only eligibility check that gates judge assignment: the admin checks
  * the members' ID cards (IdCardPanel) and details, then marks the entry
  * Verified or Ineligible. Ineligible needs a written reason. Changing a
  * Verified entry is refused server-side while judges are still assigned, so
  * that's surfaced up front here instead of only as an error toast.
+ * Like the status select, a change made from a stale view (another admin
+ * changed this registration first) is refused and the latest is shown.
  */
 export function VerificationPanel({
-  registrationId,
-  verification,
-  assignedCount,
+  registration,
   onChange,
 }: {
-  registrationId: string;
-  verification: VerificationState;
-  assignedCount: number;
-  onChange: (next: VerificationState) => void;
+  registration: AdminRegistration;
+  onChange: (next: RegistrationReviewState) => void;
 }) {
+  const router = useRouter();
+  const verification = {
+    status: registration.verification_status,
+    note: registration.verification_note,
+    decidedAt: registration.verification_decided_at,
+    decidedByName: registration.verification_decided_by_name,
+  };
+  const assignedCount = registration.assignments.length;
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
 
   async function submit(status: VerificationStatus, note?: string) {
     setBusy(true);
-    const result = await setVerificationStatus(registrationId, status, note);
+    const result = await setVerificationStatus(registration.id, status, registration.version, note);
     setBusy(false);
     if (!result.success) {
       toast.error(result.error);
+      if (result.state) {
+        onChange(result.state);
+        setRejecting(false);
+        router.refresh();
+      }
       return;
     }
-    onChange(result.verification);
+    onChange(result.state);
     setRejecting(false);
     setReason("");
     toast.success(status === "pending" ? "Verification reset." : `Marked ${VERIFICATION_STATUS_LABELS[status].toLowerCase()}.`);

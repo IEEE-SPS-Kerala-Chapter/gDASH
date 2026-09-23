@@ -8,8 +8,11 @@ import {
   TEAM_SELECT,
   mapTeamRow,
   type RawTeamRow,
+  type AdminAssignment,
   type AdminJudge,
   type AdminTeam,
+  type RegistrationReviewState,
+  type VerificationStatus,
 } from "@/lib/admin-teams";
 
 export type {
@@ -21,6 +24,7 @@ export type {
   AdminTeam,
   RawTeamRow,
   VerificationStatus,
+  RegistrationReviewState,
 } from "@/lib/admin-teams";
 
 /** Returns the caller's profile role, or null if not signed in / no profile. */
@@ -104,9 +108,24 @@ export async function getJudges(): Promise<
   return { success: true, judges: data ?? [] };
 }
 
-type AssignResult = { success: true; assignmentId: string } | { success: false; error: string };
+type AssignResult =
+  | { success: true; assignment: AdminAssignment }
+  | { success: false; error: string; stale?: boolean };
 
-/** Admin (or super-admin) only: assign a judge to review a registration. */
+const ASSIGN_GUARD_MESSAGES: Record<string, string> = {
+  not_verified: "Verify this team's eligibility before assigning judges.",
+  already_decided: "This team already has a final decision, so no more judges can be assigned.",
+};
+
+/**
+ * Admin (or super-admin) only: assign a judge to review a registration.
+ * Safe against two admins acting at once: the (registration_id, judge_id)
+ * unique constraint turns a duplicate into a clear "already assigned"
+ * (flagged `stale` so the UI re-syncs to show it), and the
+ * registration_assignments_insert_guard trigger re-checks verification and
+ * decision state under a row lock — see
+ * supabase/migrations/20260923040000_admin_concurrency.sql.
+ */
 export async function assignJudge(registrationId: string, judgeId: string): Promise<AssignResult> {
   const caller = await getCallerRole();
   if (!caller) {
@@ -117,22 +136,6 @@ export async function assignJudge(registrationId: string, judgeId: string): Prom
   }
 
   const supabase = await createClient();
-
-  // RLS's registration_assignments_insert_admin enforces this again at the
-  // DB level — checked here first only so the admin gets a clear message
-  // instead of a generic insert failure.
-  const { data: reg } = await supabase
-    .from("registrations")
-    .select("verification_status")
-    .eq("id", registrationId)
-    .single();
-  if (!reg) {
-    return { success: false, error: "Registration not found." };
-  }
-  if (reg.verification_status !== "verified") {
-    return { success: false, error: "Verify this team's eligibility before assigning judges." };
-  }
-
   const { data, error } = await supabase
     .from("registration_assignments")
     .insert({
@@ -140,12 +143,15 @@ export async function assignJudge(registrationId: string, judgeId: string): Prom
       judge_id: judgeId,
       assigned_by: caller.userId,
     })
-    .select("id")
+    .select("id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name )")
     .single();
 
   if (error || !data) {
     if (error?.code === "23505") {
-      return { success: false, error: "Already assigned to this judge." };
+      return { success: false, error: "That judge is already assigned — another admin may have just done it.", stale: true };
+    }
+    if (error?.hint && ASSIGN_GUARD_MESSAGES[error.hint]) {
+      return { success: false, error: ASSIGN_GUARD_MESSAGES[error.hint], stale: true };
     }
     return { success: false, error: "Could not assign judge." };
   }
@@ -154,11 +160,21 @@ export async function assignJudge(registrationId: string, judgeId: string): Prom
     targetId: registrationId,
     metadata: { judgeId },
   });
-  return { success: true, assignmentId: data.id };
+  const judge = data.profiles as unknown as { full_name: string } | null;
+  return {
+    success: true,
+    assignment: { id: data.id, judge_id: data.judge_id, judge_name: judge?.full_name ?? "Unknown" },
+  };
 }
 
-/** Admin (or super-admin) only: remove a judge assignment. */
-export async function unassignJudge(assignmentId: string): Promise<StatusResult> {
+type UnassignResult = { success: true; alreadyRemoved: boolean } | { success: false; error: string };
+
+/**
+ * Admin (or super-admin) only: remove a judge assignment. If another admin
+ * already removed it, that's reported (alreadyRemoved) rather than
+ * pretending this call did it, and nothing is audit-logged twice.
+ */
+export async function unassignJudge(assignmentId: string): Promise<UnassignResult> {
   const caller = await getCallerRole();
   if (!caller) {
     return { success: false, error: "Please sign in." };
@@ -168,15 +184,22 @@ export async function unassignJudge(assignmentId: string): Promise<StatusResult>
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("registration_assignments").delete().eq("id", assignmentId);
+  const { data, error } = await supabase
+    .from("registration_assignments")
+    .delete()
+    .eq("id", assignmentId)
+    .select("id");
   if (error) {
     return { success: false, error: "Could not remove assignment." };
+  }
+  if (!data || data.length === 0) {
+    return { success: true, alreadyRemoved: true };
   }
   await logAuditEvent(supabase, "judge.unassigned", {
     targetType: "registration_assignment",
     targetId: assignmentId,
   });
-  return { success: true };
+  return { success: true, alreadyRemoved: false };
 }
 
 type DeckUrlResult = { success: true; url: string } | { success: false; error: string };
@@ -259,57 +282,133 @@ export async function getMemberIdCardDownloadUrl(idCardPath: string): Promise<De
   return { success: true, url: data.signedUrl };
 }
 
-type StatusResult = { success: true } | { success: false; error: string };
+const REVIEW_STATE_SELECT = `version, status, status_changed_at,
+  status_changed_by:profiles!registrations_status_changed_by_fkey ( full_name ),
+  verification_status, verification_note, verification_decided_at,
+  verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name )`;
 
-/** Admin (or super-admin) only: change a registration's review status. */
+type RawReviewState = {
+  version: number;
+  status: RegistrationReviewState["status"];
+  status_changed_at: string | null;
+  status_changed_by: { full_name: string } | null;
+  verification_status: VerificationStatus;
+  verification_note: string | null;
+  verification_decided_at: string | null;
+  verification_decided_by: { full_name: string } | null;
+};
+
+function toReviewState(raw: RawReviewState): RegistrationReviewState {
+  return {
+    version: raw.version,
+    status: raw.status,
+    statusChangedAt: raw.status_changed_at,
+    statusChangedByName: raw.status_changed_by?.full_name ?? null,
+    verification: {
+      status: raw.verification_status,
+      note: raw.verification_note,
+      decidedAt: raw.verification_decided_at,
+      decidedByName: raw.verification_decided_by?.full_name ?? null,
+    },
+  };
+}
+
+type ReviewStateResult =
+  | { success: true; state: RegistrationReviewState }
+  /** `state`, when present, is the registration's current state after a conflict — the UI should show it. */
+  | { success: false; error: string; state?: RegistrationReviewState };
+
+const REVIEW_GUARD_MESSAGES: Record<string, string> = {
+  has_assignments: "Unassign this team's judges before changing its verification.",
+  no_judges: "Assign judges and collect their scores before shortlisting or rejecting.",
+  scores_incomplete: "Every assigned judge must submit their score before shortlisting or rejecting.",
+};
+
+/**
+ * Applies an admin's change to a registration only if nobody else changed
+ * it since they loaded it (expectedVersion). On a mismatch, returns the
+ * current state and who last changed the status, so the admin sees what
+ * happened instead of overwriting it.
+ */
+async function updateRegistrationIfCurrent(
+  registrationId: string,
+  expectedVersion: number,
+  patch: Record<string, unknown>,
+): Promise<ReviewStateResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("registrations")
+    .update(patch)
+    .eq("id", registrationId)
+    .eq("version", expectedVersion)
+    .select(REVIEW_STATE_SELECT)
+    .maybeSingle();
+
+  if (error) {
+    if (error.hint && REVIEW_GUARD_MESSAGES[error.hint]) {
+      return { success: false, error: REVIEW_GUARD_MESSAGES[error.hint] };
+    }
+    return { success: false, error: "Could not save the change." };
+  }
+  if (data) {
+    return { success: true, state: toReviewState(data as unknown as RawReviewState) };
+  }
+
+  const { data: current } = await supabase
+    .from("registrations")
+    .select(REVIEW_STATE_SELECT)
+    .eq("id", registrationId)
+    .maybeSingle();
+  if (!current) {
+    return { success: false, error: "Registration not found." };
+  }
+  const state = toReviewState(current as unknown as RawReviewState);
+  const by = state.statusChangedByName ? ` by ${state.statusChangedByName}` : "";
+  return {
+    success: false,
+    error: `Another admin updated this team${by} while you were viewing it. Showing the latest — check it and try again if still needed.`,
+    state,
+  };
+}
+
+/**
+ * Admin (or super-admin) only: change a registration's review status.
+ * Refused if another admin changed the registration since expectedVersion,
+ * and — enforced by the DB trigger — shortlisted/rejected need every
+ * assigned judge's submitted score first.
+ */
 export async function updateRegistrationStatus(
   registrationId: string,
   status: string,
-): Promise<StatusResult> {
+  expectedVersion: number,
+): Promise<ReviewStateResult> {
   if (!REGISTRATION_STATUSES.includes(status as (typeof REGISTRATION_STATUSES)[number])) {
     return { success: false, error: "Invalid status." };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
+  const caller = await getCallerRole();
+  if (!caller) {
     return { success: false, error: "Please sign in." };
   }
-
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (!profile || !isAdminLevelRole(profile.role)) {
+  if (!isAdminLevelRole(caller.role)) {
     return { success: false, error: "Only admins can change registration status." };
   }
 
   // RLS's registrations_update_admin policy enforces is_admin() again at the
   // DB level regardless — the check above is just for a clean error message.
-  const { error } = await supabase.from("registrations").update({ status }).eq("id", registrationId);
-  if (error) {
-    return { success: false, error: "Could not update status." };
+  const result = await updateRegistrationIfCurrent(registrationId, expectedVersion, { status });
+  if (result.success) {
+    const supabase = await createClient();
+    await logAuditEvent(supabase, "registration.status_changed", {
+      targetType: "registration",
+      targetId: registrationId,
+      metadata: { status },
+    });
   }
-  await logAuditEvent(supabase, "registration.status_changed", {
-    targetType: "registration",
-    targetId: registrationId,
-    metadata: { status },
-  });
-  return { success: true };
+  return result;
 }
 
 const VERIFICATION_STATUSES = ["pending", "verified", "ineligible"] as const;
-
-type VerificationResult =
-  | {
-      success: true;
-      verification: {
-        status: (typeof VERIFICATION_STATUSES)[number];
-        note: string | null;
-        decidedAt: string | null;
-        decidedByName: string | null;
-      };
-    }
-  | { success: false; error: string };
 
 /**
  * Admin (or super-admin) only: record the eligibility check for a
@@ -317,13 +416,15 @@ type VerificationResult =
  * Only verified registrations can be assigned judges. A reason is required
  * for "ineligible" so there's a record of why. Who/when is stamped by the
  * registrations_verification_guard trigger from the session, which also
- * refuses to un-verify an entry that still has judges assigned.
+ * refuses to un-verify an entry that still has judges assigned. Same
+ * expectedVersion conflict check as updateRegistrationStatus.
  */
 export async function setVerificationStatus(
   registrationId: string,
   status: string,
+  expectedVersion: number,
   note?: string,
-): Promise<VerificationResult> {
+): Promise<ReviewStateResult> {
   if (!VERIFICATION_STATUSES.includes(status as (typeof VERIFICATION_STATUSES)[number])) {
     return { success: false, error: "Invalid verification status." };
   }
@@ -343,39 +444,19 @@ export async function setVerificationStatus(
     return { success: false, error: "Only admins can verify registrations." };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("registrations")
-    .update({ verification_status: status, verification_note: trimmedNote })
-    .eq("id", registrationId)
-    .select(
-      "verification_status, verification_note, verification_decided_at, verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name )",
-    )
-    .single();
-
-  if (error || !data) {
-    if (error?.hint === "has_assignments") {
-      return { success: false, error: "Unassign this team's judges before changing its verification." };
-    }
-    return { success: false, error: "Could not update verification." };
-  }
-
-  await logAuditEvent(supabase, "registration.verification_changed", {
-    targetType: "registration",
-    targetId: registrationId,
-    metadata: { verificationStatus: status, ...(trimmedNote ? { note: trimmedNote } : {}) },
+  const result = await updateRegistrationIfCurrent(registrationId, expectedVersion, {
+    verification_status: status,
+    verification_note: trimmedNote,
   });
-
-  const decidedBy = data.verification_decided_by as unknown as { full_name: string } | null;
-  return {
-    success: true,
-    verification: {
-      status: data.verification_status,
-      note: data.verification_note,
-      decidedAt: data.verification_decided_at,
-      decidedByName: decidedBy?.full_name ?? null,
-    },
-  };
+  if (result.success) {
+    const supabase = await createClient();
+    await logAuditEvent(supabase, "registration.verification_changed", {
+      targetType: "registration",
+      targetId: registrationId,
+      metadata: { verificationStatus: status, ...(trimmedNote ? { note: trimmedNote } : {}) },
+    });
+  }
+  return result;
 }
 
 type CsvResult = { success: true; csv: string; filename: string } | { success: false; error: string };

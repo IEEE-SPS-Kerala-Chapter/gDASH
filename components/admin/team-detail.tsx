@@ -1,15 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { AdminTeam, AdminJudge, AdminRegistration, AdminMember } from "@/app/actions/admin";
+import type {
+  AdminTeam,
+  AdminJudge,
+  AdminRegistration,
+  AdminMember,
+  RegistrationReviewState,
+} from "@/app/actions/admin";
 import { updateRegistrationStatus, deleteRegistration } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
+import { useLiveRefresh } from "./use-live-refresh";
+import { allAssignedScoresIn, applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
 import { JudgeScoresSummary } from "./judge-scores-summary";
 import { ScoreForm } from "@/components/judge/score-form";
 import { Badge, Panel, Select, SectionLabel, StatusDotBadge } from "@/components/admin/ui";
@@ -38,28 +46,41 @@ export function TeamDetail({
   queueNav?: { prevTeamId: string | null; nextTeamId: string | null; position: string } | null;
 }) {
   const [team, setTeam] = useState(initialTeam);
+  // Other admins' changes arrive via useLiveRefresh (router.refresh) as new
+  // props — re-sync local state from them.
+  useEffect(() => setTeam(initialTeam), [initialTeam]);
   const router = useRouter();
   const reg = team.registration;
   const leader = team.members.find((m) => m.is_leader);
   const isAdmin = isAdminLevelRole(viewerRole);
   const isJudge = viewerRole === "judge";
   const isSuperAdmin = viewerRole === "super_admin";
+  // Admins only — a judge's view has nothing another admin changes under them.
+  useLiveRefresh({ enabled: isAdmin });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
 
+  const [statusBusy, setStatusBusy] = useState(false);
+
+  function applyState(state: RegistrationReviewState) {
+    setTeam((prev) => (prev.registration ? { ...prev, registration: applyReviewState(prev.registration, state) } : prev));
+  }
+
   async function handleStatusChange(status: string) {
-    if (!reg) return;
-    const result = await updateRegistrationStatus(reg.id, status);
+    if (!reg || status === reg.status) return;
+    setStatusBusy(true);
+    const result = await updateRegistrationStatus(reg.id, status, reg.version);
+    setStatusBusy(false);
     if (!result.success) {
       toast.error(result.error);
+      if (result.state) {
+        applyState(result.state);
+        router.refresh();
+      }
       return;
     }
-    setTeam((prev) =>
-      prev.registration
-        ? { ...prev, registration: { ...prev.registration, status: status as typeof prev.registration.status } }
-        : prev,
-    );
+    applyState(result.state);
     toast.success("Status updated.");
   }
 
@@ -184,32 +205,7 @@ export function TeamDetail({
 
           <div className="flex flex-col gap-5">
             {reg && (
-              <VerificationPanel
-                registrationId={reg.id}
-                verification={{
-                  status: reg.verification_status,
-                  note: reg.verification_note,
-                  decidedAt: reg.verification_decided_at,
-                  decidedByName: reg.verification_decided_by_name,
-                }}
-                assignedCount={reg.assignments.length}
-                onChange={(v) =>
-                  setTeam((prev) =>
-                    prev.registration
-                      ? {
-                          ...prev,
-                          registration: {
-                            ...prev.registration,
-                            verification_status: v.status,
-                            verification_note: v.note,
-                            verification_decided_at: v.decidedAt,
-                            verification_decided_by_name: v.decidedByName,
-                          },
-                        }
-                      : prev,
-                  )
-                }
-              />
+              <VerificationPanel registration={reg} onChange={applyState} />
             )}
 
             {reg && (
@@ -220,18 +216,44 @@ export function TeamDetail({
                 </div>
                 <Select
                   value={reg.status}
+                  disabled={statusBusy}
                   onChange={(e) => handleStatusChange(e.target.value)}
                   className="border-gignite-blue font-semibold text-gignite-blue"
                 >
-                  {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
+                  {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => {
+                    const blocked =
+                      !allAssignedScoresIn(reg) && value !== reg.status && DECISION_STATUSES.includes(value as AdminRegistration["status"]);
+                    return (
+                      <option key={value} value={value} disabled={blocked}>
+                        {blocked ? `${label} (scores pending)` : label}
+                      </option>
+                    );
+                  })}
                 </Select>
                 <span className="text-[13px] leading-[1.5] text-gignite-text/75">
                   {REGISTRATION_STATUS_HINTS[reg.status]}
                 </span>
+                {!allAssignedScoresIn(reg) && !DECISION_STATUSES.includes(reg.status) && (
+                  <span className="text-[13px] leading-[1.5] text-gignite-text/75">
+                    {reg.assignments.length === 0
+                      ? "Assign judges and collect their scores before shortlisting or rejecting."
+                      : `Shortlist or reject once every assigned judge has submitted a score (${
+                          reg.scores.filter(
+                            (s) => s.status === "submitted" && reg.assignments.some((a) => a.judge_id === s.judgeId),
+                          ).length
+                        } of ${reg.assignments.length} in).`}
+                  </span>
+                )}
+                {reg.status_changed_at && (
+                  <span className="font-mono text-[11px] text-gignite-text/60">
+                    Last changed by {reg.status_changed_by_name ?? "an admin"} ·{" "}
+                    {new Date(reg.status_changed_at).toLocaleString("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                )}
               </Panel>
             )}
 
@@ -247,6 +269,7 @@ export function TeamDetail({
                   judges={judges}
                   scoredJudgeIds={reg.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
                   verificationStatus={reg.verification_status}
+                  decided={DECISION_STATUSES.includes(reg.status)}
                   onChange={(assignments) =>
                     setTeam((prev) => (prev.registration ? { ...prev, registration: { ...prev.registration, assignments } } : prev))
                   }

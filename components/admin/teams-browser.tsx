@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LayoutGrid, List } from "lucide-react";
-import type { AdminTeam, AdminJudge, AdminAssignment, AdminRegistration } from "@/app/actions/admin";
+import type { AdminTeam, AdminJudge, AdminAssignment, RegistrationReviewState } from "@/app/actions/admin";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
+import { applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
+import { useLiveRefresh } from "./use-live-refresh";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { InlineStatusSelect } from "./inline-status-select";
 import { RegistrationsAnalytics } from "./registrations-analytics";
@@ -35,6 +37,10 @@ function formatSubmitted(dateString: string) {
 export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam[]; judges: AdminJudge[] }) {
   const router = useRouter();
   const [teams, setTeams] = useState(initialTeams);
+  // Other admins' changes arrive via useLiveRefresh (router.refresh) as new
+  // props — re-sync local state from them.
+  useEffect(() => setTeams(initialTeams), [initialTeams]);
+  useLiveRefresh();
   const [search, setSearch] = useState("");
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -93,12 +99,10 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
     );
   }
 
-  function handleStatusChange(teamId: string, status: string) {
+  function handleReviewStateChange(teamId: string, state: RegistrationReviewState) {
     setTeams((prev) =>
       prev.map((t) =>
-        t.id === teamId && t.registration
-          ? { ...t, registration: { ...t.registration, status: status as AdminRegistration["status"] } }
-          : t,
+        t.id === teamId && t.registration ? { ...t, registration: applyReviewState(t.registration, state) } : t,
       ),
     );
   }
@@ -121,9 +125,8 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
   function StatusCell({ team, status }: { team: AdminTeam; status: string }) {
     return team.registration ? (
       <InlineStatusSelect
-        registrationId={team.registration.id}
-        status={status}
-        onChange={(s) => handleStatusChange(team.id, s)}
+        registration={team.registration}
+        onChange={(state) => handleReviewStateChange(team.id, state)}
       />
     ) : (
       <Badge variant={REGISTRATION_STATUS_BADGE_VARIANT[status] ?? "neutral"}>
@@ -150,6 +153,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         judges={judges}
         scoredJudgeIds={team.registration.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
         verificationStatus={team.registration.verification_status}
+        decided={DECISION_STATUSES.includes(team.registration.status)}
         onChange={(a) => handleAssignmentsChange(team.id, a)}
       />
     ) : (

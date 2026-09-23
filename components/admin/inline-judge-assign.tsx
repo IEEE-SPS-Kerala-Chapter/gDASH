@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AdminAssignment, AdminJudge } from "@/app/actions/admin";
 import { assignJudge, unassignJudge } from "@/app/actions/admin";
@@ -14,6 +15,11 @@ import { Badge, ChipButton } from "@/components/admin/ui";
  * The "+ Assign judge" picker only appears once the registration is
  * verified eligible (the server and RLS refuse it otherwise too).
  *
+ * Two admins acting on the same team at once: a duplicate assignment or a
+ * verification/decision change that got there first comes back as a
+ * `stale` error, and removing an assignment someone else already removed
+ * is reported as such — both re-sync the page from the server.
+ *
  * Unassigning shows an inline confirm panel (per the Claude Design file's
  * "gIGNITE Team Detail Page" spec) rather than a native browser confirm() —
  * it also tells the admin whether that judge has already scored the team,
@@ -25,17 +31,21 @@ export function InlineJudgeAssign({
   judges,
   scoredJudgeIds = [],
   verificationStatus,
+  decided = false,
   onChange,
 }: {
   registrationId: string;
   /** Only "verified" registrations can be assigned judges — see VerificationPanel. */
   verificationStatus: string;
+  /** Shortlisted/rejected already — no more judges can be added (the DB refuses it too). */
+  decided?: boolean;
   assignments: AdminAssignment[];
   judges: AdminJudge[];
   /** judge_ids who have already submitted a score for this registration — only used to word the unassign confirmation. */
   scoredJudgeIds?: string[];
   onChange: (next: AdminAssignment[]) => void;
 }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState<AdminAssignment | null>(null);
   const assignedIds = new Set(assignments.map((a) => a.judge_id));
@@ -49,12 +59,10 @@ export function InlineJudgeAssign({
     setBusy(false);
     if (!result.success) {
       toast.error(result.error);
+      if (result.stale) router.refresh();
       return;
     }
-    const judge = judges.find((j) => j.id === judgeId);
-    if (judge) {
-      onChange([...assignments, { id: result.assignmentId, judge_id: judge.id, judge_name: judge.full_name }]);
-    }
+    onChange([...assignments, result.assignment]);
     toast.success("Judge assigned.");
   }
 
@@ -62,12 +70,18 @@ export function InlineJudgeAssign({
     if (!confirming) return;
     const assignmentId = confirming.id;
     setConfirming(null);
+    setBusy(true);
     const result = await unassignJudge(assignmentId);
+    setBusy(false);
     if (!result.success) {
       toast.error(result.error);
       return;
     }
     onChange(assignments.filter((a) => a.id !== assignmentId));
+    if (result.alreadyRemoved) {
+      toast.info("Another admin had already removed that judge.");
+      router.refresh();
+    }
   }
 
   return (
@@ -81,7 +95,9 @@ export function InlineJudgeAssign({
             </ChipButton>
           </Badge>
         ))}
-        {verificationStatus !== "verified" ? (
+        {decided ? (
+          assignments.length === 0 && <span className="text-[12px] text-gignite-text/60">Decision made</span>
+        ) : verificationStatus !== "verified" ? (
           <span className="text-[12px] text-gignite-text/60">
             {verificationStatus === "ineligible" ? "Ineligible, can't assign" : "Verify eligibility to assign"}
           </span>
@@ -124,6 +140,7 @@ export function InlineJudgeAssign({
             <button
               type="button"
               onClick={handleConfirmedUnassign}
+              disabled={busy}
               className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F]"
             >
               Unassign

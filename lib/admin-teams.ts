@@ -72,6 +72,15 @@ export type AdminRegistration = {
   verification_note: string | null;
   verification_decided_at: string | null;
   verification_decided_by_name: string | null;
+  /**
+   * Bumped on every update. Status and verification changes send the
+   * version they were made from and are refused if another admin changed
+   * the registration in between — see
+   * supabase/migrations/20260923040000_admin_concurrency.sql.
+   */
+  version: number;
+  status_changed_at: string | null;
+  status_changed_by_name: string | null;
   created_at: string;
   declaration_eligibility: boolean;
   declaration_originality: boolean;
@@ -106,6 +115,8 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
        supporting_link, deck_path, status, created_at,
        verification_status, verification_note, verification_decided_at,
        verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name ),
+       version, status_changed_at,
+       status_changed_by:profiles!registrations_status_changed_by_fkey ( full_name ),
        declaration_eligibility, declaration_originality, declaration_rules, declaration_media_consent,
        registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
        judge_scores (
@@ -130,9 +141,10 @@ type RawJudgeScore = {
 
 type RawRegistration = Omit<
   AdminRegistration,
-  "assignments" | "scores" | "avgScore" | "verification_decided_by_name"
+  "assignments" | "scores" | "avgScore" | "verification_decided_by_name" | "status_changed_by_name"
 > & {
   verification_decided_by: { full_name: string } | null;
+  status_changed_by: { full_name: string } | null;
   registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
   judge_scores: RawJudgeScore[];
 };
@@ -180,10 +192,11 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
     // (and therefore complete, by construction of submitScore()) score
     // counts toward it.
     const submittedScores = scores.filter((s) => s.status === "submitted" && s.weighted !== null);
-    const { verification_decided_by, ...regFields } = rawReg;
+    const { verification_decided_by, status_changed_by, ...regFields } = rawReg;
     registration = {
       ...regFields,
       verification_decided_by_name: verification_decided_by?.full_name ?? null,
+      status_changed_by_name: status_changed_by?.full_name ?? null,
       assignments: (rawReg.registration_assignments ?? []).map((a) => ({
         id: a.id,
         judge_id: a.judge_id,
@@ -223,3 +236,50 @@ export function redactMemberContactInfo(team: AdminTeam): AdminTeam {
     members: team.members.map((m) => ({ ...m, email: "", phone: "" })),
   };
 }
+
+/**
+ * The parts of a registration that admins change and can conflict over
+ * (status + verification), plus the version those changes are checked
+ * against. Returned by updateRegistrationStatus/setVerificationStatus,
+ * both on success and, after a conflict, as the current state to show.
+ */
+export type RegistrationReviewState = {
+  version: number;
+  status: AdminRegistration["status"];
+  statusChangedAt: string | null;
+  statusChangedByName: string | null;
+  verification: {
+    status: VerificationStatus;
+    note: string | null;
+    decidedAt: string | null;
+    decidedByName: string | null;
+  };
+};
+
+/** Folds a RegistrationReviewState back into an AdminRegistration. */
+export function applyReviewState(reg: AdminRegistration, state: RegistrationReviewState): AdminRegistration {
+  return {
+    ...reg,
+    version: state.version,
+    status: state.status,
+    status_changed_at: state.statusChangedAt,
+    status_changed_by_name: state.statusChangedByName,
+    verification_status: state.verification.status,
+    verification_note: state.verification.note,
+    verification_decided_at: state.verification.decidedAt,
+    verification_decided_by_name: state.verification.decidedByName,
+  };
+}
+
+/**
+ * Whether a final decision (shortlisted/rejected) is allowed yet: at least
+ * one judge assigned and every assigned judge has submitted. Mirrors the
+ * DB check in registrations_version_and_decision_guard, for the UI.
+ */
+export function allAssignedScoresIn(reg: AdminRegistration): boolean {
+  if (reg.assignments.length === 0) return false;
+  const submitted = new Set(reg.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId));
+  return reg.assignments.every((a) => submitted.has(a.judge_id));
+}
+
+export const DECISION_STATUSES: ReadonlyArray<AdminRegistration["status"]> = ["shortlisted", "rejected"];
