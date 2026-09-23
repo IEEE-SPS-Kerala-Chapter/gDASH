@@ -18,6 +18,9 @@ import {
   PrimaryButton,
   SecondaryButton,
   DesktopSidebar,
+  FormCard,
+  Skeleton,
+  Spinner,
 } from "./ui";
 import { StepTeam } from "./step-team";
 import { StepMembers } from "./step-members";
@@ -132,6 +135,12 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // True until the saved draft (server, then local) has been checked. The
+  // server lookup can take a moment after signing back in, and showing the
+  // empty form meanwhile looked like nothing was saved — and anything typed
+  // into it would be overwritten once the draft arrived. So the form stays
+  // hidden behind a loading state until then.
+  const [restoring, setRestoring] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
   const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -154,9 +163,8 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   // Restore a saved draft after mount — not during useForm()/render, since
   // reading localStorage synchronously there would throw during SSR (this
   // is a client component, but still goes through SSR for the initial
-  // HTML). One post-hydration flash (empty → restored) is expected and
-  // matches the same "restore in useEffect" pattern already used for the
-  // admin view-mode toggle in teams-browser.tsx.
+  // HTML). Until it finishes, `restoring` shows a loading state instead of
+  // the empty form (see RestoringDraft below).
   //
   // The server-side draft (tied to the signed-in leader, not one browser)
   // takes priority when one exists — that's the copy that's "there
@@ -165,18 +173,32 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   // server round trip fails.
   useEffect(() => {
     (async () => {
-      if (leaderEmail) {
-        const serverDraft = await loadRegistrationDraft();
-        if (serverDraft) {
-          form.reset(serverDraft.value);
-          setStep(serverDraft.step);
-          return;
+      try {
+        if (leaderEmail) {
+          const serverDraft = await loadRegistrationDraft();
+          if (serverDraft) {
+            form.reset(serverDraft.value);
+            setStep(serverDraft.step);
+            return;
+          }
         }
-      }
-      const draft = loadDraft();
-      if (draft) {
-        form.reset(draft.value);
-        setStep(draft.step);
+        const draft = loadDraft();
+        if (draft) {
+          form.reset(draft.value);
+          setStep(draft.step);
+        }
+      } catch (err) {
+        // A failed server lookup (e.g. dropped connection) shouldn't leave
+        // the leader stuck on the loading state — fall back to whatever
+        // local draft exists, or an empty form.
+        console.error("Could not restore registration draft:", err);
+        const draft = loadDraft();
+        if (draft) {
+          form.reset(draft.value);
+          setStep(draft.step);
+        }
+      } finally {
+        setRestoring(false);
       }
     })();
     // Only ever run once, right after mount.
@@ -352,73 +374,98 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
             </div>
           )}
 
-          <div className="flex flex-col gap-[9px] lg:hidden">
-            <ProgressBar step={step} total={STEPS.length} />
-            <StepMeta label={current.label} hint={hint} />
-          </div>
-
-          <div className="hidden items-baseline justify-between lg:flex">
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
-              {current.label}
-            </span>
-            <span className="font-mono text-[11px] text-gignite-text/65">{hint}</span>
-          </div>
-
-          <StepTitle title={current.title} subtitle={current.subtitle} />
-
-          {/* Declarations already surfaces this inline, right next to the
-              actual required checkbox — showing it again up here too would
-              just be a second, redundant copy on that one screen. */}
-          {current.key !== "declarations" && (
-            <a
-              href={RULES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-fit rounded-[8px] border-[1.5px] border-gignite-blue px-3 py-[6px] font-heading text-[13px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
-            >
-              Rules to follow ↗
-            </a>
-          )}
-
-          <div className="lg:max-w-[760px]">
-            {current.key === "team" && <StepTeam form={form} />}
-            {current.key === "members" && <StepMembers form={form} />}
-            {current.key === "idea" && <StepIdea form={form} />}
-            {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} />}
-            {current.key === "declarations" && <StepDeclarations form={form} />}
-          </div>
-
-          {isLastStep && (
-            <div className="lg:max-w-[760px]">
-              <TurnstileWidget onToken={setTurnstileToken} />
+          {restoring ? (
+            <RestoringDraft />
+          ) : (
+            <>
+            <div className="flex flex-col gap-[9px] lg:hidden">
+              <ProgressBar step={step} total={STEPS.length} />
+              <StepMeta label={current.label} hint={hint} />
             </div>
-          )}
 
-          <div className="flex flex-col gap-3 lg:max-w-[760px] lg:flex-row-reverse lg:items-center">
-            <div className="lg:flex-1">
-              <PrimaryButton
-                type="submit"
-                disabled={submitting || (isLastStep && !readyToSubmit)}
-                loading={submitting}
+            <div className="hidden items-baseline justify-between lg:flex">
+              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
+                {current.label}
+              </span>
+              <span className="font-mono text-[11px] text-gignite-text/65">{hint}</span>
+            </div>
+
+            <StepTitle title={current.title} subtitle={current.subtitle} />
+
+            {/* Declarations already surfaces this inline, right next to the
+                actual required checkbox — showing it again up here too would
+                just be a second, redundant copy on that one screen. */}
+            {current.key !== "declarations" && (
+              <a
+                href={RULES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit rounded-[8px] border-[1.5px] border-gignite-blue px-3 py-[6px] font-heading text-[13px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
               >
-                {submitting ? "Submitting…" : current.cta}
-              </PrimaryButton>
+                Rules to follow ↗
+              </a>
+            )}
+
+            <div className="lg:max-w-[760px]">
+              {current.key === "team" && <StepTeam form={form} />}
+              {current.key === "members" && <StepMembers form={form} />}
+              {current.key === "idea" && <StepIdea form={form} />}
+              {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} />}
+              {current.key === "declarations" && <StepDeclarations form={form} />}
             </div>
-            {step > 0 && (
-              <div className="hidden lg:block">
-                <SecondaryButton type="button" onClick={handleBack}>
-                  ← Back
-                </SecondaryButton>
+
+            {isLastStep && (
+              <div className="lg:max-w-[760px]">
+                <TurnstileWidget onToken={setTurnstileToken} />
               </div>
             )}
-            {leaderEmail && (
-              <SecondaryButton type="button" onClick={handleSaveDraft} disabled={savingDraft}>
-                {savingDraft ? "Saving…" : "Save draft"}
-              </SecondaryButton>
-            )}
-          </div>
+
+            <div className="flex flex-col gap-3 lg:max-w-[760px] lg:flex-row-reverse lg:items-center">
+              <div className="lg:flex-1">
+                <PrimaryButton
+                  type="submit"
+                  disabled={submitting || (isLastStep && !readyToSubmit)}
+                  loading={submitting}
+                >
+                  {submitting ? "Submitting…" : current.cta}
+                </PrimaryButton>
+              </div>
+              {step > 0 && (
+                <div className="hidden lg:block">
+                  <SecondaryButton type="button" onClick={handleBack}>
+                    ← Back
+                  </SecondaryButton>
+                </div>
+              )}
+              {leaderEmail && (
+                <SecondaryButton type="button" onClick={handleSaveDraft} disabled={savingDraft}>
+                  {savingDraft ? "Saving…" : "Save draft"}
+                </SecondaryButton>
+              )}
+            </div>
+            </>
+          )}
         </form>
       </div>
+    </div>
+  );
+}
+
+function RestoringDraft() {
+  return (
+    <div className="flex flex-col gap-[18px] lg:max-w-[760px]" role="status" aria-live="polite">
+      <div className="flex items-center gap-2.5 text-[14px] font-semibold text-gignite-blue">
+        <Spinner />
+        Loading your saved progress…
+      </div>
+      <FormCard>
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-11 w-full" />
+      </FormCard>
     </div>
   );
 }
