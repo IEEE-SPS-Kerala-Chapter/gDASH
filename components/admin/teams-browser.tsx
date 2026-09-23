@@ -10,7 +10,12 @@ import { InlineJudgeAssign } from "./inline-judge-assign";
 import { InlineStatusSelect } from "./inline-status-select";
 import { RegistrationsAnalytics } from "./registrations-analytics";
 import { Badge, Panel, SecondaryButton, SegmentedToggle, Select, TextInput } from "@/components/admin/ui";
-import { REGISTRATION_STATUS_BADGE_VARIANT, REGISTRATION_STATUS_LABELS } from "@/lib/registration-status";
+import {
+  REGISTRATION_STATUS_BADGE_VARIANT,
+  REGISTRATION_STATUS_LABELS,
+  VERIFICATION_STATUS_BADGE_VARIANT,
+  VERIFICATION_STATUS_LABELS,
+} from "@/lib/registration-status";
 import { downloadCsv } from "@/lib/csv-download";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
 import { cn } from "@/lib/utils";
@@ -37,6 +42,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [themeFilter, setThemeFilter] = useState<string | null>(null);
   const [districtFilter, setDistrictFilter] = useState<string | null>(null);
+  const [verificationFilter, setVerificationFilter] = useState<string | null>(null);
 
   // Remembered per-browser, not critical data — fine to keep in localStorage.
   useEffect(() => {
@@ -64,17 +70,19 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
       if (statusFilter && (t.registration?.status ?? "submitted") !== statusFilter) return false;
       if (themeFilter && t.ai_theme !== themeFilter) return false;
       if (districtFilter && t.district !== districtFilter) return false;
+      if (verificationFilter && t.registration?.verification_status !== verificationFilter) return false;
       return true;
     });
     return [...rows].sort((a, b) => {
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sortNewestFirst ? -diff : diff;
     });
-  }, [teams, search, sortNewestFirst, statusFilter, themeFilter, districtFilter]);
+  }, [teams, search, sortNewestFirst, statusFilter, themeFilter, districtFilter, verificationFilter]);
 
-  const anyFilterActive = Boolean(statusFilter || themeFilter || districtFilter);
+  const anyFilterActive = Boolean(statusFilter || themeFilter || districtFilter || verificationFilter);
   function clearFilters() {
     setStatusFilter(null);
+    setVerificationFilter(null);
     setThemeFilter(null);
     setDistrictFilter(null);
   }
@@ -124,6 +132,16 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
     );
   }
 
+  function VerificationBadge({ team }: { team: AdminTeam }) {
+    const v = team.registration?.verification_status;
+    if (!v) return null;
+    return (
+      <Badge variant={VERIFICATION_STATUS_BADGE_VARIANT[v] ?? "neutral"} className="px-2 py-0.5 text-[9px]">
+        {v === "pending" ? "Unverified" : (VERIFICATION_STATUS_LABELS[v] ?? v)}
+      </Badge>
+    );
+  }
+
   function JudgesCell({ team }: { team: AdminTeam }) {
     return team.registration ? (
       <InlineJudgeAssign
@@ -131,6 +149,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         assignments={team.registration.assignments}
         judges={judges}
         scoredJudgeIds={team.registration.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
+        verificationStatus={team.registration.verification_status}
         onChange={(a) => handleAssignmentsChange(team.id, a)}
       />
     ) : (
@@ -166,6 +185,18 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
           >
             <option value="">All statuses</option>
             {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+          <Select
+            value={verificationFilter ?? ""}
+            onChange={(e) => setVerificationFilter(e.target.value || null)}
+            className={cn("w-auto flex-none py-[9px] text-[13.5px] font-semibold", verificationFilter ? "border-gignite-blue text-gignite-blue" : "text-gignite-text")}
+          >
+            <option value="">All verification</option>
+            {Object.entries(VERIFICATION_STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -254,7 +285,10 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                   className={cn(GRID_COLS, "cursor-pointer border-b border-gignite-divider px-5 py-4 last:border-b-0 hover:bg-gignite-bg/30")}
                   onClick={() => goToTeam(team.id)}
                 >
-                  <span className="truncate font-heading font-semibold text-black">{team.name}</span>
+                  <div className="flex min-w-0 flex-col items-start gap-1">
+                    <span className="max-w-full truncate font-heading font-semibold text-black">{team.name}</span>
+                    <VerificationBadge team={team} />
+                  </div>
                   <span className="truncate text-[14px] text-gignite-text/80">{team.ai_theme}</span>
                   <span className="text-[14px] text-gignite-text/80">{team.members.length}</span>
                   <span className="truncate text-[14px] text-gignite-text/80">{leader?.full_name ?? "—"}</span>
@@ -286,6 +320,9 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                   <div>
                     <h3 className="font-heading font-semibold text-black">{team.name}</h3>
                     <p className="text-[13px] text-gignite-text/70">{team.ai_theme}</p>
+                    <div className="mt-1.5">
+                      <VerificationBadge team={team} />
+                    </div>
                   </div>
                   <StatusCell team={team} status={status} />
                 </div>

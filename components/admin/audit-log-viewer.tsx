@@ -20,6 +20,7 @@ const RANGE_OPTIONS: { value: AuditLogRange; label: string }[] = [
 const ACTION_LABELS: Record<string, string> = {
   "team.registered": "Registered a team",
   "registration.status_changed": "Changed registration status",
+  "registration.verification_changed": "Changed eligibility verification",
   "judge.assigned": "Assigned a judge",
   "judge.unassigned": "Removed a judge assignment",
   "judge.score_submitted": "Submitted a score",

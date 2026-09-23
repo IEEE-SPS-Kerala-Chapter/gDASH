@@ -52,6 +52,8 @@ export type AdminJudgeScore = {
   weighted: number | null;
 };
 
+export type VerificationStatus = "pending" | "verified" | "ineligible";
+
 export type AdminRegistration = {
   id: string;
   problem_statement: string;
@@ -61,6 +63,15 @@ export type AdminRegistration = {
   supporting_link: string | null;
   deck_path: string | null;
   status: "submitted" | "under_review" | "shortlisted" | "rejected";
+  /**
+   * Admin eligibility check (ID cards etc.) — separate from `status`, which
+   * is the judging outcome. Only "verified" registrations can be assigned
+   * judges; see supabase/migrations/20260923030000_registration_verification.sql.
+   */
+  verification_status: VerificationStatus;
+  verification_note: string | null;
+  verification_decided_at: string | null;
+  verification_decided_by_name: string | null;
   created_at: string;
   declaration_eligibility: boolean;
   declaration_originality: boolean;
@@ -93,6 +104,8 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
      registrations (
        id, problem_statement, proposed_solution, ai_approach, expected_impact,
        supporting_link, deck_path, status, created_at,
+       verification_status, verification_note, verification_decided_at,
+       verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name ),
        declaration_eligibility, declaration_originality, declaration_rules, declaration_media_consent,
        registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
        judge_scores (
@@ -115,7 +128,11 @@ type RawJudgeScore = {
   profiles: { full_name: string } | null;
 };
 
-type RawRegistration = Omit<AdminRegistration, "assignments" | "scores" | "avgScore"> & {
+type RawRegistration = Omit<
+  AdminRegistration,
+  "assignments" | "scores" | "avgScore" | "verification_decided_by_name"
+> & {
+  verification_decided_by: { full_name: string } | null;
   registration_assignments: Array<{ id: string; judge_id: string; profiles: { full_name: string } | null }>;
   judge_scores: RawJudgeScore[];
 };
@@ -163,8 +180,10 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
     // (and therefore complete, by construction of submitScore()) score
     // counts toward it.
     const submittedScores = scores.filter((s) => s.status === "submitted" && s.weighted !== null);
+    const { verification_decided_by, ...regFields } = rawReg;
     registration = {
-      ...rawReg,
+      ...regFields,
+      verification_decided_by_name: verification_decided_by?.full_name ?? null,
       assignments: (rawReg.registration_assignments ?? []).map((a) => ({
         id: a.id,
         judge_id: a.judge_id,

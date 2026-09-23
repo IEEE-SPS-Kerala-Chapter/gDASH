@@ -9,6 +9,7 @@ import { updateRegistrationStatus, deleteRegistration } from "@/app/actions/admi
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
+import { VerificationPanel } from "./verification-panel";
 import { JudgeScoresSummary } from "./judge-scores-summary";
 import { ScoreForm } from "@/components/judge/score-form";
 import { Badge, Panel, Select, SectionLabel, StatusDotBadge } from "@/components/admin/ui";
@@ -183,6 +184,35 @@ export function TeamDetail({
 
           <div className="flex flex-col gap-5">
             {reg && (
+              <VerificationPanel
+                registrationId={reg.id}
+                verification={{
+                  status: reg.verification_status,
+                  note: reg.verification_note,
+                  decidedAt: reg.verification_decided_at,
+                  decidedByName: reg.verification_decided_by_name,
+                }}
+                assignedCount={reg.assignments.length}
+                onChange={(v) =>
+                  setTeam((prev) =>
+                    prev.registration
+                      ? {
+                          ...prev,
+                          registration: {
+                            ...prev.registration,
+                            verification_status: v.status,
+                            verification_note: v.note,
+                            verification_decided_at: v.decidedAt,
+                            verification_decided_by_name: v.decidedByName,
+                          },
+                        }
+                      : prev,
+                  )
+                }
+              />
+            )}
+
+            {reg && (
               <Panel className="flex flex-col gap-3 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <SectionLabel>Registration status</SectionLabel>
@@ -216,6 +246,7 @@ export function TeamDetail({
                   assignments={reg.assignments}
                   judges={judges}
                   scoredJudgeIds={reg.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
+                  verificationStatus={reg.verification_status}
                   onChange={(assignments) =>
                     setTeam((prev) => (prev.registration ? { ...prev, registration: { ...prev.registration, assignments } } : prev))
                   }

@@ -12,7 +12,16 @@ import {
   type AdminTeam,
 } from "@/lib/admin-teams";
 
-export type { AdminMember, AdminJudge, AdminAssignment, AdminJudgeScore, AdminRegistration, AdminTeam, RawTeamRow } from "@/lib/admin-teams";
+export type {
+  AdminMember,
+  AdminJudge,
+  AdminAssignment,
+  AdminJudgeScore,
+  AdminRegistration,
+  AdminTeam,
+  RawTeamRow,
+  VerificationStatus,
+} from "@/lib/admin-teams";
 
 /** Returns the caller's profile role, or null if not signed in / no profile. */
 export async function getCallerRole(): Promise<{ userId: string; role: string } | null> {
@@ -108,6 +117,22 @@ export async function assignJudge(registrationId: string, judgeId: string): Prom
   }
 
   const supabase = await createClient();
+
+  // RLS's registration_assignments_insert_admin enforces this again at the
+  // DB level — checked here first only so the admin gets a clear message
+  // instead of a generic insert failure.
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select("verification_status")
+    .eq("id", registrationId)
+    .single();
+  if (!reg) {
+    return { success: false, error: "Registration not found." };
+  }
+  if (reg.verification_status !== "verified") {
+    return { success: false, error: "Verify this team's eligibility before assigning judges." };
+  }
+
   const { data, error } = await supabase
     .from("registration_assignments")
     .insert({
@@ -272,6 +297,87 @@ export async function updateRegistrationStatus(
   return { success: true };
 }
 
+const VERIFICATION_STATUSES = ["pending", "verified", "ineligible"] as const;
+
+type VerificationResult =
+  | {
+      success: true;
+      verification: {
+        status: (typeof VERIFICATION_STATUSES)[number];
+        note: string | null;
+        decidedAt: string | null;
+        decidedByName: string | null;
+      };
+    }
+  | { success: false; error: string };
+
+/**
+ * Admin (or super-admin) only: record the eligibility check for a
+ * registration (ID cards / details checked → verified, or ineligible).
+ * Only verified registrations can be assigned judges. A reason is required
+ * for "ineligible" so there's a record of why. Who/when is stamped by the
+ * registrations_verification_guard trigger from the session, which also
+ * refuses to un-verify an entry that still has judges assigned.
+ */
+export async function setVerificationStatus(
+  registrationId: string,
+  status: string,
+  note?: string,
+): Promise<VerificationResult> {
+  if (!VERIFICATION_STATUSES.includes(status as (typeof VERIFICATION_STATUSES)[number])) {
+    return { success: false, error: "Invalid verification status." };
+  }
+  const trimmedNote = note?.trim() || null;
+  if (status === "ineligible" && !trimmedNote) {
+    return { success: false, error: "Give a reason for marking this team ineligible." };
+  }
+  if (trimmedNote && trimmedNote.length > 1000) {
+    return { success: false, error: "Keep the note under 1000 characters." };
+  }
+
+  const caller = await getCallerRole();
+  if (!caller) {
+    return { success: false, error: "Please sign in." };
+  }
+  if (!isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can verify registrations." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("registrations")
+    .update({ verification_status: status, verification_note: trimmedNote })
+    .eq("id", registrationId)
+    .select(
+      "verification_status, verification_note, verification_decided_at, verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name )",
+    )
+    .single();
+
+  if (error || !data) {
+    if (error?.hint === "has_assignments") {
+      return { success: false, error: "Unassign this team's judges before changing its verification." };
+    }
+    return { success: false, error: "Could not update verification." };
+  }
+
+  await logAuditEvent(supabase, "registration.verification_changed", {
+    targetType: "registration",
+    targetId: registrationId,
+    metadata: { verificationStatus: status, ...(trimmedNote ? { note: trimmedNote } : {}) },
+  });
+
+  const decidedBy = data.verification_decided_by as unknown as { full_name: string } | null;
+  return {
+    success: true,
+    verification: {
+      status: data.verification_status,
+      note: data.verification_note,
+      decidedAt: data.verification_decided_at,
+      decidedByName: decidedBy?.full_name ?? null,
+    },
+  };
+}
+
 type CsvResult = { success: true; csv: string; filename: string } | { success: false; error: string };
 
 function csvField(value: string): string {
@@ -312,6 +418,7 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
     "Leader Phone",
     "Leader College",
     "All Members",
+    "Verification",
     "Status",
     "Submitted At",
   ];
@@ -328,6 +435,7 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
       leader?.phone ?? "",
       leader?.college ?? "",
       allMembers,
+      team.registration?.verification_status ?? "",
       team.registration?.status ?? "",
       team.registration?.created_at ?? "",
     ].map(csvField);

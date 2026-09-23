@@ -19,7 +19,7 @@ export const REGISTRATION_STATUS_BADGE_VARIANT: Record<string, BadgeVariant> = {
 
 /** What each status means, shown as a hint under the status selector on the team detail page. */
 export const REGISTRATION_STATUS_HINTS: Record<string, string> = {
-  submitted: "Entry received and eligible. Awaiting judge scores.",
+  submitted: "Entry received. Verify eligibility, then assign judges.",
   under_review: "Assigned judges are scoring. Status changes are held until all scores are in.",
   shortlisted: "Through to the 24-hour Grand Finale at FISAT. The leader is notified by email.",
   rejected: "Not advancing. The leader receives the panel's written comments.",
@@ -37,4 +37,24 @@ export const REGISTRATION_STATUS_PILL: Record<string, { bg: string; fg: string; 
   under_review: { bg: "#FDE9D8", fg: "#96430B", dot: "#F27721" },
   shortlisted: { bg: "#DFEDE6", fg: "#146443", dot: "#16794F" },
   rejected: { bg: "#EFE4CB", fg: "#6B6355", dot: "#9A9184" },
+};
+
+/** Admin eligibility check, separate from the judging status above — see
+ * supabase/migrations/20260923030000_registration_verification.sql. */
+export const VERIFICATION_STATUS_LABELS: Record<string, string> = {
+  pending: "Pending verification",
+  verified: "Verified",
+  ineligible: "Ineligible",
+};
+
+export const VERIFICATION_STATUS_BADGE_VARIANT: Record<string, BadgeVariant> = {
+  pending: "warn",
+  verified: "success",
+  ineligible: "danger",
+};
+
+export const VERIFICATION_STATUS_HINTS: Record<string, string> = {
+  pending: "Check every member's college ID card and details before this entry can be assigned to judges.",
+  verified: "Participants checked and eligible. This entry can be assigned to judges.",
+  ineligible: "Found fake, invalid, or not eligible. This entry can't be assigned to judges.",
 };

@@ -11,6 +11,9 @@ import { Badge, ChipButton } from "@/components/admin/ui";
  * navigating into the detail page. Stops click propagation so it can sit
  * inside a row/card that navigates on click elsewhere.
  *
+ * The "+ Assign judge" picker only appears once the registration is
+ * verified eligible (the server and RLS refuse it otherwise too).
+ *
  * Unassigning shows an inline confirm panel (per the Claude Design file's
  * "gIGNITE Team Detail Page" spec) rather than a native browser confirm() —
  * it also tells the admin whether that judge has already scored the team,
@@ -21,9 +24,12 @@ export function InlineJudgeAssign({
   assignments,
   judges,
   scoredJudgeIds = [],
+  verificationStatus,
   onChange,
 }: {
   registrationId: string;
+  /** Only "verified" registrations can be assigned judges — see VerificationPanel. */
+  verificationStatus: string;
   assignments: AdminAssignment[];
   judges: AdminJudge[];
   /** judge_ids who have already submitted a score for this registration — only used to word the unassign confirmation. */
@@ -75,7 +81,11 @@ export function InlineJudgeAssign({
             </ChipButton>
           </Badge>
         ))}
-        {available.length > 0 ? (
+        {verificationStatus !== "verified" ? (
+          <span className="text-[12px] text-gignite-text/60">
+            {verificationStatus === "ineligible" ? "Ineligible, can't assign" : "Verify eligibility to assign"}
+          </span>
+        ) : available.length > 0 ? (
           <select
             disabled={busy}
             value=""
