@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getAuditLogs, type AuditLogEntry, type AuditLogRange } from "@/app/actions/audit-log";
-import { Panel } from "@/components/admin/ui";
+import { Panel, Skeleton, Spinner } from "@/components/admin/ui";
 import { roleLabel } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -96,7 +96,15 @@ export function AuditLogViewer() {
       </div>
 
       {loading ? (
-        <Panel className="py-10 text-center text-[14px] text-gignite-text/60">Loading…</Panel>
+        <Panel className="flex flex-col gap-3 p-4" role="status" aria-live="polite">
+          <span className="flex items-center gap-2 text-[14px] text-gignite-text/70">
+            <Spinner className="h-3.5 w-3.5" />
+            Loading activity…
+          </span>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-full" />
+          ))}
+        </Panel>
       ) : logs.length === 0 ? (
         <Panel className="py-10 text-center text-[14px] text-gignite-text/60">No activity in this window.</Panel>
       ) : (

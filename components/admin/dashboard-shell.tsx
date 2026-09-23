@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Users, UserCog, Download, LogOut, ScrollText } from "lucide-react";
-import { BrandLogo, GridBackground, LogoHeaderBar } from "@/components/admin/ui";
+import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
@@ -35,8 +35,11 @@ export function DashboardShell({
   const router = useRouter();
   const pathname = usePathname();
   const [exporting, setExporting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
+  // No reset afterwards: the login page replaces this one once it's done.
   async function handleSignOut() {
+    setSigningOut(true);
     await signOut();
     router.push("/login");
     router.refresh();
@@ -108,9 +111,14 @@ export function DashboardShell({
           </nav>
         </div>
         <div className="flex flex-col gap-3.5">
-          <button type="button" onClick={handleSignOut} className={navItemClass(false)}>
-            <LogOut className="h-[17px] w-[17px]" />
-            <span>Sign out</span>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-70")}
+          >
+            {signingOut ? <Spinner className="h-[17px] w-[17px]" /> : <LogOut className="h-[17px] w-[17px]" />}
+            <span>{signingOut ? "Signing out…" : "Sign out"}</span>
           </button>
           <div className="flex items-center gap-2.5 rounded-[9px] bg-black/[0.16] p-3">
             <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-gignite-accent font-heading text-[12px] font-bold text-black">
@@ -135,9 +143,11 @@ export function DashboardShell({
           <button
             type="button"
             onClick={handleSignOut}
-            className="font-body text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent"
+            disabled={signingOut}
+            className="flex items-center gap-1.5 font-body text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent disabled:cursor-not-allowed disabled:opacity-70"
           >
-            Sign out
+            {signingOut && <Spinner className="h-3 w-3" />}
+            {signingOut ? "Signing out…" : "Sign out"}
           </button>
         </header>
 

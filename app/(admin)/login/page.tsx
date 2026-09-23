@@ -11,17 +11,22 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [opening, setOpening] = useState(false);
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     setLoading(true);
     const result = await signIn({ email, password });
-    setLoading(false);
 
     if (!result.success) {
+      setLoading(false);
       toast.error(result.error);
       return;
     }
+    // Stays in the loading state until the dashboard replaces this page —
+    // resetting here left an idle "Sign in" button on screen while the
+    // dashboard loaded, which looked like nothing had happened.
+    setOpening(true);
     router.push("/dashboard");
     router.refresh();
   }
@@ -60,7 +65,7 @@ export default function AdminLoginPage() {
                 />
               </Field>
               <PrimaryButton type="submit" disabled={loading} loading={loading}>
-                {loading ? "Signing in…" : "Sign in"}
+                {opening ? "Opening dashboard…" : loading ? "Signing in…" : "Sign in"}
               </PrimaryButton>
             </form>
           </FormCard>

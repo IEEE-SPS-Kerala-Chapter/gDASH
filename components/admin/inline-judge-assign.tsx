@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AdminAssignment, AdminJudge } from "@/app/actions/admin";
 import { assignJudge, unassignJudge } from "@/app/actions/admin";
-import { Badge, ChipButton } from "@/components/admin/ui";
+import { Badge, ChipButton, Spinner } from "@/components/admin/ui";
 
 /**
  * Assign/unassign judges directly from a list or card row, without
@@ -48,6 +48,7 @@ export function InlineJudgeAssign({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState<AdminAssignment | null>(null);
+  const [removing, setRemoving] = useState(false);
   const assignedIds = new Set(assignments.map((a) => a.judge_id));
   const scoredIds = new Set(scoredJudgeIds);
   const available = judges.filter((j) => !assignedIds.has(j.id));
@@ -69,10 +70,13 @@ export function InlineJudgeAssign({
   async function handleConfirmedUnassign() {
     if (!confirming) return;
     const assignmentId = confirming.id;
-    setConfirming(null);
-    setBusy(true);
+    // The confirm panel stays open, showing "Removing…", until the server
+    // answers — closing it first left the judge's chip sitting there with
+    // no sign anything was happening.
+    setRemoving(true);
     const result = await unassignJudge(assignmentId);
-    setBusy(false);
+    setRemoving(false);
+    setConfirming(null);
     if (!result.success) {
       toast.error(result.error);
       return;
@@ -109,7 +113,7 @@ export function InlineJudgeAssign({
             className="cursor-pointer rounded-full border-[1.5px] border-dashed border-gignite-border-strong bg-transparent px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-gignite-blue outline-none transition-colors hover:border-gignite-blue disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option value="" disabled>
-              + Assign judge
+              {busy ? "Assigning…" : "+ Assign judge"}
             </option>
             {available.map((j) => (
               <option key={j.id} value={j.id}>
@@ -140,14 +144,16 @@ export function InlineJudgeAssign({
             <button
               type="button"
               onClick={handleConfirmedUnassign}
-              disabled={busy}
-              className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F]"
+              disabled={removing}
+              className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-80"
             >
-              Unassign
+              {removing && <Spinner className="h-3.5 w-3.5" />}
+              {removing ? "Removing…" : "Unassign"}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(null)}
+              disabled={removing}
               className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
             >
               Keep

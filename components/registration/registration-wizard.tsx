@@ -133,6 +133,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [openingStatus, setOpeningStatus] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   // True until the saved draft (server, then local) has been checked. The
@@ -250,12 +251,15 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       honeypot: honeypotRef.current?.value,
       turnstileToken,
     });
-    setSubmitting(false);
-
     if (!result.success) {
+      setSubmitting(false);
       toast.error(result.error);
       return;
     }
+    // Deliberately stays "submitting" from here until the status page
+    // replaces this one — resetting it earlier put the idle "Submit
+    // registration" button back on screen during sign-out and navigation.
+    setOpeningStatus(true);
     clearDraft();
     // The status page is looked up entirely by the access token in its own
     // URL — it needs no session at all — so there's no reason to leave the
@@ -427,7 +431,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
                   disabled={submitting || (isLastStep && !readyToSubmit)}
                   loading={submitting}
                 >
-                  {submitting ? "Submitting…" : current.cta}
+                  {openingStatus ? "Opening your status page…" : submitting ? "Submitting…" : current.cta}
                 </PrimaryButton>
               </div>
               {step > 0 && (

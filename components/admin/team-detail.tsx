@@ -87,8 +87,8 @@ export function TeamDetail({
   async function handleDelete() {
     setDeleting(true);
     const result = await deleteRegistration(team.id);
-    setDeleting(false);
     if (!result.success) {
+      setDeleting(false);
       toast.error(result.error);
       return;
     }

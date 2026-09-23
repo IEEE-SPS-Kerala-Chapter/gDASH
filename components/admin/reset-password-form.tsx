@@ -17,9 +17,9 @@ export function ResetPasswordForm() {
     ev.preventDefault();
     setSubmitting(true);
     const result = await resetOwnPassword({ newPassword, confirmPassword });
-    setSubmitting(false);
 
     if (!result.success) {
+      setSubmitting(false);
       toast.error(result.error);
       return;
     }
