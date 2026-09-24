@@ -67,7 +67,7 @@ export async function submitRegistration(
     // authenticated session — never from whatever the client posted, since
     // a tampered payload could otherwise claim any email as "signed in."
     // Works the same regardless of which provider produced the session
-    // (Google OAuth or the email magic link). While disabled, this whole
+    // (Google OAuth or the emailed sign-in code). While disabled, this whole
     // check is skipped and the submitted email is trusted directly, same
     // as before verification existed.
     let leaderEmail: string;

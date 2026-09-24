@@ -8,7 +8,8 @@ import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/e
 import { Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RESEND_COOLDOWN_SECONDS = 30;
+// Supabase allows one new code per email address about every 60 seconds.
+const RESEND_COOLDOWN_SECONDS = 60;
 
 /**
  * Shared "your session can't be used here — sign out" screen. Two callers:
@@ -66,7 +67,7 @@ function SessionBlocked({
  * project, same cookies) — so a staff member signed in at /login who then
  * visits /register would otherwise sail straight past the leader-sign-in
  * gate on their own staff session, registering a team under their admin
- * identity without ever verifying via Google or a magic link. This blocks
+ * identity without ever verifying via Google or an email code. This blocks
  * that instead of silently treating a staff session as a verified leader.
  */
 export function StaffSessionBlocked({ email }: { email: string }) {
@@ -76,7 +77,7 @@ export function StaffSessionBlocked({ email }: { email: string }) {
       message={
         <>
           <span className="font-semibold">{email}</span> is a staff account, not a team leader. Sign
-          out here, then verify with Google or a sign-in link as the team leader to register.
+          out here, then verify with Google or an email code as the team leader to register.
         </>
       }
     />
@@ -84,7 +85,7 @@ export function StaffSessionBlocked({ email }: { email: string }) {
 }
 
 /**
- * A magic-link sign-in can't be blocked before it's sent (nothing to check
+ * An email-code sign-in can't be blocked before it's sent (nothing to check
  * against yet), and a Google sign-in can't be checked before the redirect
  * at all — the email is only known once the session lands back here. This
  * is that check for both paths: if the now-verified email already belongs
@@ -146,7 +147,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
         intro={
           <>
             <p className="m-0">
-              The team leader verifies their email with Google or a sign-in link to confirm it&apos;s
+              The team leader verifies their email with Google or a code we email them, to confirm it&apos;s
               really theirs. Everyone else on the team is added by the leader — no account needed for
               them.
             </p>
@@ -200,12 +201,34 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
 }
 
 const ALREADY_REGISTERED_MESSAGE = "This email is already registered with another team.";
+const RATE_LIMITED_MESSAGE = "Too many attempts. Please wait a minute and try again.";
+const CODE_LENGTH = 6;
 
+/** Supabase Auth's "slow down" errors: per-address resend interval, hourly email cap, per-IP request caps. */
+function isRateLimited(err: { status?: number; code?: string }) {
+  return (
+    err.status === 429 ||
+    err.code === "over_email_send_rate_limit" ||
+    err.code === "over_request_rate_limit"
+  );
+}
+
+/**
+ * Email sign-in for leaders, in two steps: enter the email, then the
+ * 6-digit code Supabase emails to it. A code (rather than a link) works on
+ * any device and inside phone mail apps, and can't be used up by a mail
+ * scanner pre-clicking links. On success the session cookie is set here and
+ * /register re-renders server-side with it (wizard, or the already-registered
+ * / staff screens), exactly as after Google sign-in.
+ */
 function EmailSignIn({ onBack }: { onBack: () => void }) {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   // Guards a slow response from overwriting a newer one — only the result
   // for the latest-checked value is ever applied.
@@ -237,7 +260,31 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
     }, 1000);
   }
 
-  async function handleSubmit(e: FormEvent) {
+  /** Asks Supabase to email a code to `address`. Returns whether it went out. */
+  async function sendCode(address: string): Promise<boolean> {
+    const supabase = createClient();
+    const { error: sendError } = await supabase.auth.signInWithOtp({
+      email: address,
+      options: {
+        shouldCreateUser: true,
+        // Only used if the email template also includes the sign-in link.
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/register`,
+        // Tags the new auth.users row so handle_new_user() can tell a
+        // participant leader apart from staff signing in the same
+        // provider="email" way (password) — see
+        // 20260922020000_fix_staff_trigger_role_intent.sql.
+        data: { role_intent: "leader" },
+      },
+    });
+    if (sendError) {
+      setError(isRateLimited(sendError) ? RATE_LIMITED_MESSAGE : "Couldn't send the code. Please try again.");
+      return false;
+    }
+    startCooldown();
+    return true;
+  }
+
+  async function handleEmailSubmit(e: FormEvent) {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     const problem = !trimmed
@@ -262,61 +309,101 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
       setLoading(false);
       return;
     }
-    const supabase = createClient();
-    const { error: sendError } = await supabase.auth.signInWithOtp({
-      email: trimmed,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/register`,
-        // Tags the new auth.users row so handle_new_user() can tell a
-        // participant leader apart from staff signing in the same
-        // provider="email" way (password) — see
-        // 20260922020000_fix_staff_trigger_role_intent.sql.
-        data: { role_intent: "leader" },
-      },
-    });
+    const sent = await sendCode(trimmed);
     setLoading(false);
-    if (sendError) {
-      setError("Couldn't send the sign-in link. Please try again.");
+    if (sent) {
+      setCode("");
+      setSentTo(trimmed);
+    }
+  }
+
+  async function handleResend() {
+    if (!sentTo) return;
+    setError(null);
+    setLoading(true);
+    await sendCode(sentTo);
+    setLoading(false);
+    setCode("");
+  }
+
+  async function handleVerify(e: FormEvent) {
+    e.preventDefault();
+    if (!sentTo) return;
+    if (code.length !== CODE_LENGTH) {
+      setError(`Enter the ${CODE_LENGTH}-digit code from the email`);
       return;
     }
-    setSentTo(trimmed);
-    startCooldown();
+    setError(null);
+    setVerifying(true);
+    const supabase = createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({ email: sentTo, token: code, type: "email" });
+    if (verifyError) {
+      setVerifying(false);
+      setError(
+        isRateLimited(verifyError)
+          ? RATE_LIMITED_MESSAGE
+          : verifyError.status && verifyError.status < 500
+            ? "That code is incorrect or has expired. Check the latest email, or send a new code."
+            : "Couldn't verify the code. Please try again.",
+      );
+      return;
+    }
+    // Signed in: /register re-renders on the server with the new session.
+    // Stays in the verifying state until that replaces this screen.
+    router.refresh();
   }
 
   if (sentTo) {
     return (
-      <div className="flex flex-col gap-3 rounded-2xl border border-ignite-edge/[0.08] bg-ignite-bg p-4 text-left">
-        <p className="text-[14px] leading-[1.5] text-ignite-ink-soft">
-          Check <span className="font-semibold">{sentTo}</span> for a sign-in link. It&apos;ll bring
-          you straight back here, signed in.
+      <form onSubmit={handleVerify} noValidate className="flex flex-col gap-3 text-left">
+        <p className="m-0 text-[14px] leading-[1.5] text-ignite-ink-soft">
+          We sent a {CODE_LENGTH}-digit code to <span className="font-semibold">{sentTo}</span>. It
+          expires in 1 hour. Check your spam folder if it hasn&apos;t arrived.
         </p>
+        <Field label="Sign-in code" error={error ?? undefined}>
+          <TextInput
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={CODE_LENGTH}
+            placeholder="123456"
+            aria-label={`${CODE_LENGTH}-digit sign-in code`}
+            className="text-center text-[22px] font-bold tracking-[0.4em]"
+            autoFocus
+          />
+        </Field>
+        <PrimaryButton type="submit" disabled={verifying} loading={verifying}>
+          {verifying ? "Verifying…" : "Verify and continue"}
+        </PrimaryButton>
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => {
               setSentTo(null);
+              setCode("");
               setError(null);
             }}
-            className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
+            disabled={verifying}
+            className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta disabled:cursor-not-allowed disabled:opacity-60"
           >
             Use a different email
           </button>
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={cooldown > 0 || loading}
+            onClick={handleResend}
+            disabled={cooldown > 0 || loading || verifying}
             className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta disabled:cursor-not-allowed disabled:text-ignite-muted"
           >
-            {cooldown > 0 ? `Resend in ${cooldown}s` : loading ? "Sending…" : "Resend link"}
+            {cooldown > 0 ? `Resend in ${cooldown}s` : loading ? "Sending…" : "Resend code"}
           </button>
         </div>
-      </div>
+      </form>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 text-left">
+    <form onSubmit={handleEmailSubmit} noValidate className="flex flex-col gap-3 text-left">
       <Field label="Email" error={error ?? undefined}>
         <TextInput
           type="email"
@@ -328,7 +415,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
         />
       </Field>
       <PrimaryButton type="submit" disabled={loading} loading={loading}>
-        {loading ? "Sending…" : "Send sign-in link"}
+        {loading ? "Sending…" : "Email me a code"}
       </PrimaryButton>
       <button
         type="button"

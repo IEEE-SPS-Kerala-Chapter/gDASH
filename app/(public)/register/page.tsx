@@ -6,6 +6,7 @@ import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { getRegistrationWindow } from "@/app/actions/registration-window";
 import { isRegistrationCurrentlyOpen } from "@/lib/registration-window";
 import { checkContactAvailability } from "@/app/actions/registration";
+import { RegisterBackGuard } from "@/components/registration/submission-back-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,18 @@ function ClosedScreen({ message }: { message?: string | null }) {
   );
 }
 
-export default async function RegisterPage({
+// Every screen /register can show (form, sign-in, blocked, closed) gets the
+// Back-button guard: a tab that just submitted goes back to its status page.
+export default async function RegisterPage(props: { searchParams: { auth_error?: string } }) {
+  return (
+    <>
+      <RegisterBackGuard />
+      {await RegisterScreen(props)}
+    </>
+  );
+}
+
+async function RegisterScreen({
   searchParams,
 }: {
   searchParams: { auth_error?: string };
@@ -69,7 +81,7 @@ export default async function RegisterPage({
       return <StaffSessionBlocked email={user.email} />;
     }
 
-    // The email sign-in form checks this before a magic link even goes out
+    // The email sign-in form checks this before a sign-in code even goes out
     // (see components/registration/leader-sign-in.tsx), but Google can't be
     // checked until the redirect lands back here with a verified email — a
     // leader whose email already belongs to a submitted team shouldn't be

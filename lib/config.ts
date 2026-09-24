@@ -1,11 +1,11 @@
 // Leader email verification, gated before /register. The leader proves
-// they own their email either via Google OAuth or a Supabase email magic
-// link — both land the same authenticated session, so everything
+// they own their email either via Google OAuth or a 6-digit code Supabase
+// emails them — both land the same authenticated session, so everything
 // downstream (registration.ts, step-team.tsx) only cares that a session
 // exists, not which provider produced it. See googleOauth.md for the
 // Google Cloud Console + Supabase dashboard setup Google sign-in depends
-// on; the email magic link needs no extra setup beyond Supabase's default
-// Email provider, already on.
+// on, and smtpSetup.md for sending the email codes through the Workspace
+// Gmail mailbox and the email templates that show the code.
 export const LEADER_VERIFICATION_ENABLED = true;
 
 // Shared across step-declarations.tsx (inline next to the rules checkbox)

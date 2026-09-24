@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark only" />
+  <meta name="supported-color-schemes" content="dark only" />
+  <title>Your gIGNITE sign-in code</title>
+  <!-- Sora + Urbanist load in Apple Mail / iOS; Gmail and Outlook fall back to Arial. -->
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=Urbanist:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body style="margin:0; padding:0; background-color:#0D0B18; -webkit-text-size-adjust:100%;">
+  <!-- Inbox preview text (hidden) -->
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:#0D0B18;">
+    Your gIGNITE 2026 sign-in code is {{ .Token }}. It expires in 1 hour.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0D0B18; background-image:radial-gradient(70% 55% at 18% 20%, rgba(49,130,252,0.18), transparent 65%), radial-gradient(55% 65% at 82% 30%, rgba(199,86,217,0.12), transparent 65%);">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <!-- Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:560px; background-color:#16132B; border-radius:20px; overflow:hidden; border:1px solid #2A2547;">
+
+          <!-- Brand gradient strip: orange → magenta → blue (solid magenta where gradients aren't supported) -->
+          <tr>
+            <td height="6" style="height:6px; line-height:6px; font-size:0; background-color:#C756D9; background-image:linear-gradient(90deg,#F47920 0%,#C756D9 50%,#3182FC 100%);">&nbsp;</td>
+          </tr>
+
+          <!-- gIGNITE logo -->
+          <tr>
+            <td align="center" style="padding:32px 32px 8px;">
+              <!-- White plate: the logo's navy lettering disappears on the dark card -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#FFFFFF; border-radius:16px; padding:12px 18px;">
+                    <img src="https://gdash-one.vercel.app/gignite-logo.png" width="200" alt="gIGNITE 2026"
+                         style="display:block; width:200px; max-width:100%; height:auto; border:0;" />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Eyebrow -->
+          <tr>
+            <td align="center" style="padding:16px 32px 0; font-family:'Urbanist',Arial,Helvetica,sans-serif; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#F3F0FA;">
+              <span style="color:#F47920;">&#9632;</span>&nbsp; Sign-in code
+            </td>
+          </tr>
+
+          <!-- Heading -->
+          <tr>
+            <td align="center" style="padding:10px 32px 0; font-family:'Sora',Arial,Helvetica,sans-serif; font-size:26px; line-height:32px; font-weight:700; color:#F3F0FA;">
+              Verify your email
+            </td>
+          </tr>
+
+          <!-- Intro -->
+          <tr>
+            <td align="center" style="padding:12px 40px 0; font-family:'Urbanist',Arial,Helvetica,sans-serif; font-size:16px; line-height:24px; color:#D2CDE6;">
+              Enter this code on the gIGNITE 2026 registration page to confirm
+              <strong style="color:#F3F0FA;">{{ .Email }}</strong> is yours.
+            </td>
+          </tr>
+
+          <!-- Code -->
+          <tr>
+            <td align="center" style="padding:24px 32px 8px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="background-color:#231E42; border:1px solid #D8D800; border-radius:16px; padding:18px 28px;
+                             font-family:'Sora','Courier New',monospace; font-size:36px; line-height:40px; font-weight:700; letter-spacing:10px; color:#D8D800;">
+                    {{ .Token }}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Expiry -->
+          <tr>
+            <td align="center" style="padding:8px 40px 0; font-family:'Urbanist',Arial,Helvetica,sans-serif; font-size:14px; line-height:21px; color:#A39DBA;">
+              This code expires in <strong style="color:#F3F0FA;">1 hour</strong> and can be used once.
+              Requesting a new code cancels this one.
+            </td>
+          </tr>
+
+          <!-- Link fallback (remove this row once sign-in by code is live, if you want code-only) -->
+          <tr>
+            <td align="center" style="padding:20px 40px 0; font-family:'Urbanist',Arial,Helvetica,sans-serif; font-size:13px; line-height:20px; color:#A39DBA;">
+              Prefer a link? <a href="{{ .ConfirmationURL }}" style="color:#D8D800; font-weight:700; text-decoration:underline;">Sign in with one click</a>
+              <br />(open it in the same browser you're registering in)
+            </td>
+          </tr>
+
+          <!-- Safety note -->
+          <tr>
+            <td style="padding:24px 32px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#0D0B18; border:1px solid #2A2547; border-radius:12px; padding:14px 16px; font-family:'Urbanist',Arial,Helvetica,sans-serif; font-size:13px; line-height:20px; color:#A39DBA;">
+                    Didn't ask for this? You can safely ignore this email. Nobody can sign in without the code.
+                    <strong style="color:#F3F0FA;">Never share this code</strong> with anyone, including organizers.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:28px 32px 0;">
+              <div style="height:1px; line-height:1px; font-size:0; background-color:#2A2547;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Partner logos -->
+          <tr>
+            <td align="center" style="padding:22px 24px 6px;">
+              <!-- White strip: the partner logos are full-colour on white -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color:#FFFFFF; border-radius:14px;">
+                <tr>
+                  <td align="center" valign="middle" style="padding:12px 12px 12px 18px;">
+                    <img src="https://gdash-one.vercel.app/gadgeon-logo.png" width="108" alt="Gadgeon Smart Systems"
+                         style="display:block; width:108px; height:auto; border:0;" />
+                  </td>
+                  <td align="center" valign="middle" style="padding:12px;">
+                    <img src="https://gdash-one.vercel.app/fisat-sb-logo.png" width="68" alt="IEEE FISAT Student Branch"
+                         style="display:block; width:68px; height:auto; border:0;" />
+                  </td>
+                  <td align="center" valign="middle" style="padding:12px 18px 12px 12px;">
+                    <img src="https://gdash-one.vercel.app/ieee_sps_kc_logo.png" width="108" alt="IEEE Signal Processing Society Kerala Chapter"
+                         style="display:block; width:108px; height:auto; border:0;" />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:10px 32px 32px; font-family:'Urbanist',Arial,Helvetica,sans-serif; font-size:12px; line-height:18px; color:#6E6889;">
+              gIGNITE 2026 &middot; Organised by Gadgeon Smart Systems &middot; Execution partner IEEE<br />
+              This is an automated message. Please don't reply to this email.
+            </td>
+          </tr>
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

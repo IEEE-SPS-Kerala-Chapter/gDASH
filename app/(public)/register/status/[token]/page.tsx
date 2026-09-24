@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { BrandLogo, Eyebrow, LogoHeaderBar } from "@/components/registration/ui";
 import { IdCard } from "@/components/registration/id-card";
 import { StatusSignOutBar } from "@/components/registration/status-sign-out-bar";
+import { StatusBackGuard } from "@/components/registration/submission-back-guards";
 import { createClient } from "@/lib/supabase/server";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -53,6 +54,7 @@ export default async function StatusPage({ params }: { params: { token: string }
 
   return (
     <>
+      <StatusBackGuard />
       <LogoHeaderBar onHero />
       <main className="min-h-[calc(100vh-88px)] bg-ignite-bg font-ui text-ignite-ink-soft">
         <section className="hero-themed px-4 pb-12 pt-8 text-ignite-ink lg:px-16 lg:pb-16 lg:pt-12">

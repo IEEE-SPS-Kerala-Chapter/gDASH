@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { submitRegistration, saveRegistrationDraft, loadRegistrationDraft } from "@/app/actions/registration";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/registration-draft";
+import { markSubmitted, readSubmitted } from "@/lib/submitted-registration";
 import { createClient } from "@/lib/supabase/client";
 import { RULES_URL } from "@/lib/config";
 import {
@@ -29,20 +30,6 @@ import { StepIdea } from "./step-idea";
 import { StepReview } from "./step-review";
 import { StepDeclarations } from "./step-declarations";
 import { TurnstileWidget } from "./turnstile-widget";
-
-// Tab-scoped record of the last successful submission, so a stale copy of
-// this form (e.g. restored by the browser's Back button) sends the leader
-// to their status page instead of showing an empty form again.
-const SUBMITTED_KEY = "gignite-submitted";
-
-function readSubmitted(): { email: string; statusUrl: string } | null {
-  try {
-    const raw = sessionStorage.getItem(SUBMITTED_KEY);
-    return raw ? (JSON.parse(raw) as { email: string; statusUrl: string }) : null;
-  } catch {
-    return null;
-  }
-}
 
 const STEPS = [
   {
@@ -284,11 +271,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     setOpeningStatus(true);
     clearDraft();
     const statusUrl = `/register/status/${result.accessToken}`;
-    try {
-      sessionStorage.setItem(SUBMITTED_KEY, JSON.stringify({ email: leaderEmail.toLowerCase(), statusUrl }));
-    } catch {
-      // Private browsing etc. — the replace() below still keeps Back off this form.
-    }
+    markSubmitted({ email: leaderEmail.toLowerCase(), statusUrl });
     // The status page is looked up entirely by the access token in its own
     // URL — it needs no session at all — so there's no reason to leave the
     // leader signed in past this point. Matters most on a shared/public
