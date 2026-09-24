@@ -362,6 +362,10 @@ export function GradientText({ children }: { children: ReactNode }) {
   return <span className="text-brand-gradient">{children}</span>;
 }
 
+/** The white (or dark-theme surface) card HeroShell puts its content in. */
+export const HERO_CARD_CLASS =
+  "rounded-[24px] bg-ignite-surface p-7 text-ignite-ink-soft shadow-[0_24px_60px_rgba(44,29,68,0.12)] ring-1 ring-ignite-edge/10 dark:shadow-[0_24px_60px_rgba(0,0,0,0.35)] lg:p-8";
+
 /**
  * Hero layout matching the g-IGNITE page on Gadgeon.ai: a backdrop with
  * blue/magenta glows (navy in the dark theme, light in the light theme), a small status label, a large headline, and the
@@ -373,11 +377,14 @@ export function HeroShell({
   label,
   title,
   intro,
+  bare = false,
   children,
 }: {
   label: string;
   title: ReactNode;
   intro?: ReactNode;
+  /** Render `children` without the card around them (they bring their own, e.g. a FlipCard). */
+  bare?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -398,9 +405,11 @@ export function HeroShell({
           </h1>
           {intro && <div className="flex flex-col gap-3 text-[16px] leading-[1.7] text-ignite-ink-soft">{intro}</div>}
         </div>
-        <div className="w-full max-w-[420px] self-center rounded-[24px] bg-ignite-surface p-7 text-ignite-ink-soft shadow-[0_24px_60px_rgba(44,29,68,0.12)] ring-1 ring-ignite-edge/10 dark:shadow-[0_24px_60px_rgba(0,0,0,0.35)] lg:p-8">
-          {children}
-        </div>
+        {bare ? (
+          <div className="w-full max-w-[420px] self-center">{children}</div>
+        ) : (
+          <div className={cn("w-full max-w-[420px] self-center", HERO_CARD_CLASS)}>{children}</div>
+        )}
       </div>
     </main>
   );

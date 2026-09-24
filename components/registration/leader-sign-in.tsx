@@ -2,10 +2,12 @@
 
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
 import { Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
+import { FlipCard } from "./flip-card";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Supabase allows one new code per email address about every 60 seconds.
@@ -109,7 +111,11 @@ export function AlreadyRegisteredBlocked({ email, statusUrl }: { email: string; 
 }
 
 export function LeaderSignIn({ authError }: { authError?: boolean }) {
-  const [mode, setMode] = useState<"choose" | "email">("choose");
+  // Front of the card: Google or email. Back: the email → code steps.
+  const [showEmail, setShowEmail] = useState(false);
+  // The email steps are only mounted once opened, then kept, so flipping
+  // back to the options and returning resumes where the leader left off.
+  const [emailOpened, setEmailOpened] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState(false);
 
@@ -156,45 +162,66 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
             </p>
           </>
         }
+        bare
       >
+        <FlipCard
+          flipped={showEmail}
+          front={
+            <div className="flex w-full flex-col gap-3">
+              {googleError && (
+                <p className="mb-1 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
+                  Couldn&apos;t open Google sign-in. Check your connection and try again, or continue with email.
+                </p>
+              )}
 
-        {googleError && (
-          <p className="mb-4 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
-            Couldn&apos;t open Google sign-in. Check your connection and try again, or continue with email.
-          </p>
-        )}
+              {authError && (
+                <p className="mb-1 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
+                  Sign-in didn&apos;t go through. Please try again.
+                </p>
+              )}
 
-        {authError && (
-          <p className="mb-4 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
-            Sign-in didn&apos;t go through. Please try again.
-          </p>
-        )}
+              <PrimaryButton
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+                loading={googleLoading}
+              >
+                {googleLoading ? "Redirecting…" : "Continue with Google"}
+              </PrimaryButton>
 
-        <div className="flex w-full flex-col gap-3">
-          <PrimaryButton
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={googleLoading}
-            loading={googleLoading}
-          >
-            {googleLoading ? "Redirecting…" : "Continue with Google"}
-          </PrimaryButton>
-
-          {mode === "choose" && (
-            <>
               <div className="flex items-center gap-3 font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ignite-faint">
                 <span className="h-px flex-1 bg-ignite-edge/[0.07]" />
                 or
                 <span className="h-px flex-1 bg-ignite-edge/[0.07]" />
               </div>
-              <SecondaryButton type="button" onClick={() => setMode("email")}>
+              <SecondaryButton
+                type="button"
+                data-flip-focus
+                onClick={() => {
+                  setEmailOpened(true);
+                  setShowEmail(true);
+                }}
+              >
                 Continue with email
               </SecondaryButton>
-            </>
-          )}
-
-          {mode === "email" && <EmailSignIn onBack={() => setMode("choose")} />}
-        </div>
+            </div>
+          }
+          back={
+            <div className="flex w-full flex-col gap-4">
+              <button
+                type="button"
+                onClick={() => setShowEmail(false)}
+                className="w-fit text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
+              >
+                ← Other sign-in options
+              </button>
+              <h2 className="m-0 font-display text-[20px] font-bold tracking-[-0.01em] text-ignite-ink">
+                Sign in with email
+              </h2>
+              {emailOpened && <EmailSignIn />}
+            </div>
+          }
+        />
       </HeroShell>
     </>
   );
@@ -225,7 +252,7 @@ function isRateLimited(err: { status?: number; code?: string }) {
  * /register re-renders server-side with it (wizard, or the already-registered
  * / staff screens), exactly as after Google sign-in.
  */
-function EmailSignIn({ onBack }: { onBack: () => void }) {
+function EmailSignIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -234,6 +261,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
   const [code, setCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [returnedFromCode, setReturnedFromCode] = useState(false);
   // Guards a slow response from overwriting a newer one — only the result
   // for the latest-checked value is ever applied.
   const latestChecked = useRef("");
@@ -359,7 +387,11 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
 
   if (sentTo) {
     return (
-      <form onSubmit={handleVerify} noValidate className="flex flex-col gap-3 text-left">
+      <form
+        onSubmit={handleVerify}
+        noValidate
+        className="flex flex-col gap-3 text-left duration-300 animate-in fade-in slide-in-from-right-6 motion-reduce:animate-none"
+      >
         <p className="m-0 text-[14px] leading-[1.5] text-ignite-ink-soft">
           We sent a sign-in code to <span className="font-semibold">{sentTo}</span>. It
           expires in 1 hour. Check your spam folder if it hasn&apos;t arrived.
@@ -387,6 +419,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
               setSentTo(null);
               setCode("");
               setError(null);
+              setReturnedFromCode(true);
             }}
             disabled={verifying}
             className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta disabled:cursor-not-allowed disabled:opacity-60"
@@ -407,7 +440,15 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <form onSubmit={handleEmailSubmit} noValidate className="flex flex-col gap-3 text-left">
+    <form
+      onSubmit={handleEmailSubmit}
+      noValidate
+      className={cn(
+        "flex flex-col gap-3 text-left",
+        // Slides in from the left only when coming back from the code step.
+        returnedFromCode && "duration-300 animate-in fade-in slide-in-from-left-6 motion-reduce:animate-none",
+      )}
+    >
       <Field label="Email" error={error ?? undefined}>
         <TextInput
           type="email"
@@ -415,19 +456,12 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
           onChange={(e) => setEmail(e.target.value)}
           onBlur={(e) => void handleEmailBlur(e.target.value)}
           placeholder="you@college.ac.in"
-          autoFocus
+          data-flip-focus
         />
       </Field>
       <PrimaryButton type="submit" disabled={loading} loading={loading}>
         {loading ? "Sending…" : "Email me a code"}
       </PrimaryButton>
-      <button
-        type="button"
-        onClick={onBack}
-        className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
-      >
-        Back
-      </button>
     </form>
   );
 }
