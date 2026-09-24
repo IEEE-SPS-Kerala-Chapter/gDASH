@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
-import { memberDisplayCode } from "@/lib/member-code";
 import { BrandLogo, Spinner } from "./ui";
 
 export type IdCardMember = {
   id: string;
+  member_code: string;
   full_name: string;
   is_leader: boolean;
   college: string;
@@ -46,7 +46,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
       const png = await toPng(cardRef.current, { pixelRatio: 2 });
       const a = document.createElement("a");
       a.href = png;
-      a.download = `gignite-id-${memberDisplayCode(member.id)}.png`;
+      a.download = `gignite-id-${member.member_code}.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -64,7 +64,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
         <div className="flex items-center justify-between gap-3">
           <BrandLogo className="h-8" />
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-blue">
-            {memberDisplayCode(member.id)}
+            {member.member_code}
           </span>
         </div>
 

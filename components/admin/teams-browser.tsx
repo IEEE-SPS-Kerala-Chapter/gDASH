@@ -72,7 +72,14 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const rows = teams.filter((t) => {
-      if (q && !t.name.toLowerCase().includes(q) && !t.ai_theme.toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !t.name.toLowerCase().includes(q) &&
+        !t.ai_theme.toLowerCase().includes(q) &&
+        !t.entry_code.toLowerCase().includes(q) &&
+        !t.members.some((m) => m.member_code.toLowerCase().includes(q))
+      )
+        return false;
       if (statusFilter && (t.registration?.status ?? "submitted") !== statusFilter) return false;
       if (themeFilter && t.ai_theme !== themeFilter) return false;
       if (districtFilter && t.district !== districtFilter) return false;
@@ -165,7 +172,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
     <div className="flex flex-col gap-6">
       <div className="w-full max-w-xs">
         <TextInput
-          placeholder="Search by team name or theme…"
+          placeholder="Search by team, theme, or ID…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="py-[9px] text-[14px]"

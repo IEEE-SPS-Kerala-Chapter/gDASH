@@ -233,6 +233,7 @@ type StatusResult =
       team: { name: string; entry_code: string; ai_theme: string; district: string; status: string; created_at: string };
       members: Array<{
         id: string;
+        member_code: string;
         full_name: string;
         is_leader: boolean;
         college: string;

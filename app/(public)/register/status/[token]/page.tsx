@@ -88,6 +88,7 @@ export default async function StatusPage({ params }: { params: { token: string }
                 <div key={i} className="flex items-center justify-between gap-3 text-sm">
                   <span className="font-medium text-black">
                     {m.full_name} {m.is_leader && <span className="text-gignite-blue">· Leader</span>}
+                    <span className="ml-2 font-mono text-[11px] text-gignite-blue">{m.member_code}</span>
                   </span>
                   <span className="text-gignite-text/70">{m.college}</span>
                 </div>

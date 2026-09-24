@@ -8,6 +8,8 @@ import { computeWeightedScore, isCompleteStage1Scores, type PartialStage1Scores 
 
 export type AdminMember = {
   id: string;
+  member_no: number;
+  member_code: string;
   full_name: string;
   email: string;
   phone: string;
@@ -109,7 +111,7 @@ export type AdminTeam = {
 };
 
 export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, created_at,
-     team_members ( id, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
+     team_members ( id, member_no, member_code, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
      registrations (
        id, problem_statement, proposed_solution, ai_approach, expected_impact,
        supporting_link, deck_path, status, created_at,
@@ -217,7 +219,7 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
     district: t.district,
     status: t.status,
     created_at: t.created_at,
-    members: t.team_members ?? [],
+    members: [...(t.team_members ?? [])].sort((a, b) => a.member_no - b.member_no),
     registration,
   };
 }

@@ -13,6 +13,12 @@ every future phase its lookup key. Building the phases below later needs no
 schema migration on the "identify this card" side — only new read/write
 surfaces on top of the id that already round-trips today.
 
+Each member also has a human-readable `team_members.member_code`
+(`<team entry_code>-<member_no>`, e.g. `GIG-7K3QPA-1`, leader always `-1`;
+see `supabase/migrations/20260924010000_member_codes.sql`). It is unique,
+stored, and can't be changed once issued, so it's the fallback key for manual
+check-in or food-token claims when a QR won't scan: a volunteer can type it in.
+
 ---
 
 ## 1. Results / shortlist reveal

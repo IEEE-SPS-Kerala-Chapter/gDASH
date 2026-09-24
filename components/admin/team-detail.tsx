@@ -384,6 +384,7 @@ function MembersPanel({ members, showContactDetails }: { members: AdminMember[];
                 <span className="text-[15px] font-semibold text-black">{m.full_name}</span>
                 {m.is_leader && <Badge className="text-[9px]">Leader</Badge>}
               </div>
+              <span className="font-mono text-[12px] text-gignite-blue">{m.member_code}</span>
               {showContactDetails ? (
                 <>
                   <span className="truncate text-[13px] text-gignite-text">{m.email}</span>
