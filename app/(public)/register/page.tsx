@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 function ClosedScreen({ message }: { message?: string | null }) {
   return (
     <>
-      <LogoHeaderBar />
+      <LogoHeaderBar onHero />
       <HeroShell
         label="g-IGNITE 2026"
         title={
@@ -21,7 +21,6 @@ function ClosedScreen({ message }: { message?: string | null }) {
           </>
         }
       >
-        <BrandLogo className="mx-auto mb-5 h-14" />
         <p className="m-0 text-center text-[15px] leading-[1.6] text-ignite-muted">
           {message || "Registration for gIGNITE 2026 is no longer open. Contact the organizers if you think this is a mistake."}
         </p>

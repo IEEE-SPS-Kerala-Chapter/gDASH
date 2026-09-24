@@ -47,8 +47,8 @@ export function RegistrationWindowPanel({ initial }: { initial: RegistrationWind
 
   return (
     <FormCard>
-      <h2 className="m-0 font-heading text-[19px] font-bold text-black">Registration window</h2>
-      <p className="m-0 text-[13px] text-gignite-text/60">
+      <h2 className="m-0 font-display text-[19px] font-bold text-ignite-ink">Registration window</h2>
+      <p className="m-0 text-[13px] text-ignite-muted">
         Controls whether new teams can submit at /register. A scheduled closing date takes effect on
         its own — no need to flip the toggle at the exact time.
       </p>

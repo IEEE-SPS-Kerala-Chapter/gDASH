@@ -1,23 +1,15 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* shadcn's semantic tokens, mapped to the gignite brand palette (see
-     tailwind.config.ts `gignite.*`) so Button/Input/Table/Badge/Select/
-     Sheet/Dialog — used by the admin dashboard and staff login, which
-     otherwise had no relation to the registration flow's look — read as
-     the same product instead of a bolted-on generic admin theme. Both
-     surfaces share one fixed light palette by design (no separate dark
-     theme), so .dark intentionally mirrors :root. */
+  /* Light theme in :root, dark theme in .dark (the default; see
+     components/theme/theme-provider.tsx). The --ig-* channels drive the
+     `ignite` Tailwind palette used everywhere; the shadcn tokens only set
+     the page background/foreground. */
   :root {
-    --font-heading: "Space Grotesk", "Segoe UI", sans-serif;
-    --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
-    --font-mono: "IBM Plex Mono", Consolas, monospace;
-    --background: 42.9 46.7% 88.2%; /* gignite.bg */
-    --foreground: 0 0% 17.3%; /* gignite.text */
+    --background: 220 33% 97%; /* ignite bg (light) */
+    --foreground: 264 40% 19%; /* ignite ink (light) */
     --card: 0 0% 100%; /* gignite.surface */
     --card-foreground: 0 0% 17.3%;
     --popover: 0 0% 100%;
@@ -32,7 +24,7 @@
     --accent-foreground: 223.8 65.6% 36.5%; /* gignite.blue */
     --destructive: 13.8 78% 39.2%; /* gignite.danger */
     --destructive-foreground: 0 0% 100%;
-    --border: 41.5 33.9% 77.5%; /* gignite.border */
+    --border: 225 14% 88%;
     --input: 41.5 33.9% 77.5%;
     --ring: 223.8 65.6% 36.5%; /* gignite.blue */
     --chart-1: 12 76% 61%;
@@ -41,10 +33,49 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.75rem;
+    /* Themeable brand palette (see tailwind.config.ts `ignite`): RGB channels. */
+    --ig-ink: 44 29 68;
+    --ig-ink-soft: 76 61 102;
+    --ig-muted: 106 114 130;
+    --ig-faint: 153 161 175;
+    --ig-bg: 244 246 250;
+    --ig-surface: 255 255 255;
+    --ig-lavender: 242 240 248;
+    --ig-edge: 0 0 0;
+    --ig-primary: 44 29 68;
+    --ig-primary-hover: 76 61 102;
+    --ig-on-primary: 255 255 255;
+    --ig-danger: 212 24 61;
+    --ig-danger-pale: 253 232 236;
+    --ig-success: 31 122 66;
+    --ig-success-pale: 228 241 230;
+    --ig-warn: 194 94 14;
+    --ig-warn-pale: 251 238 218;
+    --ig-navy: 13 11 24;
+    --ig-navy-2: 22 19 43;
+    --ig-on-dark: 210 205 230;
+    --ig-orange: 244 121 32;
+    --ig-magenta: 199 86 217;
+    --ig-blue: 49 130 252;
+    --ig-royal: 44 95 255;
+    --ig-lime: 216 216 0;
+    --ig-status-submitted-bg: #E6EEFF;
+    --ig-status-submitted-fg: #1F4FC9;
+    --ig-status-submitted-dot: #3182FC;
+    --ig-status-under_review-bg: #FFF0E4;
+    --ig-status-under_review-fg: #A2480C;
+    --ig-status-under_review-dot: #F47920;
+    --ig-status-shortlisted-bg: #E4F1E6;
+    --ig-status-shortlisted-fg: #1F7A42;
+    --ig-status-shortlisted-dot: #16794F;
+    --ig-status-rejected-bg: #EEEDF2;
+    --ig-status-rejected-fg: #5E5A6E;
+    --ig-status-rejected-dot: #99A1AF;
+    color-scheme: light;
   }
   .dark {
-    --background: 42.9 46.7% 88.2%;
-    --foreground: 0 0% 17.3%;
+    --background: 249 37% 7%;
+    --foreground: 258 56% 96%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 17.3%;
     --popover: 0 0% 100%;
@@ -59,7 +90,7 @@
     --accent-foreground: 223.8 65.6% 36.5%;
     --destructive: 13.8 78% 39.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 41.5 33.9% 77.5%;
+    --border: 250 20% 20%;
     --input: 41.5 33.9% 77.5%;
     --ring: 223.8 65.6% 36.5%;
     --chart-1: 220 70% 50%;
@@ -67,6 +98,36 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --ig-ink: 243 240 250;
+    --ig-ink-soft: 210 205 230;
+    --ig-muted: 163 157 186;
+    --ig-faint: 110 104 137;
+    --ig-bg: 13 11 24;
+    --ig-surface: 22 19 43;
+    --ig-lavender: 35 30 66;
+    --ig-edge: 255 255 255;
+    --ig-primary: 216 216 0;
+    --ig-primary-hover: 232 232 42;
+    --ig-on-primary: 33 24 3;
+    --ig-danger: 255 107 133;
+    --ig-danger-pale: 58 21 34;
+    --ig-success: 95 208 139;
+    --ig-success-pale: 19 48 31;
+    --ig-warn: 255 176 102;
+    --ig-warn-pale: 58 36 20;
+    --ig-status-submitted-bg: #1A2446;
+    --ig-status-submitted-fg: #9FC0FF;
+    --ig-status-submitted-dot: #3182FC;
+    --ig-status-under_review-bg: #3A2414;
+    --ig-status-under_review-fg: #FFB27A;
+    --ig-status-under_review-dot: #F47920;
+    --ig-status-shortlisted-bg: #13301F;
+    --ig-status-shortlisted-fg: #7FD6A0;
+    --ig-status-shortlisted-dot: #2FA866;
+    --ig-status-rejected-bg: #25223A;
+    --ig-status-rejected-fg: #B5B0C8;
+    --ig-status-rejected-dot: #6E6889;
+    color-scheme: dark;
   }
 }
 
@@ -100,10 +161,61 @@
       linear-gradient(var(--brand-border-fill, #fff), var(--brand-border-fill, #fff)) padding-box,
       linear-gradient(90deg, #f47920 0%, #c756d9 50%, #3182fc 100%) border-box;
   }
+  /* Hero backdrop that follows the theme: light with soft glows in light
+     mode, the Hackathon page's navy with glows in dark mode. */
+  .hero-themed {
+    background-color: rgb(var(--ig-bg));
+    background-image:
+      radial-gradient(70% 55% at 18% 40%, rgba(49, 130, 252, 0.12), transparent 65%),
+      radial-gradient(55% 65% at 82% 45%, rgba(199, 86, 217, 0.10), transparent 65%);
+  }
+  .dark .hero-themed {
+    background-color: #0d0b18;
+    background-image:
+      radial-gradient(70% 55% at 18% 40%, rgba(49, 130, 252, 0.22), transparent 65%),
+      radial-gradient(55% 65% at 82% 45%, rgba(199, 86, 217, 0.14), transparent 65%);
+  }
+  /* Always navy (admin sidebar). */
   .hero-dark {
     background-color: #0d0b18;
     background-image:
       radial-gradient(70% 55% at 18% 40%, rgba(49, 130, 252, 0.22), transparent 65%),
       radial-gradient(55% 65% at 82% 45%, rgba(199, 86, 217, 0.14), transparent 65%);
   }
+}
+
+/* Forces the light palette inside it, whatever the page theme: used for the
+   logo header bar (colour logos need white) and the downloadable ID card
+   (always a printable light card). */
+.light-scope {
+    --ig-ink: 44 29 68;
+    --ig-ink-soft: 76 61 102;
+    --ig-muted: 106 114 130;
+    --ig-faint: 153 161 175;
+    --ig-bg: 244 246 250;
+    --ig-surface: 255 255 255;
+    --ig-lavender: 242 240 248;
+    --ig-edge: 0 0 0;
+    --ig-primary: 44 29 68;
+    --ig-primary-hover: 76 61 102;
+    --ig-on-primary: 255 255 255;
+    --ig-danger: 212 24 61;
+    --ig-danger-pale: 253 232 236;
+    --ig-success: 31 122 66;
+    --ig-success-pale: 228 241 230;
+    --ig-warn: 194 94 14;
+    --ig-warn-pale: 251 238 218;
+    --ig-status-submitted-bg: #E6EEFF;
+    --ig-status-submitted-fg: #1F4FC9;
+    --ig-status-submitted-dot: #3182FC;
+    --ig-status-under_review-bg: #FFF0E4;
+    --ig-status-under_review-fg: #A2480C;
+    --ig-status-under_review-dot: #F47920;
+    --ig-status-shortlisted-bg: #E4F1E6;
+    --ig-status-shortlisted-fg: #1F7A42;
+    --ig-status-shortlisted-dot: #16794F;
+    --ig-status-rejected-bg: #EEEDF2;
+    --ig-status-rejected-fg: #5E5A6E;
+    --ig-status-rejected-dot: #99A1AF;
+  color-scheme: light;
 }

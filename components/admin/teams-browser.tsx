@@ -164,7 +164,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         onChange={(a) => handleAssignmentsChange(team.id, a)}
       />
     ) : (
-      <span className="text-[13px] text-gignite-text/60">—</span>
+      <span className="text-[13px] text-ignite-muted">—</span>
     );
   }
 
@@ -192,7 +192,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
           <Select
             value={statusFilter ?? ""}
             onChange={(e) => setStatusFilter(e.target.value || null)}
-            className={cn("w-auto flex-none py-[9px] text-[13.5px] font-semibold", statusFilter ? "border-gignite-blue text-gignite-blue" : "text-gignite-text")}
+            className={cn("w-auto flex-none py-[9px] text-[13.5px] font-semibold", statusFilter ? "border-ignite-ink text-ignite-ink" : "text-ignite-ink-soft")}
           >
             <option value="">All statuses</option>
             {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => (
@@ -204,7 +204,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
           <Select
             value={verificationFilter ?? ""}
             onChange={(e) => setVerificationFilter(e.target.value || null)}
-            className={cn("w-auto flex-none py-[9px] text-[13.5px] font-semibold", verificationFilter ? "border-gignite-blue text-gignite-blue" : "text-gignite-text")}
+            className={cn("w-auto flex-none py-[9px] text-[13.5px] font-semibold", verificationFilter ? "border-ignite-ink text-ignite-ink" : "text-ignite-ink-soft")}
           >
             <option value="">All verification</option>
             {Object.entries(VERIFICATION_STATUS_LABELS).map(([value, label]) => (
@@ -216,7 +216,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
           <Select
             value={themeFilter ?? ""}
             onChange={(e) => setThemeFilter(e.target.value || null)}
-            className={cn("w-auto max-w-[190px] flex-none truncate py-[9px] text-[13.5px] font-semibold", themeFilter ? "border-gignite-blue text-gignite-blue" : "text-gignite-text")}
+            className={cn("w-auto max-w-[190px] flex-none truncate py-[9px] text-[13.5px] font-semibold", themeFilter ? "border-ignite-ink text-ignite-ink" : "text-ignite-ink-soft")}
           >
             <option value="">All themes</option>
             {AI_THEMES.map((theme) => (
@@ -228,7 +228,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
           <Select
             value={districtFilter ?? ""}
             onChange={(e) => setDistrictFilter(e.target.value || null)}
-            className="w-auto flex-none py-[9px] text-[13.5px] text-gignite-text"
+            className="w-auto flex-none py-[9px] text-[13.5px] text-ignite-ink-soft"
           >
             <option value="">All districts</option>
             {KERALA_DISTRICTS.map((district) => (
@@ -260,29 +260,29 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         </div>
       </div>
 
-      <span className="-mt-2 font-mono text-[12px] text-gignite-text/60">
+      <span className="-mt-2 font-ui text-[12px] text-ignite-muted">
         {filtered.length} of {teams.length} teams shown
       </span>
 
       {filtered.length === 0 ? (
-        <Panel className="py-10 text-center text-[14px] text-gignite-text/60">
+        <Panel className="py-10 text-center text-[14px] text-ignite-muted">
           {teams.length === 0 ? "No teams registered yet." : "No teams match your search or filters."}
         </Panel>
       ) : viewMode === "list" ? (
         <Panel className="overflow-x-auto">
           <div className="min-w-[900px]">
-            <div className={cn(GRID_COLS, "border-b border-gignite-border px-5 py-3")}>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Team</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Theme</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Members</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Leader</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Status</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Judges</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Avg score</span>
+            <div className={cn(GRID_COLS, "border-b border-ignite-edge/[0.12] px-5 py-3")}>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Team</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Theme</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Members</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Leader</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Status</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Judges</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Avg score</span>
               <button
                 type="button"
                 onClick={() => setSortNewestFirst((s) => !s)}
-                className="text-left font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70 hover:text-gignite-blue"
+                className="text-left font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted hover:text-ignite-ink"
               >
                 Submitted {sortNewestFirst ? "↓" : "↑"}
               </button>
@@ -293,22 +293,22 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
               return (
                 <div
                   key={team.id}
-                  className={cn(GRID_COLS, "cursor-pointer border-b border-gignite-divider px-5 py-4 last:border-b-0 hover:bg-gignite-bg/30")}
+                  className={cn(GRID_COLS, "cursor-pointer border-b border-ignite-edge/[0.07] px-5 py-4 last:border-b-0 hover:bg-ignite-bg/30")}
                   onClick={() => goToTeam(team.id)}
                 >
                   <div className="flex min-w-0 flex-col items-start gap-1">
-                    <span className="max-w-full truncate font-heading font-semibold text-black">{team.name}</span>
+                    <span className="max-w-full truncate font-display font-semibold text-ignite-ink">{team.name}</span>
                     <VerificationBadge team={team} />
                   </div>
-                  <span className="truncate text-[14px] text-gignite-text/80">{team.ai_theme}</span>
-                  <span className="text-[14px] text-gignite-text/80">{team.members.length}</span>
-                  <span className="truncate text-[14px] text-gignite-text/80">{leader?.full_name ?? "—"}</span>
+                  <span className="truncate text-[14px] text-ignite-ink-soft">{team.ai_theme}</span>
+                  <span className="text-[14px] text-ignite-ink-soft">{team.members.length}</span>
+                  <span className="truncate text-[14px] text-ignite-ink-soft">{leader?.full_name ?? "—"}</span>
                   <StatusCell team={team} status={status} />
                   <JudgesCell team={team} />
-                  <span className="text-[14px] text-gignite-text/80">
+                  <span className="text-[14px] text-ignite-ink-soft">
                     {team.registration?.avgScore != null ? `${team.registration.avgScore.toFixed(1)} / 10` : "—"}
                   </span>
-                  <span className="text-[13px] text-gignite-text/60">
+                  <span className="text-[13px] text-ignite-muted">
                     {team.registration ? formatSubmitted(team.registration.created_at) : "—"}
                   </span>
                 </div>
@@ -324,33 +324,33 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
             return (
               <Panel
                 key={team.id}
-                className="flex cursor-pointer flex-col gap-3 p-4 transition-colors hover:border-gignite-blue"
+                className="flex cursor-pointer flex-col gap-3 p-4 transition-colors hover:border-ignite-ink"
                 onClick={() => goToTeam(team.id)}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="font-heading font-semibold text-black">{team.name}</h3>
-                    <p className="text-[13px] text-gignite-text/70">{team.ai_theme}</p>
+                    <h3 className="font-display font-semibold text-ignite-ink">{team.name}</h3>
+                    <p className="text-[13px] text-ignite-muted">{team.ai_theme}</p>
                     <div className="mt-1.5">
                       <VerificationBadge team={team} />
                     </div>
                   </div>
                   <StatusCell team={team} status={status} />
                 </div>
-                <div className="flex flex-col gap-1 text-[13px] text-gignite-text/70">
+                <div className="flex flex-col gap-1 text-[13px] text-ignite-muted">
                   <span>Leader: {leader?.full_name ?? "—"}</span>
                   <span>{team.members.length} member(s)</span>
                   <span>{team.registration ? formatSubmitted(team.registration.created_at) : "Not submitted"}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-gignite-divider pt-3">
+                <div className="flex items-center justify-between border-t border-ignite-edge/[0.07] pt-3">
                   <div>
-                    <span className="mb-1.5 block font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-text/60">
+                    <span className="mb-1.5 block font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">
                       Judges
                     </span>
                     <JudgesCell team={team} />
                   </div>
                   {team.registration?.avgScore != null && (
-                    <span className="whitespace-nowrap text-[13px] font-semibold text-gignite-text">
+                    <span className="whitespace-nowrap text-[13px] font-semibold text-ignite-ink-soft">
                       {team.registration.avgScore.toFixed(1)} / 10
                     </span>
                   )}

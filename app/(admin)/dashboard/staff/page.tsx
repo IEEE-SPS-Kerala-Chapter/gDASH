@@ -15,7 +15,7 @@ export default async function StaffPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeading title="Staff accounts" />
-      {result.success ? <StaffManager staff={result.staff} /> : <p className="text-gignite-danger">{result.error}</p>}
+      {result.success ? <StaffManager staff={result.staff} /> : <p className="text-ignite-danger">{result.error}</p>}
     </div>
   );
 }

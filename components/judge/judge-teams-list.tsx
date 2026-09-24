@@ -45,7 +45,7 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
 
   if (teams.length === 0) {
     return (
-      <Panel className="py-10 text-center text-[14px] text-gignite-text/60">
+      <Panel className="py-10 text-center text-[14px] text-ignite-muted">
         No teams have been assigned to you yet.
       </Panel>
     );
@@ -55,7 +55,7 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <span className="font-heading text-[15px] font-bold text-black">
+          <span className="font-display text-[15px] font-bold text-ignite-ink">
             {scoredCount} of {teams.length} fully scored
           </span>
           <SegmentedToggle
@@ -67,19 +67,19 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
             ]}
           />
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-gignite-divider">
-          <div className="h-full rounded-full bg-gignite-accent transition-all" style={{ width: `${progressPct}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-ignite-edge/[0.07]">
+          <div className="h-full rounded-full bg-ignite-orange transition-all" style={{ width: `${progressPct}%` }} />
         </div>
       </div>
 
       {viewMode === "list" ? (
         <Panel className="overflow-x-auto">
           <div className="min-w-[560px]">
-            <div className={`${GRID_COLS} border-b border-gignite-border px-5 py-3`}>
+            <div className={`${GRID_COLS} border-b border-ignite-edge/[0.12] px-5 py-3`}>
               <span />
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Team</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Theme</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">Your score</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Team</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Theme</span>
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Your score</span>
             </div>
             {teams.map((team) => {
               const myScore = team.registration?.scores[0];
@@ -87,26 +87,26 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
               return (
                 <div
                   key={team.id}
-                  className={`${GRID_COLS} cursor-pointer border-b border-gignite-divider px-5 py-4 last:border-b-0 hover:bg-gignite-bg/30`}
+                  className={`${GRID_COLS} cursor-pointer border-b border-ignite-edge/[0.07] px-5 py-4 last:border-b-0 hover:bg-ignite-bg/30`}
                   onClick={() => router.push(`/dashboard/teams/${team.id}`)}
                 >
                   {submitted ? (
-                    <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-gignite-blue text-[11px] font-semibold text-white">
+                    <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-ignite-primary text-[11px] font-semibold text-ignite-on-primary">
                       ✓
                     </div>
                   ) : myScore ? (
-                    <div className="h-[22px] w-[22px] rounded-full border-[1.5px] border-dashed border-gignite-warn" />
+                    <div className="h-[22px] w-[22px] rounded-full border-[1.5px] border-dashed border-ignite-warn" />
                   ) : (
-                    <div className="h-[22px] w-[22px] rounded-full border-[1.5px] border-gignite-border-strong" />
+                    <div className="h-[22px] w-[22px] rounded-full border-[1.5px] border-ignite-edge/[0.18]" />
                   )}
                   <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="truncate font-heading font-semibold text-black">{team.name}</span>
-                    <span className="truncate text-[13px] text-gignite-text/60">{team.district}</span>
+                    <span className="truncate font-display font-semibold text-ignite-ink">{team.name}</span>
+                    <span className="truncate text-[13px] text-ignite-muted">{team.district}</span>
                   </div>
                   <Badge className="w-fit">{team.ai_theme}</Badge>
                   <span
-                    className={`font-mono text-[13px] ${
-                      submitted ? "text-gignite-blue" : myScore ? "text-gignite-warn" : "text-gignite-text/60"
+                    className={`font-ui text-[13px] ${
+                      submitted ? "text-ignite-ink" : myScore ? "text-ignite-warn" : "text-ignite-muted"
                     }`}
                   >
                     {submitted && myScore?.weighted != null
@@ -134,30 +134,30 @@ export function JudgeTeamsList({ teams }: { teams: AdminTeam[] }) {
               >
                 <div className="flex-none pt-0.5">
                   {submitted ? (
-                    <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-gignite-blue text-[13px] font-semibold text-white">
+                    <div className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-ignite-primary text-[13px] font-semibold text-ignite-on-primary">
                       ✓
                     </div>
                   ) : myScore ? (
-                    <div className="h-[26px] w-[26px] rounded-full border-[1.5px] border-dashed border-gignite-warn" />
+                    <div className="h-[26px] w-[26px] rounded-full border-[1.5px] border-dashed border-ignite-warn" />
                   ) : (
-                    <div className="h-[26px] w-[26px] rounded-full border-[1.5px] border-gignite-border-strong" />
+                    <div className="h-[26px] w-[26px] rounded-full border-[1.5px] border-ignite-edge/[0.18]" />
                   )}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="m-0 font-heading text-[18px] font-medium leading-snug tracking-[-0.01em] text-black">
+                    <h3 className="m-0 font-display text-[18px] font-medium leading-snug tracking-[-0.01em] text-ignite-ink">
                       {team.name}
                     </h3>
-                    <span className="flex-none font-mono text-[12px] text-gignite-text/60">{team.district}</span>
+                    <span className="flex-none font-ui text-[12px] text-ignite-muted">{team.district}</span>
                   </div>
                   {excerpt && (
-                    <p className="m-0 line-clamp-2 text-[14px] leading-[1.5] text-gignite-text/90">{excerpt}</p>
+                    <p className="m-0 line-clamp-2 text-[14px] leading-[1.5] text-ignite-ink-soft">{excerpt}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
                     <Badge>{team.ai_theme}</Badge>
                     <span
-                      className={`font-mono text-[12px] ${
-                        submitted ? "text-gignite-blue" : myScore ? "text-gignite-warn" : "text-gignite-text/60"
+                      className={`font-ui text-[12px] ${
+                        submitted ? "text-ignite-ink" : myScore ? "text-ignite-warn" : "text-ignite-muted"
                       }`}
                     >
                       {submitted && myScore?.weighted != null

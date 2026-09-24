@@ -72,11 +72,11 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
   return (
     <div className="flex flex-col gap-6">
       {justCreated && (
-        <Panel className="border-gignite-blue/40">
+        <Panel className="border-ignite-ink/40">
           <div className="flex flex-wrap items-center justify-between gap-3 p-4 text-[14px]">
             <div>
-              <p className="m-0 font-semibold text-black">Account created — share these with them yourself:</p>
-              <p className="m-0 text-gignite-text/70">
+              <p className="m-0 font-semibold text-ignite-ink">Account created — share these with them yourself:</p>
+              <p className="m-0 text-ignite-muted">
                 {justCreated.email} / {justCreated.password}
               </p>
             </div>
@@ -93,7 +93,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
       )}
 
       <FormCard>
-        <h2 className="m-0 font-heading text-[19px] font-bold text-black">Add a staff account</h2>
+        <h2 className="m-0 font-display text-[19px] font-bold text-ignite-ink">Add a staff account</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Full name">
@@ -118,7 +118,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
               </div>
             </Field>
           </div>
-          <p className="m-0 text-[13px] text-gignite-text/60">
+          <p className="m-0 text-[13px] text-ignite-muted">
             There&apos;s no invite email yet — after creating the account, you&apos;ll need to send this email and
             password to them yourself.
           </p>
@@ -132,13 +132,13 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
 
       <div className="flex flex-col gap-2">
         <SectionLabel>Existing staff ({staff.length})</SectionLabel>
-        <Panel className="flex flex-col divide-y divide-gignite-divider">
+        <Panel className="flex flex-col divide-y divide-ignite-edge/[0.07]">
           {staff.map((s) => (
             <div key={s.id} className="flex flex-col gap-3 p-3 text-[14px]">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="font-semibold text-black">{s.full_name}</div>
-                  <div className="text-gignite-text/70">{s.email}</div>
+                  <div className="font-semibold text-ignite-ink">{s.full_name}</div>
+                  <div className="text-ignite-muted">{s.email}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge>{ROLE_LABELS[s.role] ?? s.role}</Badge>
@@ -150,7 +150,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                       type="button"
                       aria-label={`Delete ${s.full_name}`}
                       onClick={() => setConfirmingDelete(s)}
-                      className="rounded-[7px] border-[1.5px] border-gignite-danger/50 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-gignite-danger transition-colors hover:border-gignite-danger hover:bg-gignite-danger hover:text-white"
+                      className="rounded-[7px] border-[1.5px] border-ignite-danger/50 px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-danger transition-colors hover:border-ignite-danger hover:bg-ignite-danger hover:text-white"
                     >
                       Delete
                     </button>
@@ -159,13 +159,13 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
               </div>
 
               {confirmingDelete?.id === s.id && (
-                <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-gignite-danger bg-gignite-card p-4">
+                <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-ignite-danger bg-ignite-bg p-4">
                   <div className="flex gap-2.5">
-                    <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-gignite-danger text-[11px] font-bold text-white">
+                    <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-ignite-danger text-[11px] font-bold text-white">
                       !
                     </span>
-                    <span className="flex-1 text-[14px] leading-[1.55] text-gignite-text">
-                      Permanently delete <span className="font-semibold text-black">{s.full_name}</span>&apos;s{" "}
+                    <span className="flex-1 text-[14px] leading-[1.55] text-ignite-ink-soft">
+                      Permanently delete <span className="font-semibold text-ignite-ink">{s.full_name}</span>&apos;s{" "}
                       {ROLE_LABELS[s.role] ?? s.role} account?{" "}
                       {s.role === "judge"
                         ? "Any scores they've already submitted are deleted with it, not just the account."
@@ -177,7 +177,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                       type="button"
                       onClick={handleConfirmedDelete}
                       disabled={deleting}
-                      className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="flex-1 rounded-[9px] bg-ignite-danger px-4 py-2.5 font-display text-[14px] font-medium text-white transition-colors hover:bg-ignite-danger/85 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {deleting ? "Deleting…" : "Delete account"}
                     </button>
@@ -185,7 +185,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                       type="button"
                       onClick={() => setConfirmingDelete(null)}
                       disabled={deleting}
-                      className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
+                      className="flex-1 rounded-[9px] border-[1.5px] border-ignite-edge/[0.18] bg-ignite-surface px-4 py-2.5 font-display text-[14px] font-medium text-ignite-ink-soft transition-colors hover:border-ignite-ink hover:text-ignite-ink"
                     >
                       Keep
                     </button>

@@ -66,7 +66,7 @@ export function IdCardUploadField({
       <label className="font-ui text-[13px] font-semibold text-ignite-ink-soft">
         College ID card (for eligibility checks — visible only to organizers)
       </label>
-      <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-black/[0.18] bg-ignite-bg px-[15px] py-[13px]">
+      <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-ignite-bg px-[15px] py-[13px]">
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"

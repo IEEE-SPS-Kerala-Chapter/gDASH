@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { resetOwnPassword, signOut } from "@/app/actions/auth";
-import { Field, FormCard, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/ui";
+import { Field, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/ui";
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -36,10 +36,10 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <FormCard>
+    <div className="flex flex-col gap-[18px]">
       <div className="flex flex-col gap-[6px]">
-        <h1 className="m-0 font-heading text-[20px] font-bold text-black">Set a new password</h1>
-        <p className="m-0 text-[14px] text-gignite-text/70">
+        <h1 className="m-0 font-display text-[20px] font-bold text-ignite-ink">Set a new password</h1>
+        <p className="m-0 text-[14px] text-ignite-muted">
           For security, you need to set your own password before continuing.
         </p>
       </div>
@@ -71,6 +71,6 @@ export function ResetPasswordForm() {
           {signingOut ? "Signing out…" : "Sign out instead"}
         </SecondaryButton>
       </form>
-    </FormCard>
+    </div>
   );
 }

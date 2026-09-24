@@ -13,7 +13,7 @@ export default function RegisterLoading() {
             ))}
           </div>
         </div>
-        <div className="flex w-full flex-col gap-5 rounded-[30px] border border-black/[0.08] bg-ignite-bg p-6 shadow-[0_18px_46px_rgba(44,44,44,0.13)] lg:flex-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+        <div className="flex w-full flex-col gap-5 rounded-[30px] border border-ignite-edge/[0.08] bg-ignite-bg p-6 shadow-[0_18px_46px_rgba(44,44,44,0.13)] lg:flex-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-40 w-full rounded-2xl" />

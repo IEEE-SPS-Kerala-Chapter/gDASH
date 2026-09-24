@@ -44,7 +44,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <span className="text-[15px] font-semibold text-ignite-ink">{leaderName || "Team leader"}</span>
-            <span className="inline-flex rounded-full bg-ignite-ink px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-white">
+            <span className="inline-flex rounded-full bg-ignite-primary px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-ignite-on-primary">
               Leader
             </span>
           </div>
@@ -148,7 +148,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
         <button
           type="button"
           onClick={() => append(emptyMember)}
-          className="w-full rounded-full border-[1.5px] border-dashed border-black/[0.18] py-[13px] font-ui text-[15px] font-semibold text-ignite-ink transition-colors hover:border-ignite-ink hover:bg-white"
+          className="w-full rounded-full border-[1.5px] border-dashed border-ignite-edge/[0.18] py-[13px] font-ui text-[15px] font-semibold text-ignite-ink transition-colors hover:border-ignite-ink hover:bg-ignite-surface"
         >
           + Add member ({slotsLeft} slot{slotsLeft === 1 ? "" : "s"} left)
         </button>

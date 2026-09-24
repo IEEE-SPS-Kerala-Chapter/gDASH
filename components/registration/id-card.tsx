@@ -59,7 +59,8 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
     <div className="flex flex-col gap-3">
       <div
         ref={cardRef}
-        className="flex flex-col gap-4 overflow-hidden rounded-[20px] border border-black/[0.06] bg-white p-5 pt-0 font-ui shadow-[0_1px_6px_rgba(0,0,0,0.06)]"
+        // light-scope: the downloaded card is always the printable light version.
+        className="light-scope flex flex-col gap-4 overflow-hidden rounded-[20px] border border-ignite-edge/[0.06] bg-ignite-surface p-5 pt-0 font-ui shadow-[0_1px_6px_rgba(0,0,0,0.06)]"
       >
         <div aria-hidden="true" className="-mx-5 h-1.5 bg-brand-gradient" />
         <div className="flex items-center justify-between gap-3">
@@ -88,7 +89,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-black/[0.07] pt-3">
+        <div className="flex items-center justify-between border-t border-ignite-edge/[0.07] pt-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- sponsor mark, same hotlink-free local asset used in LogoHeaderBar */}
           <img src="/gadgeon-logo.png" alt="Gadgeon Smart Systems" className="h-10 w-auto" />
           {/* eslint-disable-next-line @next/next/no-img-element -- combined IEEE + SPS-KC mark, same hotlink-free local asset used in LogoHeaderBar */}
@@ -100,7 +101,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
         type="button"
         onClick={handleDownload}
         disabled={downloading || !qrDataUrl}
-        className="flex items-center justify-center gap-2 rounded-full border border-ignite-ink/70 bg-white/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex items-center justify-center gap-2 rounded-full border border-ignite-ink/70 bg-ignite-surface/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-not-allowed disabled:opacity-50"
       >
         {downloading && <Spinner />}
         {downloading ? "Preparing…" : "Download ID card"}

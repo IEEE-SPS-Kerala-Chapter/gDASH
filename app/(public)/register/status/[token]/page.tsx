@@ -7,8 +7,8 @@ import { StatusSignOutBar } from "@/components/registration/status-sign-out-bar"
 import { createClient } from "@/lib/supabase/server";
 
 const STATUS_STYLES: Record<string, string> = {
-  submitted: "bg-white/10 text-white ring-1 ring-white/25",
-  under_review: "bg-ignite-lime text-[#211803]",
+  submitted: "bg-ignite-edge/[0.06] text-ignite-ink ring-1 ring-ignite-edge/20",
+  under_review: "bg-ignite-lime text-ignite-navy",
   shortlisted: "bg-ignite-success-pale text-ignite-success",
   rejected: "bg-ignite-danger-pale text-ignite-danger",
 };
@@ -53,9 +53,9 @@ export default async function StatusPage({ params }: { params: { token: string }
 
   return (
     <>
-      <LogoHeaderBar />
+      <LogoHeaderBar onHero />
       <main className="min-h-[calc(100vh-88px)] bg-ignite-bg font-ui text-ignite-ink-soft">
-        <section className="hero-dark px-4 pb-12 pt-8 text-white lg:px-16 lg:pb-16 lg:pt-12">
+        <section className="hero-themed px-4 pb-12 pt-8 text-ignite-ink lg:px-16 lg:pb-16 lg:pt-12">
           <div className="mx-auto flex max-w-[760px] flex-col gap-6">
             {participantEmail && <StatusSignOutBar email={participantEmail} />}
             <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.16em]">
@@ -64,15 +64,15 @@ export default async function StatusPage({ params }: { params: { token: string }
             </span>
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex min-w-0 flex-col gap-2">
-                <h1 className="m-0 break-words font-display text-[36px] font-medium leading-[1.1] tracking-[-0.03em] text-white lg:text-[52px]">
+                <h1 className="m-0 break-words font-display text-[36px] font-medium leading-[1.1] tracking-[-0.03em] text-ignite-ink lg:text-[52px]">
                   {team.name}
                 </h1>
-                <p className="m-0 text-[15px] text-ignite-on-dark">
+                <p className="m-0 text-[15px] text-ignite-ink-soft">
                   {team.ai_theme} · {team.district}
                 </p>
                 <span
-                  className="border-brand-gradient mt-1 inline-block w-fit rounded-full px-3.5 py-1 text-[13px] font-bold tracking-[0.06em] text-white"
-                  style={{ "--brand-border-fill": "#16132B" } as React.CSSProperties}
+                  className="border-brand-gradient mt-1 inline-block w-fit rounded-full px-3.5 py-1 text-[13px] font-bold tracking-[0.06em] text-ignite-ink"
+                  style={{ "--brand-border-fill": "rgb(var(--ig-surface))" } as React.CSSProperties}
                 >
                   {team.entry_code}
                 </span>
@@ -85,7 +85,7 @@ export default async function StatusPage({ params }: { params: { token: string }
         </section>
 
         <div className="mx-auto flex max-w-[760px] flex-col gap-6 px-4 py-10 lg:px-0">
-          <div className="flex flex-col gap-5 rounded-[20px] border border-black/[0.06] bg-white p-6 shadow-[0_1px_6px_rgba(0,0,0,0.06)]">
+          <div className="flex flex-col gap-5 rounded-[20px] border border-ignite-edge/[0.06] bg-ignite-surface p-6 shadow-[0_1px_6px_rgba(0,0,0,0.06)]">
             <div className="flex flex-col gap-3">
               <Eyebrow>Members</Eyebrow>
               {members.map((m, i) => (
@@ -99,7 +99,7 @@ export default async function StatusPage({ params }: { params: { token: string }
               ))}
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-black/[0.07] pt-5">
+            <div className="flex flex-col gap-2 border-t border-ignite-edge/[0.07] pt-5">
               <Eyebrow>Idea</Eyebrow>
               <p className="m-0 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ignite-ink-soft">
                 {registration.problem_statement}

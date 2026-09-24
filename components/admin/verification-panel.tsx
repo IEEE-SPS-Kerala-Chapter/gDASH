@@ -72,7 +72,7 @@ export function VerificationPanel({
     <Panel className="flex flex-col gap-3 p-5">
       <div className="flex items-center justify-between gap-3">
         <SectionLabel>Eligibility verification</SectionLabel>
-        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-accent">Admin only</span>
+        <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Admin only</span>
       </div>
 
       <div>
@@ -80,25 +80,25 @@ export function VerificationPanel({
           {VERIFICATION_STATUS_LABELS[verification.status] ?? verification.status}
         </Badge>
       </div>
-      <span className="text-[13px] leading-[1.5] text-gignite-text/75">
+      <span className="text-[13px] leading-[1.5] text-ignite-muted">
         {VERIFICATION_STATUS_HINTS[verification.status]}
       </span>
 
       {verification.status !== "pending" && (decidedLabel || verification.note) && (
-        <div className="flex flex-col gap-1 rounded-[10px] border border-gignite-divider bg-gignite-card p-3 text-[13px] leading-[1.5]">
+        <div className="flex flex-col gap-1 rounded-[10px] border border-ignite-edge/[0.07] bg-ignite-bg p-3 text-[13px] leading-[1.5]">
           {decidedLabel && (
-            <span className="text-gignite-text/70">
+            <span className="text-ignite-muted">
               By {verification.decidedByName ?? "an admin"} · {decidedLabel}
             </span>
           )}
           {verification.note && (
-            <span className="whitespace-pre-wrap break-words text-gignite-text">{verification.note}</span>
+            <span className="whitespace-pre-wrap break-words text-ignite-ink-soft">{verification.note}</span>
           )}
         </div>
       )}
 
       {lockedByAssignments ? (
-        <span className="text-[13px] leading-[1.5] text-gignite-text/75">
+        <span className="text-[13px] leading-[1.5] text-ignite-muted">
           Unassign all judges to change this entry&apos;s verification.
         </span>
       ) : rejecting ? (
@@ -116,7 +116,7 @@ export function VerificationPanel({
               type="button"
               onClick={() => submit("ineligible", reason)}
               disabled={busy || !reason.trim()}
-              className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-[9px] bg-ignite-danger px-4 py-2.5 font-display text-[14px] font-medium text-white transition-colors hover:bg-ignite-danger/85 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {busy ? "Saving…" : "Mark ineligible"}
             </button>
@@ -127,7 +127,7 @@ export function VerificationPanel({
                 setReason("");
               }}
               disabled={busy}
-              className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
+              className="flex-1 rounded-[9px] border-[1.5px] border-ignite-edge/[0.18] bg-ignite-surface px-4 py-2.5 font-display text-[14px] font-medium text-ignite-ink-soft transition-colors hover:border-ignite-ink hover:text-ignite-ink"
             >
               Cancel
             </button>
@@ -141,7 +141,7 @@ export function VerificationPanel({
                 type="button"
                 onClick={() => submit("verified")}
                 disabled={busy}
-                className="flex-1 rounded-[9px] bg-gignite-blue px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-gignite-blue/90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-[9px] bg-ignite-primary px-4 py-2.5 font-display text-[14px] font-medium text-ignite-on-primary transition-colors hover:bg-ignite-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy ? "Saving…" : "Mark verified"}
               </button>
@@ -151,7 +151,7 @@ export function VerificationPanel({
                 type="button"
                 onClick={() => setRejecting(true)}
                 disabled={busy}
-                className="flex-1 rounded-[9px] border-[1.5px] border-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-danger transition-colors hover:bg-gignite-danger hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-[9px] border-[1.5px] border-ignite-danger px-4 py-2.5 font-display text-[14px] font-medium text-ignite-danger transition-colors hover:bg-ignite-danger hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Mark ineligible
               </button>
@@ -162,7 +162,7 @@ export function VerificationPanel({
               type="button"
               onClick={() => submit("pending")}
               disabled={busy}
-              className="self-start text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent disabled:opacity-50"
+              className="self-start text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta disabled:opacity-50"
             >
               Reset to pending
             </button>

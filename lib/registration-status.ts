@@ -33,10 +33,10 @@ export const REGISTRATION_STATUS_HINTS: Record<string, string> = {
  * an outcome, not an error), which the generic Badge variants don't cover.
  */
 export const REGISTRATION_STATUS_PILL: Record<string, { bg: string; fg: string; dot: string }> = {
-  submitted: { bg: "#E4EAF6", fg: "#20419A", dot: "#20419A" },
-  under_review: { bg: "#FDE9D8", fg: "#96430B", dot: "#F27721" },
-  shortlisted: { bg: "#DFEDE6", fg: "#146443", dot: "#16794F" },
-  rejected: { bg: "#EFE4CB", fg: "#6B6355", dot: "#9A9184" },
+  submitted: { bg: "var(--ig-status-submitted-bg)", fg: "var(--ig-status-submitted-fg)", dot: "var(--ig-status-submitted-dot)" },
+  under_review: { bg: "var(--ig-status-under_review-bg)", fg: "var(--ig-status-under_review-fg)", dot: "var(--ig-status-under_review-dot)" },
+  shortlisted: { bg: "var(--ig-status-shortlisted-bg)", fg: "var(--ig-status-shortlisted-fg)", dot: "var(--ig-status-shortlisted-dot)" },
+  rejected: { bg: "var(--ig-status-rejected-bg)", fg: "var(--ig-status-rejected-fg)", dot: "var(--ig-status-rejected-dot)" },
 };
 
 /** Admin eligibility check, separate from the judging status above — see

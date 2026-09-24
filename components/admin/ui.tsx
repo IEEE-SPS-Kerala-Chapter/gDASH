@@ -1,7 +1,7 @@
 /**
- * Admin/judge/staff UI primitives — deliberately built from the SAME design
- * language as components/registration/ui.tsx (the Claude Design file this
- * project follows), not shadcn/ui restyled with brand colors. Re-exports the
+ * Admin/judge/staff UI primitives — the same design language as the
+ * participant pages (components/registration/ui.tsx, matched to the
+ * Gadgeon.ai site; see gadgeon-design-reference.md). Re-exports the
  * pieces that carry over as-is, and adds only what the admin side needs that
  * the registration wizard never did: status badges, a list/card view
  * toggle, and a denser panel for data-heavy screens.
@@ -23,28 +23,32 @@ export {
   Divider,
   Spinner,
   Skeleton,
-} from "@/components/admin/base-ui";
+  Eyebrow,
+  GradientText,
+  HeroShell,
+} from "@/components/registration/ui";
+export { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function PageHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="flex flex-col gap-[6px]">
-      <h1 className="m-0 font-heading text-[26px] font-bold tracking-[-0.025em] text-black">{title}</h1>
-      {subtitle && <p className="m-0 text-[15px] leading-[1.55] text-gignite-text">{subtitle}</p>}
+      <h1 className="m-0 font-display text-[28px] font-bold tracking-[-0.02em] text-ignite-ink">{title}</h1>
+      {subtitle && <p className="m-0 font-ui text-[15px] leading-[1.55] text-ignite-muted">{subtitle}</p>}
     </div>
   );
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">{children}</span>
+    <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink-soft">{children}</span>
   );
 }
 
 const BADGE_VARIANTS = {
-  neutral: "bg-gignite-blue-pale text-gignite-blue",
-  warn: "bg-gignite-warn-pale text-gignite-warn",
-  success: "bg-gignite-success-pale text-gignite-success",
-  danger: "bg-gignite-danger-pale text-gignite-danger",
+  neutral: "bg-ignite-lavender text-ignite-ink",
+  warn: "bg-ignite-warn-pale text-ignite-warn",
+  success: "bg-ignite-success-pale text-ignite-success",
+  danger: "bg-ignite-danger-pale text-ignite-danger",
 } as const;
 
 export type BadgeVariant = keyof typeof BADGE_VARIANTS;
@@ -61,7 +65,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em]",
+        "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em]",
         BADGE_VARIANTS[variant],
         className,
       )}
@@ -91,7 +95,7 @@ export function StatusDotBadge({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-[15px] font-semibold"
+      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 font-ui text-[15px] font-bold"
       style={{ background: bg, color: fg }}
     >
       <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} />
@@ -104,7 +108,7 @@ export function Panel({ children, className, ...props }: HTMLAttributes<HTMLDivE
   return (
     <div
       className={cn(
-        "rounded-2xl border border-black/[0.08] bg-gignite-surface shadow-[0_2px_4px_rgba(44,44,44,0.05),0_16px_34px_rgba(32,65,154,0.09)]",
+        "rounded-[20px] border border-ignite-edge/[0.07] bg-ignite-surface shadow-[0_1px_6px_rgba(0,0,0,0.06)]",
         className,
       )}
       {...props}
@@ -124,15 +128,15 @@ export function SegmentedToggle<T extends string>({
   options: { value: T; label: string; icon?: ReactNode }[];
 }) {
   return (
-    <div className="flex items-center gap-0.5 rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-surface p-0.5">
+    <div className="flex items-center gap-0.5 rounded-full border border-ignite-edge/[0.12] bg-ignite-surface p-1">
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "flex items-center gap-1.5 rounded-[7px] px-3 py-[7px] font-body text-[13px] font-semibold transition-colors",
-            value === opt.value ? "bg-gignite-blue-pale text-gignite-blue" : "text-gignite-muted hover:text-gignite-text",
+            "flex items-center gap-1.5 rounded-full px-3.5 py-[7px] font-ui text-[13px] font-semibold transition-colors",
+            value === opt.value ? "bg-ignite-primary text-ignite-on-primary" : "text-ignite-muted hover:text-ignite-ink",
           )}
         >
           {opt.icon}
@@ -168,7 +172,7 @@ export function Switch({
       onClick={() => onChange(!checked)}
       className={cn(
         "relative inline-flex h-6 w-11 flex-none items-center rounded-full transition-colors",
-        checked ? "bg-gignite-success" : "bg-gignite-border-strong",
+        checked ? "bg-ignite-success" : "bg-ignite-edge/[0.18]",
       )}
     >
       <span
@@ -200,7 +204,7 @@ export function ChipButton({
       aria-label={ariaLabel}
       className={cn(
         "leading-none transition-colors",
-        tone === "danger" ? "text-gignite-blue/70 hover:text-gignite-danger" : "text-gignite-muted hover:text-gignite-text",
+        tone === "danger" ? "text-ignite-ink/70 hover:text-ignite-danger" : "text-ignite-muted hover:text-ignite-ink",
       )}
     >
       {children}

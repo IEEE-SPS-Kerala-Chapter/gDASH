@@ -84,10 +84,10 @@ export function AuditLogViewer() {
             type="button"
             onClick={() => setRange(opt.value)}
             className={cn(
-              "rounded-[8px] border-[1.5px] px-3 py-1.5 font-body text-[13px] font-semibold transition-colors",
+              "rounded-[8px] border-[1.5px] px-3 py-1.5 font-ui text-[13px] font-semibold transition-colors",
               range === opt.value
-                ? "border-gignite-blue bg-gignite-blue-pale text-gignite-blue"
-                : "border-gignite-border text-gignite-muted hover:text-gignite-text",
+                ? "border-ignite-ink bg-ignite-lavender text-ignite-ink"
+                : "border-ignite-edge/[0.12] text-ignite-muted hover:text-ignite-ink",
             )}
           >
             {opt.label}
@@ -97,7 +97,7 @@ export function AuditLogViewer() {
 
       {loading ? (
         <Panel className="flex flex-col gap-3 p-4" role="status" aria-live="polite">
-          <span className="flex items-center gap-2 text-[14px] text-gignite-text/70">
+          <span className="flex items-center gap-2 text-[14px] text-ignite-muted">
             <Spinner className="h-3.5 w-3.5" />
             Loading activity…
           </span>
@@ -106,31 +106,31 @@ export function AuditLogViewer() {
           ))}
         </Panel>
       ) : logs.length === 0 ? (
-        <Panel className="py-10 text-center text-[14px] text-gignite-text/60">No activity in this window.</Panel>
+        <Panel className="py-10 text-center text-[14px] text-ignite-muted">No activity in this window.</Panel>
       ) : (
         <>
-          <span className="font-mono text-[12px] text-gignite-text/60">
+          <span className="font-ui text-[12px] text-ignite-muted">
             {logs.length} event{logs.length === 1 ? "" : "s"}
           </span>
           <Panel className="overflow-x-auto">
-            <div className="flex min-w-[760px] flex-col divide-y divide-gignite-divider">
+            <div className="flex min-w-[760px] flex-col divide-y divide-ignite-edge/[0.07]">
               <div className="grid grid-cols-[150px_180px_1fr_1.2fr] gap-3 px-4 py-2.5">
-                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-gignite-text/60">When</span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-gignite-text/60">Who</span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-gignite-text/60">Activity</span>
-                <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-gignite-text/60">Details</span>
+                <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">When</span>
+                <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Who</span>
+                <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Activity</span>
+                <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Details</span>
               </div>
               {logs.map((entry) => (
                 <div key={entry.id} className="grid grid-cols-[150px_180px_1fr_1.2fr] items-start gap-3 px-4 py-3 text-[13px]">
-                  <span className="font-mono text-[12px] text-gignite-text/60">{formatWhen(entry.created_at)}</span>
+                  <span className="font-ui text-[12px] text-ignite-muted">{formatWhen(entry.created_at)}</span>
                   <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="truncate font-semibold text-black">{entry.actor_label}</span>
-                    <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-gignite-text/50">
+                    <span className="truncate font-semibold text-ignite-ink">{entry.actor_label}</span>
+                    <span className="font-ui text-[11px] uppercase tracking-[0.08em] text-ignite-muted">
                       {roleLabel(entry.actor_role)}
                     </span>
                   </div>
-                  <span className="text-gignite-text">{actionLabel(entry.action)}</span>
-                  <span className="truncate text-gignite-text/70">{detailSummary(entry) ?? "—"}</span>
+                  <span className="text-ignite-ink-soft">{actionLabel(entry.action)}</span>
+                  <span className="truncate text-ignite-muted">{detailSummary(entry) ?? "—"}</span>
                 </div>
               ))}
             </div>

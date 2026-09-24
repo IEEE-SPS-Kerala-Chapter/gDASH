@@ -42,17 +42,17 @@ export function JudgeScoresSummary({
       : "No scores submitted yet";
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
+    <div className="flex flex-col gap-4 rounded-xl border border-ignite-edge/[0.08] bg-ignite-surface p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div className="flex flex-col gap-1">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">
             Judge scores · Stage 1
           </span>
-          <h3 className="m-0 font-heading text-[22px] font-medium tracking-[-0.01em] text-black">{heading}</h3>
+          <h3 className="m-0 font-display text-[22px] font-medium tracking-[-0.01em] text-ignite-ink">{heading}</h3>
         </div>
         <div className="flex items-baseline gap-2.5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Average</span>
-          <span className="font-heading text-[34px] font-bold leading-none tracking-[-0.02em] text-gignite-warn">
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Average</span>
+          <span className="font-display text-[34px] font-bold leading-none tracking-[-0.02em] text-ignite-warn">
             {avgScore === null ? "—" : `${avgScore.toFixed(1)} / 10`}
           </span>
         </div>
@@ -60,8 +60,8 @@ export function JudgeScoresSummary({
 
       {scores.length > 0 && (
         <>
-          <div className="overflow-hidden rounded-[10px] border border-gignite-divider">
-            <div className={`${GRID_COLS} bg-gignite-card px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-text`}>
+          <div className="overflow-hidden rounded-[10px] border border-ignite-edge/[0.07]">
+            <div className={`${GRID_COLS} bg-ignite-bg px-4 py-2.5 font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink-soft`}>
               <span>Judge</span>
               {STAGE1_CRITERIA.map((c) => (
                 <span key={c.key} className="text-center leading-tight">
@@ -73,21 +73,21 @@ export function JudgeScoresSummary({
               <span className="text-right">Weighted</span>
             </div>
             {scores.map((s) => (
-              <div key={s.id} className={`${GRID_COLS} border-t border-gignite-divider bg-white px-4 py-3`}>
+              <div key={s.id} className={`${GRID_COLS} border-t border-ignite-edge/[0.07] bg-ignite-surface px-4 py-3`}>
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-[14px] font-semibold text-black">{s.judgeName}</span>
+                  <span className="text-[14px] font-semibold text-ignite-ink">{s.judgeName}</span>
                   {s.status === "draft" && (
-                    <span className="w-fit rounded-full bg-gignite-warn-pale px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-gignite-warn">
+                    <span className="w-fit rounded-full bg-ignite-warn-pale px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-ignite-warn">
                       Draft
                     </span>
                   )}
                 </div>
                 {STAGE1_CRITERIA.map((c) => (
-                  <span key={c.key} className="text-center font-mono text-[14px] text-gignite-text">
+                  <span key={c.key} className="text-center font-ui text-[14px] text-ignite-ink-soft">
                     {CRITERION_ACCESSOR[c.key](s) ?? "—"}
                   </span>
                 ))}
-                <span className="text-right font-heading text-[16px] font-bold text-gignite-blue">
+                <span className="text-right font-display text-[16px] font-bold text-ignite-ink">
                   {s.weighted !== null ? s.weighted.toFixed(1) : "—"}
                 </span>
               </div>
@@ -96,25 +96,25 @@ export function JudgeScoresSummary({
 
           <div className="flex flex-col gap-3.5">
             {scores.map((s) => (
-              <div key={s.id} className="flex flex-col gap-1.5 rounded-[10px] bg-gignite-card p-4">
+              <div key={s.id} className="flex flex-col gap-1.5 rounded-[10px] bg-ignite-bg p-4">
                 <div className="flex items-baseline justify-between gap-3.5">
-                  <span className="flex items-center gap-2 text-[14px] font-semibold text-black">
+                  <span className="flex items-center gap-2 text-[14px] font-semibold text-ignite-ink">
                     {s.judgeName}
                     {s.status === "draft" && (
-                      <span className="rounded-full bg-gignite-warn-pale px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-gignite-warn">
+                      <span className="rounded-full bg-ignite-warn-pale px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-ignite-warn">
                         Draft
                       </span>
                     )}
                   </span>
-                  <span className="font-mono text-[12px] text-gignite-blue">
+                  <span className="font-ui text-[12px] text-ignite-ink">
                     {s.weighted !== null ? `${s.weighted.toFixed(1)} weighted` : "In progress"}
                   </span>
                 </div>
-                {s.comments && <p className="m-0 text-[14px] leading-[1.6] text-gignite-text">{s.comments}</p>}
+                {s.comments && <p className="m-0 text-[14px] leading-[1.6] text-ignite-ink-soft">{s.comments}</p>}
               </div>
             ))}
           </div>
-          <span className="text-[13px] leading-[1.5] text-gignite-text/70">
+          <span className="text-[13px] leading-[1.5] text-ignite-muted">
             Read-only. Judges edit their own scores until the round closes; the average is unweighted across judges.
           </span>
         </>

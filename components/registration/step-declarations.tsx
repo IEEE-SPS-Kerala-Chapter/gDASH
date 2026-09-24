@@ -67,12 +67,12 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
                       field.onChange(!checked);
                     }
                   }}
-                  className="flex cursor-pointer gap-[13px] border-t border-black/[0.07] py-3 first:border-t-0 first:pt-0"
+                  className="flex cursor-pointer gap-[13px] border-t border-ignite-edge/[0.07] py-3 first:border-t-0 first:pt-0"
                 >
                   <div
                     className={cn(
-                      "flex h-6 w-6 flex-none items-center justify-center rounded-[7px] border-[1.5px] text-[13px] font-bold text-white transition-colors",
-                      checked ? "border-ignite-ink bg-ignite-ink" : "border-black/[0.12] bg-white",
+                      "flex h-6 w-6 flex-none items-center justify-center rounded-[7px] border-[1.5px] text-[13px] font-bold text-ignite-on-primary transition-colors",
+                      checked ? "border-ignite-primary bg-ignite-primary" : "border-ignite-edge/[0.18] bg-ignite-surface",
                     )}
                   >
                     {checked ? "✓" : ""}
@@ -96,7 +96,7 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(ev) => ev.stopPropagation()}
-                        className="mt-1 w-fit rounded-full border border-ignite-ink/70 bg-white/60 px-4 py-[6px] font-ui text-[13px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-ink hover:text-white"
+                        className="mt-1 w-fit rounded-full border border-ignite-ink/70 bg-ignite-surface/60 px-4 py-[6px] font-ui text-[13px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary"
                       >
                         Rules to follow ↗
                       </a>

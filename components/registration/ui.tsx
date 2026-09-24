@@ -2,6 +2,7 @@ import { forwardRef, type ReactNode, type SelectHTMLAttributes, type TextareaHTM
 import type { InputHTMLAttributes } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function BrandLogo({ className }: { className?: string }) {
   return (
@@ -11,7 +12,9 @@ export function BrandLogo({ className }: { className?: string }) {
       width={1100}
       height={451}
       priority
-      className={cn("h-auto w-auto", className)}
+      // The logo's navy lettering disappears on dark backgrounds, so in the
+      // dark theme it sits on a small white plate.
+      className={cn("h-auto w-auto dark:rounded-xl dark:bg-white dark:p-1.5", className)}
     />
   );
 }
@@ -39,43 +42,50 @@ export function GridBackground({ faded = false }: { faded?: boolean }) {
 }
 
 /**
- * Static 3-logo header bar — Gadgeon far-left (the sponsor, sized up so it
- * reads clearly), the FISAT IEEE Student Branch logo centered, and the
- * combined IEEE + SPS Kerala Chapter logo far-right. Sits in normal
- * document flow (not fixed/overlaid), so it never covers page content —
- * just pushes it down like a banner. Replaces the earlier scrolling
- * `MarqueeStrip`, which was only ever a placeholder for this.
+ * 3-logo header bar — Gadgeon far-left (the sponsor, sized up so it reads
+ * clearly), the FISAT IEEE Student Branch logo centered, and the combined
+ * IEEE + SPS Kerala Chapter logo far-right. Sticky at the top of the page,
+ * always white (the logos need it) in both themes, with the light/dark
+ * theme toggle on its own row just below it.
  */
-export function LogoHeaderBar({ className }: { className?: string }) {
+export function LogoHeaderBar({ className, onHero = false }: { className?: string; onHero?: boolean }) {
   return (
-    <div
-      className={cn(
-        "sticky top-0 z-30 flex w-full items-center justify-between gap-4 border-b border-ignite-line bg-white/95 px-6 py-3 shadow-[0_1px_6px_rgba(0,0,0,0.04)] backdrop-blur lg:px-16",
-        className,
-      )}
-    >
-      <Image
-        src="/gadgeon-logo.png"
-        alt="Gadgeon Smart Systems"
-        width={190}
-        height={64}
-        className="h-12 w-auto flex-none sm:h-16"
-      />
-      <Image
-        src="/fisat-sb-logo.png"
-        alt="IEEE FISAT Student Branch"
-        width={344}
-        height={178}
-        className="h-10 w-auto flex-none sm:h-14"
-      />
-      <Image
-        src="/ieee_sps_kc_logo.png"
-        alt="IEEE Signal Processing Society Kerala Chapter"
-        width={436}
-        height={141}
-        className="h-10 w-auto flex-none sm:h-14"
-      />
-    </div>
+    <>
+      <div className={cn("sticky top-0 z-30 w-full", className)}>
+        <div
+          // light-scope: the colour logos need a white bar in both themes.
+          className="light-scope flex w-full items-center justify-between gap-3 border-b border-ignite-edge/[0.08] bg-ignite-surface px-4 py-3 sm:gap-4 sm:px-6 shadow-[0_1px_6px_rgba(0,0,0,0.04)] lg:px-16"
+        >
+          <Image
+            src="/gadgeon-logo.png"
+            alt="Gadgeon Smart Systems"
+            width={190}
+            height={64}
+            className="h-9 w-auto min-w-0 flex-shrink sm:h-16"
+          />
+          <Image
+            src="/fisat-sb-logo.png"
+            alt="IEEE FISAT Student Branch"
+            width={344}
+            height={178}
+            className="h-8 w-auto min-w-0 flex-shrink sm:h-14"
+          />
+          <Image
+            src="/ieee_sps_kc_logo.png"
+            alt="IEEE Signal Processing Society Kerala Chapter"
+            width={436}
+            height={141}
+            className="h-8 w-auto min-w-0 flex-shrink sm:h-14"
+          />
+        </div>
+      </div>
+      {/* Theme toggle on its own row just below the bar, so page content always
+          starts beneath it instead of under it. `onHero` gives the row the
+          backdrop of a HeroShell / themed hero that follows it. */}
+      <div className={cn("flex justify-end px-4 pt-3 lg:px-8", onHero ? "-mb-px bg-ignite-bg pb-px dark:bg-ignite-navy" : "bg-transparent")}>
+        <ThemeToggle />
+      </div>
+    </>
   );
 }
 
@@ -109,7 +119,7 @@ export function Field({
 }
 
 const fieldBase =
-  "w-full rounded-xl border border-black/[0.12] bg-white px-[15px] py-[13px] font-ui text-[16px] text-ignite-ink outline-none transition-colors placeholder:text-ignite-faint focus:border-ignite-magenta focus:ring-[3px] focus:ring-ignite-magenta/20";
+  "w-full rounded-xl border border-ignite-edge/[0.12] bg-ignite-surface px-[15px] py-[13px] font-ui text-[16px] text-ignite-ink outline-none transition-colors placeholder:text-ignite-faint focus:border-ignite-magenta focus:ring-[3px] focus:ring-ignite-magenta/20";
 
 export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function TextInput({ className, ...props }, ref) {
@@ -180,8 +190,8 @@ export function PrimaryButton({
       className={cn(
         "flex w-full items-center justify-center gap-2.5 rounded-full px-6 py-[15px] font-ui text-[16px] font-bold transition-colors",
         disabled
-          ? "cursor-not-allowed bg-[#E4E3EA] text-ignite-faint"
-          : "bg-ignite-ink text-white shadow-[0_8px_20px_rgba(44,29,68,0.18)] hover:bg-ignite-ink-soft",
+          ? "cursor-not-allowed bg-ignite-edge/[0.08] text-ignite-faint"
+          : "bg-ignite-primary text-ignite-on-primary shadow-[0_8px_20px_rgba(44,29,68,0.18)] hover:bg-ignite-primary-hover",
       )}
     >
       {loading && <Spinner />}
@@ -197,7 +207,7 @@ export function SecondaryButton({
   return (
     <button
       {...props}
-      className="rounded-full border border-ignite-ink/70 bg-white/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-full border border-ignite-ink/70 bg-ignite-surface/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-surface disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -213,7 +223,7 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
         aria-label="Back"
         disabled={!canGoBack}
         className={cn(
-          "flex h-[34px] w-[34px] items-center justify-center rounded-full border border-ignite-line bg-white text-[15px] text-ignite-ink transition-colors",
+          "flex h-[34px] w-[34px] items-center justify-center rounded-full border border-ignite-edge/[0.08] bg-ignite-surface text-[15px] text-ignite-ink transition-colors",
           canGoBack ? "hover:border-ignite-ink" : "cursor-not-allowed opacity-40",
         )}
       >
@@ -255,7 +265,7 @@ export function DesktopSidebar({
               onClick={() => onStepClick?.(i)}
               className={cn(
                 "flex items-center gap-3 rounded-lg py-2 text-left",
-                clickable ? "cursor-pointer hover:bg-white/80" : "cursor-default",
+                clickable ? "cursor-pointer hover:bg-ignite-surface/80" : "cursor-default",
               )}
             >
               <div
@@ -263,7 +273,7 @@ export function DesktopSidebar({
                   "flex h-7 w-7 flex-none items-center justify-center rounded-full font-ui text-[12px] font-bold",
                   state === "done" && "bg-brand-gradient text-white",
                   state === "current" && "border-2 border-ignite-ink text-ignite-ink",
-                  state === "upcoming" && "border border-black/[0.15] text-ignite-faint",
+                  state === "upcoming" && "border border-ignite-edge/[0.15] text-ignite-faint",
                 )}
               >
                 {state === "done" ? "✓" : i + 1}
@@ -292,7 +302,7 @@ export function ProgressBar({ step, total }: { step: number; total: number }) {
           key={i}
           className={cn(
             "h-1 flex-1 rounded-full",
-            i <= step ? "bg-brand-gradient" : "bg-black/[0.08]",
+            i <= step ? "bg-brand-gradient" : "bg-ignite-edge/[0.08]",
           )}
         />
       ))}
@@ -322,14 +332,14 @@ export function StepTitle({ title, subtitle }: { title: string; subtitle: string
 
 export function FormCard({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-[18px] rounded-[20px] border border-black/[0.06] bg-white p-[22px] shadow-[0_1px_6px_rgba(0,0,0,0.06)] lg:p-8">
+    <div className="flex flex-col gap-[18px] rounded-[20px] border border-ignite-edge/[0.06] bg-ignite-surface p-[22px] shadow-[0_1px_6px_rgba(0,0,0,0.06)] lg:p-8">
       {children}
     </div>
   );
 }
 
 export function Divider() {
-  return <div className="h-px bg-black/[0.07]" />;
+  return <div className="h-px bg-ignite-edge/[0.07]" />;
 }
 
 /** Gadgeon-style section eyebrow: small label with a short gradient line before it. */
@@ -353,9 +363,10 @@ export function GradientText({ children }: { children: ReactNode }) {
 }
 
 /**
- * Dark hero layout matching the g-IGNITE page on Gadgeon.ai: navy backdrop
- * with blue/magenta glows, a small status label, a large headline, and the
- * page's actual content in a white card beside it (below it on mobile).
+ * Hero layout matching the g-IGNITE page on Gadgeon.ai: a backdrop with
+ * blue/magenta glows (navy in the dark theme, light in the light theme), a small status label, a large headline, and the
+ * page's actual content in a card beside it (below it on mobile), with the
+ * large gIGNITE logo above the headline.
  * Render LogoHeaderBar above it, as the other public pages do.
  */
 export function HeroShell({
@@ -370,19 +381,24 @@ export function HeroShell({
   children: ReactNode;
 }) {
   return (
-    <main className="hero-dark relative flex min-h-[calc(100vh-88px)] items-center px-4 py-12 font-ui text-white lg:px-16 lg:py-20">
+    <main className="hero-themed relative flex min-h-[calc(100vh-136px)] items-center px-4 py-12 font-ui text-ignite-ink lg:px-16 lg:py-20">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
         <div className="flex max-w-[560px] flex-col gap-5">
-          <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-white">
+          {/* Big event logo above the headline, on a white plate so its blue
+              lettering stays readable on the dark theme's navy. */}
+          <div className="mx-auto mb-3 w-fit rounded-[20px] bg-white px-5 py-3 shadow-[0_16px_40px_rgba(44,29,68,0.12)] ring-1 ring-ignite-edge/[0.06] dark:shadow-[0_16px_40px_rgba(0,0,0,0.35)] lg:mx-0">
+            <BrandLogo className="h-20 sm:h-24 lg:h-32" />
+          </div>
+          <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ignite-ink">
             <span aria-hidden="true" className="h-2 w-2 bg-ignite-orange" />
             {label}
           </span>
-          <h1 className="m-0 font-display text-[40px] font-medium leading-[1.08] tracking-[-0.03em] text-white lg:text-[60px]">
+          <h1 className="m-0 font-display text-[40px] font-medium leading-[1.08] tracking-[-0.03em] text-ignite-ink lg:text-[60px]">
             {title}
           </h1>
-          {intro && <div className="flex flex-col gap-3 text-[16px] leading-[1.7] text-ignite-on-dark">{intro}</div>}
+          {intro && <div className="flex flex-col gap-3 text-[16px] leading-[1.7] text-ignite-ink-soft">{intro}</div>}
         </div>
-        <div className="w-full max-w-[420px] self-center rounded-[24px] bg-white p-7 text-ignite-ink-soft shadow-[0_24px_60px_rgba(0,0,0,0.35)] lg:p-8">
+        <div className="w-full max-w-[420px] self-center rounded-[24px] bg-ignite-surface p-7 text-ignite-ink-soft shadow-[0_24px_60px_rgba(44,29,68,0.12)] ring-1 ring-ignite-edge/10 dark:shadow-[0_24px_60px_rgba(0,0,0,0.35)] lg:p-8">
           {children}
         </div>
       </div>

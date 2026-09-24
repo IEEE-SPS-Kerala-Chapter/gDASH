@@ -98,14 +98,14 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
         : "Score any criteria and save a draft, or complete all five to submit";
 
   return (
-    <div className="flex flex-col gap-7 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
-      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-gignite-divider pb-5">
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">
+    <div className="flex flex-col gap-7 rounded-xl border border-ignite-edge/[0.08] bg-ignite-surface p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
+      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-ignite-edge/[0.07] pb-5">
+        <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">
           Stage 1 · Your evaluation
         </span>
         <div className="flex items-baseline gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Weighted score</span>
-          <span className="font-heading text-[30px] font-bold leading-none tracking-[-0.02em] text-gignite-warn">
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Weighted score</span>
+          <span className="font-display text-[30px] font-bold leading-none tracking-[-0.02em] text-ignite-warn">
             {weighted !== null ? `${weighted.toFixed(1)} / 10` : "— / 10"}
           </span>
         </div>
@@ -115,24 +115,24 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
         {STAGE1_CRITERIA.map((criterion) => {
           const value = scores[criterion.key];
           return (
-            <div key={criterion.key} className="flex flex-col gap-3 border-t border-gignite-divider pt-5 first:border-t-0 first:pt-0">
+            <div key={criterion.key} className="flex flex-col gap-3 border-t border-ignite-edge/[0.07] pt-5 first:border-t-0 first:pt-0">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <div className="flex items-baseline gap-2.5">
-                  <span className="font-heading text-[18px] font-medium tracking-[-0.01em] text-black">
+                  <span className="font-display text-[18px] font-medium tracking-[-0.01em] text-ignite-ink">
                     {criterion.label}
                   </span>
-                  <span className="font-mono text-[11px] text-gignite-blue">{criterion.weight}% weight</span>
+                  <span className="font-ui text-[11px] text-ignite-ink">{criterion.weight}% weight</span>
                 </div>
                 <span
                   className={cn(
-                    "font-heading text-[15px] font-bold",
-                    value !== undefined ? "text-gignite-warn" : "text-gignite-text/50",
+                    "font-display text-[15px] font-bold",
+                    value !== undefined ? "text-ignite-warn" : "text-ignite-muted",
                   )}
                 >
                   {value !== undefined ? `${value} / 10` : "Not scored yet"}
                 </span>
               </div>
-              <p className="m-0 text-[14px] leading-[1.5] text-gignite-text/75">{criterion.description}</p>
+              <p className="m-0 text-[14px] leading-[1.5] text-ignite-muted">{criterion.description}</p>
               <div className="flex gap-1.5">
                 {SCORE_OPTIONS.map((n) => {
                   const on = value === n;
@@ -142,8 +142,8 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
                       type="button"
                       onClick={() => setScore(criterion.key, n)}
                       className={cn(
-                        "flex-1 rounded-[9px] border-[1.5px] py-3 font-heading text-[15px] font-bold transition-transform hover:-translate-y-0.5 hover:border-gignite-accent",
-                        on ? "border-gignite-accent bg-gignite-accent text-black" : "border-gignite-border bg-white text-gignite-text",
+                        "flex-1 rounded-[9px] border-[1.5px] py-3 font-display text-[15px] font-bold transition-transform hover:-translate-y-0.5 hover:border-ignite-magenta",
+                        on ? "border-ignite-orange bg-ignite-orange text-ignite-ink" : "border-ignite-edge/[0.12] bg-ignite-surface text-ignite-ink-soft",
                       )}
                     >
                       {n}
@@ -157,7 +157,7 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <label htmlFor="judge-comments" className="font-mono text-[11px] uppercase tracking-[0.14em] text-gignite-text/70">
+        <label htmlFor="judge-comments" className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">
           Comments
         </label>
         <TextArea
@@ -171,7 +171,7 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
           rows={5}
           placeholder="What worked, and what you'd push on if they had another day."
         />
-        <span className="text-[13px] text-gignite-text/70">
+        <span className="text-[13px] text-ignite-muted">
           Shared with the team after results are announced. Scores stay private to the panel.
         </span>
       </div>
@@ -182,10 +182,10 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
           onClick={handleSaveDraft}
           disabled={saving}
           className={cn(
-            "rounded-[11px] border-[1.5px] px-6 py-4 font-heading text-[15px] font-semibold transition-colors",
+            "rounded-[11px] border-[1.5px] px-6 py-4 font-display text-[15px] font-semibold transition-colors",
             saving
-              ? "cursor-not-allowed border-gignite-border text-gignite-muted"
-              : "border-gignite-blue text-gignite-blue hover:bg-gignite-blue hover:text-white",
+              ? "cursor-not-allowed border-ignite-edge/[0.12] text-ignite-muted"
+              : "border-ignite-ink text-ignite-ink hover:bg-ignite-primary hover:text-ignite-on-primary",
           )}
         >
           {savingDraft ? "Saving…" : "Save draft"}
@@ -196,15 +196,15 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
           disabled={saving || !complete}
           title={!complete ? "Score every criterion before submitting" : undefined}
           className={cn(
-            "rounded-[11px] px-9 py-4 font-heading text-[17px] font-bold transition-colors",
+            "rounded-[11px] px-9 py-4 font-display text-[17px] font-bold transition-colors",
             saving || !complete
-              ? "cursor-not-allowed bg-gignite-border text-gignite-muted"
-              : "bg-gignite-accent text-black shadow-[0_3px_0_rgba(150,67,11,0.45)] hover:bg-gignite-accent-hover",
+              ? "cursor-not-allowed bg-ignite-edge/[0.10] text-ignite-muted"
+              : "bg-ignite-orange text-ignite-ink shadow-[0_3px_0_rgba(150,67,11,0.45)] hover:bg-ignite-primary-hover",
           )}
         >
           {submitting ? "Submitting…" : "Submit score"}
         </button>
-        <span className={cn("text-[14px]", savedStatus === "submitted" && !dirty ? "text-gignite-success" : "text-gignite-text/60")}>
+        <span className={cn("text-[14px]", savedStatus === "submitted" && !dirty ? "text-ignite-success" : "text-ignite-muted")}>
           {savedLabel}
         </span>
       </div>

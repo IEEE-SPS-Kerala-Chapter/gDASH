@@ -78,7 +78,7 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
             : undefined
         }
         className={cn(
-          "flex items-center gap-3 rounded-[10px] border-[1.5px] border-black/[0.12] bg-ignite-bg p-3",
+          "flex items-center gap-3 rounded-[10px] border-[1.5px] border-ignite-edge/[0.12] bg-ignite-bg p-3",
           ready && "cursor-pointer transition-colors hover:border-ignite-ink",
         )}
       >
@@ -125,7 +125,7 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
             type="button"
             onClick={() => setExpanded(false)}
             aria-label="Close"
-            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[16px] font-semibold text-ignite-ink"
+            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-ignite-surface text-[16px] font-semibold text-ignite-ink"
           >
             ×
           </button>
@@ -174,7 +174,7 @@ export function StepReview({
         {members.map((m, i) => {
           const role = m.roleInTeam === OTHER_ROLE ? m.roleInTeamOther : m.roleInTeam;
           return (
-            <div key={i} className="flex flex-col gap-2.5 border-t border-black/[0.07] pt-4 first:border-t-0 first:pt-0">
+            <div key={i} className="flex flex-col gap-2.5 border-t border-ignite-edge/[0.07] pt-4 first:border-t-0 first:pt-0">
               <span className="text-[13px] font-semibold text-ignite-ink">{m.fullName || `Member ${i + 2}`}</span>
               <ReviewRow label="Email" value={m.email} />
               <ReviewRow label="Phone" value={m.phone} />

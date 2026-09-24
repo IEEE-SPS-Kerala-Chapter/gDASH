@@ -18,7 +18,7 @@ export default async function DashboardPage() {
         {teamsResult.success ? (
           <JudgeTeamsList teams={teamsResult.teams} />
         ) : (
-          <p className="text-gignite-danger">{teamsResult.error}</p>
+          <p className="text-ignite-danger">{teamsResult.error}</p>
         )}
       </div>
     );
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
 
   if (profile?.role === "volunteer") {
     return (
-      <Panel className="py-16 text-center text-[14px] text-gignite-text/60">
+      <Panel className="py-16 text-center text-[14px] text-ignite-muted">
         Nothing here for you yet — check back once check-in opens closer to the event.
       </Panel>
     );
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   ]);
 
   if (!teamsResult.success) {
-    return <p className="text-gignite-danger">{teamsResult.error}</p>;
+    return <p className="text-ignite-danger">{teamsResult.error}</p>;
   }
 
   return (

@@ -100,9 +100,9 @@ export function InlineJudgeAssign({
           </Badge>
         ))}
         {decided ? (
-          assignments.length === 0 && <span className="text-[12px] text-gignite-text/60">Decision made</span>
+          assignments.length === 0 && <span className="text-[12px] text-ignite-muted">Decision made</span>
         ) : verificationStatus !== "verified" ? (
-          <span className="text-[12px] text-gignite-text/60">
+          <span className="text-[12px] text-ignite-muted">
             {verificationStatus === "ineligible" ? "Ineligible, can't assign" : "Verify eligibility to assign"}
           </span>
         ) : available.length > 0 ? (
@@ -110,7 +110,7 @@ export function InlineJudgeAssign({
             disabled={busy}
             value=""
             onChange={(e) => handlePick(e.target.value)}
-            className="cursor-pointer rounded-full border-[1.5px] border-dashed border-gignite-border-strong bg-transparent px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-gignite-blue outline-none transition-colors hover:border-gignite-blue disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-full border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-transparent px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-ink outline-none transition-colors hover:border-ignite-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option value="" disabled>
               {busy ? "Assigning…" : "+ Assign judge"}
@@ -123,18 +123,18 @@ export function InlineJudgeAssign({
           </select>
         ) : (
           judges.length === 0 &&
-          assignments.length === 0 && <span className="text-[12px] text-gignite-text/60">No judges yet</span>
+          assignments.length === 0 && <span className="text-[12px] text-ignite-muted">No judges yet</span>
         )}
       </div>
 
       {confirming && (
-        <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-gignite-danger bg-gignite-card p-4">
+        <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-ignite-danger bg-ignite-bg p-4">
           <div className="flex gap-2.5">
-            <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-gignite-danger text-[11px] font-bold text-white">
+            <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-ignite-danger text-[11px] font-bold text-white">
               !
             </span>
-            <span className="flex-1 text-[14px] leading-[1.55] text-gignite-text">
-              Unassign <span className="font-semibold text-black">{confirming.judge_name}</span> from this team?{" "}
+            <span className="flex-1 text-[14px] leading-[1.55] text-ignite-ink-soft">
+              Unassign <span className="font-semibold text-ignite-ink">{confirming.judge_name}</span> from this team?{" "}
               {scoredIds.has(confirming.judge_id)
                 ? "Their submitted score and comments stay on the record."
                 : "They have not scored this entry yet."}
@@ -145,7 +145,7 @@ export function InlineJudgeAssign({
               type="button"
               onClick={handleConfirmedUnassign}
               disabled={removing}
-              className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-80"
+              className="flex flex-1 items-center justify-center gap-2 rounded-[9px] bg-ignite-danger px-4 py-2.5 font-display text-[14px] font-medium text-white transition-colors hover:bg-ignite-danger/85 disabled:cursor-not-allowed disabled:opacity-80"
             >
               {removing && <Spinner className="h-3.5 w-3.5" />}
               {removing ? "Removing…" : "Unassign"}
@@ -154,7 +154,7 @@ export function InlineJudgeAssign({
               type="button"
               onClick={() => setConfirming(null)}
               disabled={removing}
-              className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
+              className="flex-1 rounded-[9px] border-[1.5px] border-ignite-edge/[0.18] bg-ignite-surface px-4 py-2.5 font-display text-[14px] font-medium text-ignite-ink-soft transition-colors hover:border-ignite-ink hover:text-ignite-ink"
             >
               Keep
             </button>

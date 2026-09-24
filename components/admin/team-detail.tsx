@@ -125,21 +125,21 @@ export function TeamDetail({
         </section>
       )}
       {isJudge && queueNav && (
-        <div className="flex items-center justify-between gap-4 border-t border-gignite-divider pt-5">
+        <div className="flex items-center justify-between gap-4 border-t border-ignite-edge/[0.07] pt-5">
           <button
             type="button"
             disabled={!queueNav.prevTeamId}
             onClick={() => queueNav.prevTeamId && router.push(`/dashboard/teams/${queueNav.prevTeamId}`)}
-            className="font-body text-[15px] font-semibold text-gignite-text transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:text-gignite-blue"
+            className="font-ui text-[15px] font-semibold text-ignite-ink-soft transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:text-ignite-ink"
           >
             ← Previous
           </button>
-          <span className="font-mono text-[12px] text-gignite-text/60">{queueNav.position}</span>
+          <span className="font-ui text-[12px] text-ignite-muted">{queueNav.position}</span>
           <button
             type="button"
             disabled={!queueNav.nextTeamId}
             onClick={() => queueNav.nextTeamId && router.push(`/dashboard/teams/${queueNav.nextTeamId}`)}
-            className="font-body text-[15px] font-semibold text-gignite-blue transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:text-gignite-accent"
+            className="font-ui text-[15px] font-semibold text-ignite-ink transition-colors disabled:cursor-not-allowed disabled:opacity-40 hover:text-ignite-magenta"
           >
             Next submission →
           </button>
@@ -150,37 +150,37 @@ export function TeamDetail({
 
   return (
     <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gignite-divider pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ignite-edge/[0.07] pb-4">
         <div className="flex items-center gap-2 text-[13px]">
-          <Link href="/dashboard" className="text-gignite-text/70 hover:text-gignite-blue">
+          <Link href="/dashboard" className="text-ignite-muted hover:text-ignite-ink">
             Teams
           </Link>
-          <span className="text-gignite-text/40">/</span>
-          <span className="font-semibold text-black">{team.name}</span>
+          <span className="text-ignite-muted">/</span>
+          <span className="font-semibold text-ignite-ink">{team.name}</span>
         </div>
         {leader && isAdmin && (
           <a
             href={`mailto:${leader.email}`}
-            className="rounded-[9px] border-[1.5px] border-gignite-blue px-4 py-2 font-heading text-[14px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
+            className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary"
           >
             Message team
           </a>
         )}
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-8 border-b border-gignite-divider pb-6">
+      <div className="flex flex-wrap items-start justify-between gap-8 border-b border-ignite-edge/[0.07] pb-6">
         <div className="flex min-w-0 flex-col gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-gignite-blue">
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
             Stage 1 entry · {teamCode}
           </span>
-          <h1 className="m-0 font-heading text-[34px] font-bold leading-[1.05] tracking-[-0.03em] text-black lg:text-[40px]">
+          <h1 className="m-0 font-display text-[34px] font-bold leading-[1.05] tracking-[-0.03em] text-ignite-ink lg:text-[40px]">
             {team.name}
           </h1>
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex rounded-[6px] bg-gignite-blue-pale px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.08em] text-gignite-blue">
+            <span className="inline-flex rounded-[6px] bg-ignite-lavender px-2.5 py-1 font-ui text-[11px] uppercase tracking-[0.08em] text-ignite-ink">
               {team.ai_theme}
             </span>
-            <span className="text-[15px] text-gignite-text">
+            <span className="text-[15px] text-ignite-ink-soft">
               {team.district}
               {leader?.college ? ` · ${leader.college}` : ""}
             </span>
@@ -194,7 +194,7 @@ export function TeamDetail({
               fg={pill.fg}
               dot={pill.dot}
             />
-            <span className="font-mono text-[12px] text-gignite-text/70">Submitted {submittedLabel}</span>
+            <span className="font-ui text-[12px] text-ignite-muted">Submitted {submittedLabel}</span>
           </div>
         )}
       </div>
@@ -212,13 +212,13 @@ export function TeamDetail({
               <Panel className="flex flex-col gap-3 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <SectionLabel>Registration status</SectionLabel>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-accent">Admin only</span>
+                  <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Admin only</span>
                 </div>
                 <Select
                   value={reg.status}
                   disabled={statusBusy}
                   onChange={(e) => handleStatusChange(e.target.value)}
-                  className="border-gignite-blue font-semibold text-gignite-blue"
+                  className="border-ignite-ink font-semibold text-ignite-ink"
                 >
                   {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => {
                     const blocked =
@@ -230,11 +230,11 @@ export function TeamDetail({
                     );
                   })}
                 </Select>
-                <span className="text-[13px] leading-[1.5] text-gignite-text/75">
+                <span className="text-[13px] leading-[1.5] text-ignite-muted">
                   {REGISTRATION_STATUS_HINTS[reg.status]}
                 </span>
                 {!allAssignedScoresIn(reg) && !DECISION_STATUSES.includes(reg.status) && (
-                  <span className="text-[13px] leading-[1.5] text-gignite-text/75">
+                  <span className="text-[13px] leading-[1.5] text-ignite-muted">
                     {reg.assignments.length === 0
                       ? "Assign judges and collect their scores before shortlisting or rejecting."
                       : `Shortlist or reject once every assigned judge has submitted a score (${
@@ -245,7 +245,7 @@ export function TeamDetail({
                   </span>
                 )}
                 {reg.status_changed_at && (
-                  <span className="font-mono text-[11px] text-gignite-text/60">
+                  <span className="font-ui text-[11px] text-ignite-muted">
                     Last changed by {reg.status_changed_by_name ?? "an admin"} ·{" "}
                     {new Date(reg.status_changed_at).toLocaleString("en-IN", {
                       timeZone: "Asia/Kolkata",
@@ -261,7 +261,7 @@ export function TeamDetail({
               <Panel className="flex flex-col gap-3.5 p-5">
                 <div className="flex items-center justify-between gap-3">
                   <SectionLabel>Assigned judges</SectionLabel>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-accent">Admin only</span>
+                  <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Admin only</span>
                 </div>
                 <InlineJudgeAssign
                   registrationId={reg.id}
@@ -275,12 +275,12 @@ export function TeamDetail({
                   }
                 />
                 {judges.length === 0 && (
-                  <span className="text-[13px] leading-[1.5] text-gignite-text/75">No judge accounts yet.</span>
+                  <span className="text-[13px] leading-[1.5] text-ignite-muted">No judge accounts yet.</span>
                 )}
               </Panel>
             )}
 
-            <Panel className="flex flex-col gap-2.5 bg-gignite-card p-5">
+            <Panel className="flex flex-col gap-2.5 bg-ignite-bg p-5">
               <SectionLabel>Record</SectionLabel>
               <RecordRow label="Entry ID" value={teamCode} mono />
               <RecordRow label="Submitted" value={submittedLabel ?? "—"} />
@@ -290,16 +290,16 @@ export function TeamDetail({
                 <RecordRow
                   label="Declarations"
                   value={declarationsAllConfirmed ? "All confirmed" : "Required confirmed"}
-                  valueClassName="text-[#146443]"
+                  valueClassName="text-ignite-success"
                 />
               )}
             </Panel>
 
             {isSuperAdmin && (
-              <Panel className="flex flex-col gap-3 border-gignite-danger p-5">
+              <Panel className="flex flex-col gap-3 border-ignite-danger p-5">
                 <div className="flex items-center justify-between gap-3">
                   <SectionLabel>Danger zone</SectionLabel>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-accent">
+                  <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">
                     Super admin only
                   </span>
                 </div>
@@ -307,18 +307,18 @@ export function TeamDetail({
                   <button
                     type="button"
                     onClick={() => setDeleteConfirmOpen(true)}
-                    className="rounded-[9px] border-[1.5px] border-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-danger transition-colors hover:bg-gignite-danger hover:text-white"
+                    className="rounded-[9px] border-[1.5px] border-ignite-danger px-4 py-2.5 font-display text-[14px] font-medium text-ignite-danger transition-colors hover:bg-ignite-danger hover:text-white"
                   >
                     Delete registration
                   </button>
                 ) : (
-                  <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-gignite-danger bg-gignite-card p-4">
+                  <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-ignite-danger bg-ignite-bg p-4">
                     <div className="flex gap-2.5">
-                      <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-gignite-danger text-[11px] font-bold text-white">
+                      <span className="mt-0.5 flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full bg-ignite-danger text-[11px] font-bold text-white">
                         !
                       </span>
-                      <span className="flex-1 text-[14px] leading-[1.55] text-gignite-text">
-                        This permanently deletes <span className="font-semibold text-black">{team.name}</span> —
+                      <span className="flex-1 text-[14px] leading-[1.55] text-ignite-ink-soft">
+                        This permanently deletes <span className="font-semibold text-ignite-ink">{team.name}</span> —
                         the team, all {team.members.length} member{team.members.length === 1 ? "" : "s"}, the
                         submitted idea, and any judge scores. This cannot be undone. Type the team name to confirm.
                       </span>
@@ -328,14 +328,14 @@ export function TeamDetail({
                       value={deleteConfirmText}
                       onChange={(e) => setDeleteConfirmText(e.target.value)}
                       placeholder={team.name}
-                      className="w-full rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-3 py-2 text-[14px] text-gignite-text outline-none focus:border-gignite-danger"
+                      className="w-full rounded-[9px] border-[1.5px] border-ignite-edge/[0.18] bg-ignite-surface px-3 py-2 text-[14px] text-ignite-ink-soft outline-none focus:border-ignite-danger"
                     />
                     <div className="flex gap-2.5">
                       <button
                         type="button"
                         onClick={handleDelete}
                         disabled={deleteConfirmText !== team.name || deleting}
-                        className="flex-1 rounded-[9px] bg-gignite-danger px-4 py-2.5 font-heading text-[14px] font-medium text-white transition-colors hover:bg-[#98300F] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex-1 rounded-[9px] bg-ignite-danger px-4 py-2.5 font-display text-[14px] font-medium text-white transition-colors hover:bg-ignite-danger/85 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {deleting ? "Deleting…" : "Permanently delete"}
                       </button>
@@ -346,7 +346,7 @@ export function TeamDetail({
                           setDeleteConfirmText("");
                         }}
                         disabled={deleting}
-                        className="flex-1 rounded-[9px] border-[1.5px] border-gignite-border-strong bg-white px-4 py-2.5 font-heading text-[14px] font-medium text-gignite-text transition-colors hover:border-gignite-blue hover:text-gignite-blue"
+                        className="flex-1 rounded-[9px] border-[1.5px] border-ignite-edge/[0.18] bg-ignite-surface px-4 py-2.5 font-display text-[14px] font-medium text-ignite-ink-soft transition-colors hover:border-ignite-ink hover:text-ignite-ink"
                       >
                         Cancel
                       </button>
@@ -361,43 +361,43 @@ export function TeamDetail({
         <div className="flex flex-col gap-5">{contentSections}</div>
       )}
 
-      {!leader && <p className="text-[14px] text-gignite-text/60">No leader on record for this team.</p>}
+      {!leader && <p className="text-[14px] text-ignite-muted">No leader on record for this team.</p>}
     </div>
   );
 }
 
 function MembersPanel({ members, showContactDetails }: { members: AdminMember[]; showContactDetails: boolean }) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
+    <div className="flex flex-col gap-4 rounded-xl border border-ignite-edge/[0.08] bg-ignite-surface p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
       <div className="flex items-center justify-between gap-4">
-        <h3 className="m-0 font-heading text-[22px] font-medium tracking-[-0.01em] text-black">Members</h3>
-        <span className="font-mono text-[12px] text-gignite-text/70">{members.length} of 5</span>
+        <h3 className="m-0 font-display text-[22px] font-medium tracking-[-0.01em] text-ignite-ink">Members</h3>
+        <span className="font-ui text-[12px] text-ignite-muted">{members.length} of 5</span>
       </div>
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         {members.map((m) => (
-          <div key={m.id} className="flex gap-3.5 rounded-[10px] border border-[#EFE4CB] bg-gignite-card p-4">
-            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-gignite-blue-pale font-heading text-[14px] font-bold text-gignite-blue">
+          <div key={m.id} className="flex gap-3.5 rounded-[10px] border border-ignite-edge/[0.07] bg-ignite-bg p-4">
+            <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-ignite-lavender font-display text-[14px] font-bold text-ignite-ink">
               {initials(m.full_name)}
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[15px] font-semibold text-black">{m.full_name}</span>
+                <span className="text-[15px] font-semibold text-ignite-ink">{m.full_name}</span>
                 {m.is_leader && <Badge className="text-[9px]">Leader</Badge>}
               </div>
-              <span className="font-mono text-[12px] text-gignite-blue">{m.member_code}</span>
+              <span className="font-ui text-[12px] text-ignite-ink">{m.member_code}</span>
               {showContactDetails ? (
                 <>
-                  <span className="truncate text-[13px] text-gignite-text">{m.email}</span>
-                  <span className="text-[13px] text-gignite-text/80">{m.phone}</span>
-                  <span className="text-[13px] text-gignite-blue">
+                  <span className="truncate text-[13px] text-ignite-ink-soft">{m.email}</span>
+                  <span className="text-[13px] text-ignite-ink-soft">{m.phone}</span>
+                  <span className="text-[13px] text-ignite-ink">
                     {m.college}
                     {m.branch ? ` · ${m.branch}` : ""}
                     {m.year ? ` · ${m.year}` : ""}
                   </span>
-                  {m.role_in_team && <span className="text-[13px] text-gignite-text/80">{m.role_in_team}</span>}
+                  {m.role_in_team && <span className="text-[13px] text-ignite-ink-soft">{m.role_in_team}</span>}
                 </>
               ) : (
-                <span className="text-[13px] text-gignite-blue">{m.college}</span>
+                <span className="text-[13px] text-ignite-ink">{m.college}</span>
               )}
             </div>
           </div>
@@ -417,25 +417,25 @@ function initials(name: string) {
 
 function SubmissionPanel({ reg }: { reg: AdminRegistration }) {
   return (
-    <div className="flex flex-col gap-5 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
-      <h3 className="m-0 font-heading text-[22px] font-medium tracking-[-0.01em] text-black">Stage 1 submission</h3>
+    <div className="flex flex-col gap-5 rounded-xl border border-ignite-edge/[0.08] bg-ignite-surface p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
+      <h3 className="m-0 font-display text-[22px] font-medium tracking-[-0.01em] text-ignite-ink">Stage 1 submission</h3>
       <SubmissionField label="Problem statement" value={reg.problem_statement} />
       <SubmissionField label="Proposed solution" value={reg.proposed_solution} />
       <SubmissionField label="AI approach / technology" value={reg.ai_approach} />
       <SubmissionField label="Expected impact" value={reg.expected_impact} />
       {reg.supporting_link && (
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gignite-divider pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-ignite-edge/[0.07] pt-4">
           <div className="flex min-w-0 flex-col gap-1">
-            <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">
+            <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">
               Supporting material
             </span>
-            <span className="truncate text-[15px] text-gignite-text">{reg.supporting_link}</span>
+            <span className="truncate text-[15px] text-ignite-ink-soft">{reg.supporting_link}</span>
           </div>
           <a
             href={reg.supporting_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="border-b-[1.5px] border-gignite-blue/35 pb-0.5 text-[15px] font-semibold text-gignite-blue transition-colors hover:border-gignite-accent hover:text-gignite-accent"
+            className="border-b-[1.5px] border-ignite-ink/35 pb-0.5 text-[15px] font-semibold text-ignite-ink transition-colors hover:border-ignite-magenta hover:text-ignite-magenta"
           >
             Open link →
           </a>
@@ -448,8 +448,8 @@ function SubmissionPanel({ reg }: { reg: AdminRegistration }) {
 function SubmissionField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">{label}</span>
-      <p className="m-0 max-w-[80ch] whitespace-pre-wrap break-words text-[16px] leading-[1.7] text-gignite-text">
+      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">{label}</span>
+      <p className="m-0 max-w-[80ch] whitespace-pre-wrap break-words text-[16px] leading-[1.7] text-ignite-ink-soft">
         {value}
       </p>
     </div>
@@ -469,8 +469,8 @@ function RecordRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3.5">
-      <span className="text-[14px] text-gignite-text">{label}</span>
-      <span className={cn("text-[14px] font-semibold text-black", mono && "font-mono font-medium", valueClassName)}>
+      <span className="text-[14px] text-ignite-ink-soft">{label}</span>
+      <span className={cn("text-[14px] font-semibold text-ignite-ink", mono && "font-ui font-medium", valueClassName)}>
         {value}
       </span>
     </div>

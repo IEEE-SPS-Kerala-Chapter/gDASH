@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
-import { BrandLogo, Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
+import { Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -38,9 +38,8 @@ function SessionBlocked({
 
   return (
     <>
-      <LogoHeaderBar />
+      <LogoHeaderBar onHero />
       <HeroShell label="g-IGNITE 2026" title={title} intro={<p className="m-0">{message}</p>}>
-        <BrandLogo className="mx-auto mb-6 h-14" />
         <div className="flex w-full flex-col gap-3">
           {statusUrl && (
             <PrimaryButton type="button" onClick={() => router.push(statusUrl)} disabled={signingOut}>
@@ -136,7 +135,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
 
   return (
     <>
-      <LogoHeaderBar />
+      <LogoHeaderBar onHero />
       <HeroShell
         label="Registrations Open"
         title={
@@ -157,7 +156,6 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
           </>
         }
       >
-        <BrandLogo className="mx-auto mb-6 h-14" />
 
         {googleError && (
           <p className="mb-4 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
@@ -184,9 +182,9 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
           {mode === "choose" && (
             <>
               <div className="flex items-center gap-3 font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ignite-faint">
-                <span className="h-px flex-1 bg-black/[0.07]" />
+                <span className="h-px flex-1 bg-ignite-edge/[0.07]" />
                 or
-                <span className="h-px flex-1 bg-black/[0.07]" />
+                <span className="h-px flex-1 bg-ignite-edge/[0.07]" />
               </div>
               <SecondaryButton type="button" onClick={() => setMode("email")}>
                 Continue with email
@@ -288,7 +286,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
 
   if (sentTo) {
     return (
-      <div className="flex flex-col gap-3 rounded-2xl border border-black/[0.08] bg-ignite-bg p-4 text-left">
+      <div className="flex flex-col gap-3 rounded-2xl border border-ignite-edge/[0.08] bg-ignite-bg p-4 text-left">
         <p className="text-[14px] leading-[1.5] text-ignite-ink-soft">
           Check <span className="font-semibold">{sentTo}</span> for a sign-in link. It&apos;ll bring
           you straight back here, signed in.

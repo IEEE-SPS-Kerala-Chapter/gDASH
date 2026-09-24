@@ -23,7 +23,7 @@ export default function GlobalError({
       <button
         type="button"
         onClick={reset}
-        className="rounded-full bg-ignite-ink px-7 py-3 font-ui font-bold text-white shadow-[0_8px_20px_rgba(44,29,68,0.18)] hover:bg-ignite-ink-soft"
+        className="rounded-full bg-ignite-primary px-7 py-3 font-ui font-bold text-ignite-on-primary shadow-[0_8px_20px_rgba(44,29,68,0.18)] hover:bg-ignite-primary-hover"
       >
         Try again
       </button>

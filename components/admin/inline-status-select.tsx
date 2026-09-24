@@ -10,10 +10,10 @@ import { REGISTRATION_STATUS_LABELS, REGISTRATION_STATUS_BADGE_VARIANT } from "@
 import { cn } from "@/lib/utils";
 
 const VARIANT_SELECT_CLASSES: Record<string, string> = {
-  neutral: "border-gignite-blue/25 bg-gignite-blue-pale text-gignite-blue",
-  warn: "border-gignite-warn/25 bg-gignite-warn-pale text-gignite-warn",
-  success: "border-gignite-success/25 bg-gignite-success-pale text-gignite-success",
-  danger: "border-gignite-danger/25 bg-gignite-danger-pale text-gignite-danger",
+  neutral: "border-ignite-ink/25 bg-ignite-lavender text-ignite-ink",
+  warn: "border-ignite-warn/25 bg-ignite-warn-pale text-ignite-warn",
+  success: "border-ignite-success/25 bg-ignite-success-pale text-ignite-success",
+  danger: "border-ignite-danger/25 bg-ignite-danger-pale text-ignite-danger",
 };
 
 /**
@@ -66,7 +66,7 @@ export function InlineStatusSelect({
       onClick={(e) => e.stopPropagation()}
       onChange={(e) => handleChange(e.target.value)}
       className={cn(
-        "cursor-pointer appearance-none rounded-full border-[1.5px] px-3 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        "cursor-pointer appearance-none rounded-full border-[1.5px] px-3 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-60",
         VARIANT_SELECT_CLASSES[variant],
       )}
     >

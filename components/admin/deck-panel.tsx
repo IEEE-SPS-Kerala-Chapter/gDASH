@@ -41,35 +41,35 @@ export function DeckPanel({ deckPath, uploadedAt }: { deckPath: string; uploaded
   });
 
   return (
-    <div className="flex flex-col gap-3.5 rounded-xl border border-black/[0.08] bg-white p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
+    <div className="flex flex-col gap-3.5 rounded-xl border border-ignite-edge/[0.08] bg-ignite-surface p-6 shadow-[0_1px_2px_rgba(44,44,44,0.05),0_12px_28px_rgba(32,65,154,0.06)]">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Uploaded deck</span>
-          <span className="text-[15px] font-semibold text-black">{deckFileName(deckPath)}</span>
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Uploaded deck</span>
+          <span className="text-[15px] font-semibold text-ignite-ink">{deckFileName(deckPath)}</span>
         </div>
         <div className="flex items-center gap-3.5">
-          <span className="font-mono text-[12px] text-gignite-text/70">uploaded {uploadedLabel}</span>
+          <span className="font-ui text-[12px] text-ignite-muted">uploaded {uploadedLabel}</span>
           {state.status === "ready" && (
             <a
               href={state.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="border-b-[1.5px] border-gignite-blue/35 pb-0.5 text-[14px] font-semibold text-gignite-blue transition-colors hover:border-gignite-accent hover:text-gignite-accent"
+              className="border-b-[1.5px] border-ignite-ink/35 pb-0.5 text-[14px] font-semibold text-ignite-ink transition-colors hover:border-ignite-magenta hover:text-ignite-magenta"
             >
               Download ↗
             </a>
           )}
         </div>
       </div>
-      <div className="h-[520px] overflow-hidden rounded-[10px] border border-gignite-divider bg-gignite-bg">
+      <div className="h-[520px] overflow-hidden rounded-[10px] border border-ignite-edge/[0.07] bg-ignite-bg">
         {state.status === "loading" && (
-          <div className="flex h-full items-center justify-center gap-2.5 text-[14px] text-gignite-text/60">
+          <div className="flex h-full items-center justify-center gap-2.5 text-[14px] text-ignite-muted">
             <Spinner />
             Loading deck…
           </div>
         )}
         {state.status === "error" && (
-          <div className="flex h-full items-center justify-center text-[14px] text-gignite-danger">{state.message}</div>
+          <div className="flex h-full items-center justify-center text-[14px] text-ignite-danger">{state.message}</div>
         )}
         {state.status === "ready" && <iframe src={state.url} title="Uploaded deck" className="h-full w-full border-0" />}
       </div>

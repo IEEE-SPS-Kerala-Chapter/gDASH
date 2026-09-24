@@ -3,11 +3,11 @@ import { Skeleton } from "@/components/admin/ui";
 export default function TeamDetailLoading() {
   return (
     <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-6">
-      <div className="flex items-center justify-between gap-3 border-b border-gignite-divider pb-4">
+      <div className="flex items-center justify-between gap-3 border-b border-ignite-edge/[0.07] pb-4">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-9 w-32 rounded-[9px]" />
       </div>
-      <div className="flex items-start justify-between gap-8 border-b border-gignite-divider pb-6">
+      <div className="flex items-start justify-between gap-8 border-b border-ignite-edge/[0.07] pb-6">
         <div className="flex flex-1 flex-col gap-3">
           <Skeleton className="h-3 w-28" />
           <Skeleton className="h-9 w-72" />

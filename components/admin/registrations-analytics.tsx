@@ -11,18 +11,18 @@ import { AI_THEMES } from "@/lib/validations/team";
  * same as clicking a donut slice would in the design. */
 
 export const THEME_COLORS: Record<string, string> = {
-  "AI for Healthcare": "#20419A",
-  "AI for Mobility & Transportation": "#F27721",
-  "AI for Disaster Management": "#1F7A42",
-  "AI for Smart Cities": "#C25E0E",
-  "Open Innovation Track": "#6B6355",
+  "AI for Healthcare": "#3182FC",
+  "AI for Mobility & Transportation": "#F47920",
+  "AI for Disaster Management": "#2FA866",
+  "AI for Smart Cities": "#C756D9",
+  "Open Innovation Track": "#99A1AF",
 };
 
 export const STATUS_COLORS: Record<string, string> = {
-  submitted: "#20419A",
-  under_review: "#F27721",
-  shortlisted: "#16794F",
-  rejected: "#9A9184",
+  submitted: "var(--ig-status-submitted-dot)",
+  under_review: "var(--ig-status-under_review-dot)",
+  shortlisted: "var(--ig-status-shortlisted-dot)",
+  rejected: "var(--ig-status-rejected-dot)",
 };
 
 function conicGradient(counts: [string, number][], colors: Record<string, string>): string {
@@ -32,7 +32,7 @@ function conicGradient(counts: [string, number][], colors: Record<string, string
     const start = (acc / total) * 360;
     acc += n;
     const end = (acc / total) * 360;
-    return `${colors[key] ?? "#D9CDB2"} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
+    return `${colors[key] ?? "rgb(var(--ig-edge) / 0.12)"} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
   });
   return `conic-gradient(${stops.join(", ")})`;
 }
@@ -56,15 +56,15 @@ function DonutPanel({
 }) {
   return (
     <Panel className="flex flex-col gap-3.5 p-5">
-      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">{title}</span>
+      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">{title}</span>
       <div className="flex items-center gap-5">
         <div
           className="relative h-[100px] w-[100px] flex-none rounded-full"
           style={{ background: conicGradient(counts, colors) }}
         >
-          <div className="absolute inset-[18px] flex flex-col items-center justify-center rounded-full bg-white">
-            <span className="font-heading text-[18px] font-bold text-black">{total}</span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-gignite-text/60">teams</span>
+          <div className="absolute inset-[18px] flex flex-col items-center justify-center rounded-full bg-ignite-surface">
+            <span className="font-display text-[18px] font-bold text-ignite-ink">{total}</span>
+            <span className="font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-ignite-muted">teams</span>
           </div>
         </div>
         <div className="flex min-w-0 flex-col gap-1.5">
@@ -77,8 +77,8 @@ function DonutPanel({
               style={{ opacity: !activeKey || activeKey === key ? 1 : 0.35 }}
             >
               <span className="h-[9px] w-[9px] flex-none rounded-[3px]" style={{ background: colors[key] }} />
-              <span className="truncate text-[12.5px] text-gignite-text">{labelFor(key)}</span>
-              <span className="font-mono text-[11px] text-gignite-text/55">{n}</span>
+              <span className="truncate text-[12.5px] text-ignite-ink-soft">{labelFor(key)}</span>
+              <span className="font-ui text-[11px] text-ignite-muted">{n}</span>
             </button>
           ))}
         </div>
@@ -131,13 +131,13 @@ function DailyActivityPanel({ teams }: { teams: AdminTeam[] }) {
     <Panel className="flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/65">Daily submissions</span>
-          <span className="font-mono text-[11px] text-gignite-blue">{monthLabel}</span>
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">Daily submissions</span>
+          <span className="font-ui text-[11px] text-ignite-ink">{monthLabel}</span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="font-heading text-[24px] font-bold text-black">{today.count}</span>
-          <span className="text-[13px] text-gignite-text/70">today</span>
-          <span className={`font-mono text-[12px] ${delta >= 0 ? "text-gignite-success" : "text-gignite-danger"}`}>
+          <span className="font-display text-[24px] font-bold text-ignite-ink">{today.count}</span>
+          <span className="text-[13px] text-ignite-muted">today</span>
+          <span className={`font-ui text-[12px] ${delta >= 0 ? "text-ignite-success" : "text-ignite-danger"}`}>
             {delta >= 0 ? "+" : ""}
             {delta} vs yesterday
           </span>
@@ -146,15 +146,15 @@ function DailyActivityPanel({ teams }: { teams: AdminTeam[] }) {
       <div className="flex h-24 items-end gap-2.5">
         {daily.map((d) => (
           <div key={d.key} className="flex h-full flex-1 flex-col items-center justify-end gap-1.5">
-            <span className="font-mono text-[11px] text-gignite-text/60">{d.count}</span>
+            <span className="font-ui text-[11px] text-ignite-muted">{d.count}</span>
             <div
               className="w-full rounded-t-[6px] rounded-b-[3px]"
               style={{
                 height: `${Math.max(6, Math.round((d.count / maxCount) * 64))}px`,
-                background: d.isToday ? "#F27721" : "#C7D3ED",
+                background: d.isToday ? "#F47920" : "rgb(var(--ig-blue) / 0.35)",
               }}
             />
-            <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-gignite-text/55">
+            <span className="font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-muted">
               {d.label.split(" ")[0]}
             </span>
           </div>

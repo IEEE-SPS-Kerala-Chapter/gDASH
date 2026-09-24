@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { BrandLogo, FormCard, Field, TextInput, PrimaryButton, GridBackground, LogoHeaderBar } from "@/components/admin/ui";
+import { Field, GradientText, HeroShell, TextInput, PrimaryButton, LogoHeaderBar } from "@/components/admin/ui";
 import { signIn } from "@/app/actions/auth";
 
 export default function AdminLoginPage() {
@@ -33,16 +33,17 @@ export default function AdminLoginPage() {
 
   return (
     <>
-      <LogoHeaderBar />
-      <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-8 bg-gignite-bg p-4 font-body text-gignite-text">
-        <GridBackground />
-        <BrandLogo className="relative z-10 h-16" />
-        <div className="relative z-10 w-full max-w-sm">
-          <FormCard>
-            <div className="flex flex-col gap-[6px]">
-              <h1 className="m-0 font-heading text-[20px] font-bold text-black">Staff sign-in</h1>
-              <p className="m-0 text-[14px] text-gignite-text/70">For organizers, judges, and volunteers only.</p>
-            </div>
+      <LogoHeaderBar onHero />
+      <HeroShell
+        label="Staff access"
+        title={
+          <>
+            Staff <GradientText>sign-in.</GradientText>
+          </>
+        }
+        intro={<p className="m-0">For organizers, judges, and volunteers only.</p>}
+      >
+        <div className="flex flex-col gap-5">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <Field label="Email">
                 <TextInput
@@ -68,9 +69,8 @@ export default function AdminLoginPage() {
                 {opening ? "Opening dashboard…" : loading ? "Signing in…" : "Sign in"}
               </PrimaryButton>
             </form>
-          </FormCard>
         </div>
-      </main>
+      </HeroShell>
     </>
   );
 }

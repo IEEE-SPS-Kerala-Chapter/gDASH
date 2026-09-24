@@ -359,7 +359,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
       <div
         className={
-          "flex w-full flex-col overflow-hidden rounded-[28px] border border-black/[0.06] " +
+          "flex w-full flex-col overflow-hidden rounded-[28px] border border-ignite-edge/[0.06] " +
           "bg-ignite-bg shadow-[0_18px_46px_rgba(44,29,68,0.10)] " +
           // Desktop drops the outer card entirely — the form sits directly on
           // the page background, so only the per-section field groups below
@@ -393,7 +393,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
           />
 
           {leaderEmail && (
-            <div className="flex items-center justify-between gap-3 rounded-full border border-black/[0.06] bg-white px-5 py-2.5 font-ui text-[13px] text-ignite-ink-soft shadow-[0_1px_6px_rgba(0,0,0,0.05)] lg:max-w-[760px]">
+            <div className="flex items-center justify-between gap-3 rounded-full border border-ignite-edge/[0.06] bg-ignite-surface px-5 py-2.5 font-ui text-[13px] text-ignite-ink-soft shadow-[0_1px_6px_rgba(0,0,0,0.05)] lg:max-w-[760px]">
               <span>
                 Signed in as <span className="font-semibold">{leaderEmail}</span>
               </span>
@@ -432,7 +432,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
                 href={RULES_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-fit rounded-full border border-ignite-ink/70 bg-white/60 px-4 py-[7px] font-ui text-[13px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-ink hover:text-white"
+                className="w-fit rounded-full border border-ignite-ink/70 bg-ignite-surface/60 px-4 py-[7px] font-ui text-[13px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary"
               >
                 Rules to follow ↗
               </a>

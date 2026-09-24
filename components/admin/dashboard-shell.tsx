@@ -65,23 +65,23 @@ export function DashboardShell({
 
   const navItemClass = (active: boolean) =>
     cn(
-      "flex items-center gap-2.5 rounded-[9px] border-l-[3px] px-3 py-2.5 text-[14px] transition-colors",
+      "relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 font-ui text-[14px] transition-colors",
       active
-        ? "border-gignite-accent bg-white/[0.13] font-semibold text-white"
-        : "border-transparent text-[#C3CEE9] hover:bg-white/[0.08]",
+        ? "bg-white/[0.10] font-bold text-white before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-brand-gradient"
+        : "font-medium text-ignite-on-dark hover:bg-white/[0.06] hover:text-white",
     );
 
   return (
-    <div className="relative flex min-h-screen bg-gignite-bg font-body text-gignite-text">
+    <div className="relative flex min-h-screen bg-ignite-bg font-ui text-ignite-ink-soft">
       <GridBackground faded />
 
       {/* Sidebar — desktop only; mobile gets a compact top bar instead. */}
-      <aside className="sticky top-0 z-10 hidden h-screen w-[228px] flex-none flex-col justify-between overflow-y-auto bg-gignite-blue px-3.5 py-5 lg:flex">
+      <aside className="hero-dark sticky top-0 z-10 hidden h-screen w-[236px] flex-none flex-col justify-between overflow-y-auto border-r border-white/[0.06] px-3.5 py-5 lg:flex">
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-2.5 px-2.5">
-            <div className="h-3 w-3 flex-none rounded-[3px] bg-gignite-accent" />
-            <span className="font-heading text-[18px] font-bold tracking-[-0.01em] text-white">gIGNITE</span>
-            <span className="pt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-[#9FB1DA]">
+            <div className="h-3 w-3 flex-none rounded-[3px] bg-brand-gradient" />
+            <span className="font-display text-[18px] font-bold tracking-[-0.01em] text-white">gIGNITE</span>
+            <span className="pt-0.5 font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-on-dark/70">
               {roleLabel(role)}
             </span>
           </div>
@@ -120,13 +120,13 @@ export function DashboardShell({
             {signingOut ? <Spinner className="h-[17px] w-[17px]" /> : <LogOut className="h-[17px] w-[17px]" />}
             <span>{signingOut ? "Signing out…" : "Sign out"}</span>
           </button>
-          <div className="flex items-center gap-2.5 rounded-[9px] bg-black/[0.16] p-3">
-            <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-gignite-accent font-heading text-[12px] font-bold text-black">
+          <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.06] p-3 ring-1 ring-white/[0.06]">
+            <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-brand-gradient font-display text-[12px] font-bold text-white">
               {initials || "?"}
             </div>
             <div className="flex min-w-0 flex-col">
               <span className="truncate text-[13px] font-semibold text-white">{name}</span>
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[#9FB1DA]">{roleLabel(role)}</span>
+              <span className="font-ui text-[11px] uppercase tracking-[0.08em] text-ignite-on-dark/70">{roleLabel(role)}</span>
             </div>
           </div>
         </div>
@@ -135,16 +135,16 @@ export function DashboardShell({
       {/* Content column: logo bar + compact top bar (mobile/tablet only) + main, stacked. Sidebar stays untouched to the left. */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <LogoHeaderBar />
-        <header className="flex items-center justify-between border-b border-gignite-border bg-gignite-card px-5 py-3.5 lg:hidden">
+        <header className="flex items-center justify-between border-b border-ignite-edge/[0.08] bg-ignite-surface px-5 py-3.5 lg:hidden">
           <div className="flex items-center gap-3">
             <BrandLogo className="h-7" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-text/70">{roleLabel(role)}</span>
+            <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">{roleLabel(role)}</span>
           </div>
           <button
             type="button"
             onClick={handleSignOut}
             disabled={signingOut}
-            className="flex items-center gap-1.5 font-body text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex items-center gap-1.5 font-ui text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta disabled:cursor-not-allowed disabled:opacity-70"
           >
             {signingOut && <Spinner className="h-3 w-3" />}
             {signingOut ? "Signing out…" : "Sign out"}
