@@ -202,7 +202,11 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
 
 const ALREADY_REGISTERED_MESSAGE = "This email is already registered with another team.";
 const RATE_LIMITED_MESSAGE = "Too many attempts. Please wait a minute and try again.";
-const CODE_LENGTH = 6;
+// Supabase's code length is a project setting (Authentication → Email →
+// Email OTP Length, 6–10 digits; this project currently sends 8), so accept
+// any length in that range rather than hard-coding one.
+const CODE_MIN_LENGTH = 6;
+const CODE_MAX_LENGTH = 10;
 
 /** Supabase Auth's "slow down" errors: per-address resend interval, hourly email cap, per-IP request caps. */
 function isRateLimited(err: { status?: number; code?: string }) {
@@ -215,7 +219,7 @@ function isRateLimited(err: { status?: number; code?: string }) {
 
 /**
  * Email sign-in for leaders, in two steps: enter the email, then the
- * 6-digit code Supabase emails to it. A code (rather than a link) works on
+ * sign-in code Supabase emails to it. A code (rather than a link) works on
  * any device and inside phone mail apps, and can't be used up by a mail
  * scanner pre-clicking links. On success the session cookie is set here and
  * /register re-renders server-side with it (wizard, or the already-registered
@@ -329,8 +333,8 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
   async function handleVerify(e: FormEvent) {
     e.preventDefault();
     if (!sentTo) return;
-    if (code.length !== CODE_LENGTH) {
-      setError(`Enter the ${CODE_LENGTH}-digit code from the email`);
+    if (code.length < CODE_MIN_LENGTH) {
+      setError("Enter the full code from the email");
       return;
     }
     setError(null);
@@ -357,19 +361,19 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
     return (
       <form onSubmit={handleVerify} noValidate className="flex flex-col gap-3 text-left">
         <p className="m-0 text-[14px] leading-[1.5] text-ignite-ink-soft">
-          We sent a {CODE_LENGTH}-digit code to <span className="font-semibold">{sentTo}</span>. It
+          We sent a sign-in code to <span className="font-semibold">{sentTo}</span>. It
           expires in 1 hour. Check your spam folder if it hasn&apos;t arrived.
         </p>
         <Field label="Sign-in code" error={error ?? undefined}>
           <TextInput
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH))}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, CODE_MAX_LENGTH))}
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={CODE_LENGTH}
-            placeholder="123456"
-            aria-label={`${CODE_LENGTH}-digit sign-in code`}
-            className="text-center text-[22px] font-bold tracking-[0.4em]"
+            maxLength={CODE_MAX_LENGTH}
+            placeholder="Enter code"
+            aria-label="Sign-in code from the email"
+            className="text-center text-[22px] font-bold tracking-[0.3em] placeholder:text-[16px] placeholder:font-medium placeholder:tracking-normal"
             autoFocus
           />
         </Field>

@@ -1,5 +1,5 @@
 // Leader email verification, gated before /register. The leader proves
-// they own their email either via Google OAuth or a 6-digit code Supabase
+// they own their email either via Google OAuth or a sign-in code Supabase
 // emails them — both land the same authenticated session, so everything
 // downstream (registration.ts, step-team.tsx) only cares that a session
 // exists, not which provider produced it. See googleOauth.md for the
