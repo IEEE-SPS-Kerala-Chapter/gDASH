@@ -63,33 +63,33 @@ export function IdCardUploadField({
 
   return (
     <div className="flex flex-col gap-[7px]">
-      <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">
+      <label className="font-ui text-[13px] font-semibold text-ignite-ink-soft">
         College ID card (for eligibility checks — visible only to organizers)
       </label>
-      <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">
+      <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-black/[0.18] bg-ignite-bg px-[15px] py-[13px]">
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={(ev) => handleFile(ev.target.files?.[0])}
         />
-        <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-gignite-blue-pale font-mono text-[10px] font-medium text-gignite-blue">
+        <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-ignite-lavender font-ui text-[10px] font-medium text-ignite-ink">
           {state.status === "uploading" ? <Spinner /> : "ID"}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[14px] font-semibold text-black">
+          <span className="text-[14px] font-semibold text-ignite-ink">
             {state.status === "uploading"
               ? `Uploading ${state.name}…`
               : state.status === "done"
                 ? `Uploaded: ${state.name}`
                 : "Upload a clear photo of your college ID card"}
           </span>
-          <span className="text-[12px] text-gignite-text/70">
+          <span className="text-[12px] text-ignite-muted">
             {state.status === "error" ? state.message : "JPG, PNG, or WEBP · 8 MB max"}
           </span>
         </div>
       </label>
-      {error && <span className="text-[13px] leading-[1.45] text-gignite-danger">{error}</span>}
+      {error && <span className="text-[13px] leading-[1.45] text-ignite-danger">{error}</span>}
     </div>
   );
 }

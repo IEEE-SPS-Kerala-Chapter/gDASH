@@ -59,35 +59,36 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
     <div className="flex flex-col gap-3">
       <div
         ref={cardRef}
-        className="flex flex-col gap-4 rounded-[18px] border border-black/[0.08] bg-white p-5 shadow-[0_2px_4px_rgba(44,44,44,0.05),0_16px_34px_rgba(32,65,154,0.09)]"
+        className="flex flex-col gap-4 overflow-hidden rounded-[20px] border border-black/[0.06] bg-white p-5 pt-0 font-ui shadow-[0_1px_6px_rgba(0,0,0,0.06)]"
       >
+        <div aria-hidden="true" className="-mx-5 h-1.5 bg-brand-gradient" />
         <div className="flex items-center justify-between gap-3">
           <BrandLogo className="h-8" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-gignite-blue">
+          <span className="rounded-full bg-ignite-lavender px-3 py-1 text-[12px] font-bold tracking-[0.08em] text-ignite-ink">
             {member.member_code}
           </span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="text-[17px] font-semibold text-black">{member.full_name}</span>
-            <span className="text-[13px] text-gignite-blue">
+            <span className="font-display text-[18px] font-semibold tracking-[-0.01em] text-ignite-ink">{member.full_name}</span>
+            <span className="text-[13px] font-semibold text-ignite-magenta">
               {[member.role_in_team, member.is_leader ? "Team Leader" : null].filter(Boolean).join(" · ")}
             </span>
-            <span className="text-[13px] text-gignite-text/80">{teamName}</span>
-            <span className="text-[12px] text-gignite-text/70">{member.college}</span>
+            <span className="text-[13px] text-ignite-muted">{teamName}</span>
+            <span className="text-[12px] text-ignite-muted">{member.college}</span>
           </div>
-          <div className="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-[10px] bg-gignite-card">
+          <div className="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-[10px] bg-ignite-bg">
             {qrDataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- a generated data: URL, not an optimizable remote asset
               <img src={qrDataUrl} alt="Scan at check-in" className="h-full w-full" />
             ) : (
-              <Spinner className="text-gignite-text/40" />
+              <Spinner className="text-ignite-muted" />
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gignite-divider pt-3">
+        <div className="flex items-center justify-between border-t border-black/[0.07] pt-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- sponsor mark, same hotlink-free local asset used in LogoHeaderBar */}
           <img src="/gadgeon-logo.png" alt="Gadgeon Smart Systems" className="h-10 w-auto" />
           {/* eslint-disable-next-line @next/next/no-img-element -- combined IEEE + SPS-KC mark, same hotlink-free local asset used in LogoHeaderBar */}
@@ -99,7 +100,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
         type="button"
         onClick={handleDownload}
         disabled={downloading || !qrDataUrl}
-        className="flex items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-gignite-border-strong bg-transparent px-4 py-2 font-body text-[13px] font-semibold text-gignite-blue transition-colors hover:border-gignite-blue disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex items-center justify-center gap-2 rounded-full border border-ignite-ink/70 bg-white/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
       >
         {downloading && <Spinner />}
         {downloading ? "Preparing…" : "Download ID card"}

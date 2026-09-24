@@ -17,28 +17,21 @@ export function BrandLogo({ className }: { className?: string }) {
 }
 
 /**
- * Faint graph-paper grid, fixed behind the page content — matches the
- * ".circuit-grid-overlay" background used on the gIGNITE landing page
- * (gIGNITE-UI repo, src/index.css), ported here so the registration and
- * staff-login pages read as the same product as the site that links to
- * them. Render it first, then wrap the actual content in `relative z-10`
- * so it paints above the overlay regardless of DOM stacking quirks.
+ * Soft page backdrop, fixed behind the content: the pale blue and magenta
+ * glows the Gadgeon.ai site uses behind its light sections (see
+ * gadgeon-design-reference.md). Render it first, then wrap the actual
+ * content in `relative z-10` so it paints above it.
  *
- * `faded` softens it further with a blur + lower opacity — used behind the
- * admin/staff dashboard, where the grid sits directly behind dense card
- * content and reads as busier than on the mostly-empty registration/login
- * pages; the sharp version stays the default everywhere else.
+ * `faded` lowers the glow further for dense screens.
  */
 export function GridBackground({ faded = false }: { faded?: boolean }) {
   return (
     <div
       aria-hidden="true"
-      className={cn("pointer-events-none fixed inset-0 z-0", faded && "blur-[3px]")}
+      className="pointer-events-none fixed inset-0 z-0"
       style={{
         backgroundImage:
-          "linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)",
-        backgroundSize: "80px 80px",
-        backgroundPosition: "center center",
+          "radial-gradient(60% 50% at 12% 18%, rgba(49,130,252,0.10), transparent 70%), radial-gradient(50% 55% at 90% 30%, rgba(199,86,217,0.08), transparent 70%), radial-gradient(60% 50% at 50% 100%, rgba(244,121,32,0.05), transparent 70%)",
         opacity: faded ? 0.6 : 1,
       }}
     />
@@ -57,7 +50,7 @@ export function LogoHeaderBar({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "relative z-10 flex w-full items-center justify-between gap-4 border-b border-gignite-border bg-gignite-card px-6 py-3",
+        "sticky top-0 z-30 flex w-full items-center justify-between gap-4 border-b border-ignite-line bg-white/95 px-6 py-3 shadow-[0_1px_6px_rgba(0,0,0,0.04)] backdrop-blur lg:px-16",
         className,
       )}
     >
@@ -101,22 +94,22 @@ export function Field({
 }) {
   return (
     <div className="flex flex-col gap-[7px]">
-      <label className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-text/70">
+      <label className="font-ui text-[13px] font-semibold text-ignite-ink-soft">
         {label}
       </label>
       {children}
       {trailing}
       {error ? (
-        <span className="text-[13px] leading-[1.45] text-gignite-danger">{error}</span>
+        <span className="font-ui text-[13px] font-medium leading-[1.45] text-ignite-danger">{error}</span>
       ) : hint ? (
-        <span className="text-[13px] leading-[1.45] text-gignite-text/70">{hint}</span>
+        <span className="font-ui text-[13px] leading-[1.45] text-ignite-muted">{hint}</span>
       ) : null}
     </div>
   );
 }
 
 const fieldBase =
-  "w-full rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-surface px-[15px] py-[13px] text-[16px] text-gignite-text outline-none transition-colors focus:border-gignite-blue focus:ring-[3px] focus:ring-gignite-blue/20";
+  "w-full rounded-xl border border-black/[0.12] bg-white px-[15px] py-[13px] font-ui text-[16px] text-ignite-ink outline-none transition-colors placeholder:text-ignite-faint focus:border-ignite-magenta focus:ring-[3px] focus:ring-ignite-magenta/20";
 
 export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function TextInput({ className, ...props }, ref) {
@@ -129,7 +122,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
     return (
       <textarea
         ref={ref}
-        className={cn(fieldBase, "resize-y font-body leading-[1.6]", className)}
+        className={cn(fieldBase, "resize-y leading-[1.6]", className)}
         {...props}
       />
     );
@@ -171,7 +164,7 @@ export function Spinner({ className }: { className?: string }) {
  * screen/section still loading its shape, a spinner for a button/inline
  * action in flight). */
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-md bg-gignite-divider", className)} />;
+  return <div className={cn("animate-pulse rounded-md bg-ignite-lavender", className)} />;
 }
 
 export function PrimaryButton({
@@ -185,10 +178,10 @@ export function PrimaryButton({
       {...props}
       disabled={disabled}
       className={cn(
-        "flex w-full items-center justify-center gap-2.5 rounded-[11px] px-6 py-4 font-heading text-[17px] font-bold transition-colors",
+        "flex w-full items-center justify-center gap-2.5 rounded-full px-6 py-[15px] font-ui text-[16px] font-bold transition-colors",
         disabled
-          ? "cursor-not-allowed bg-gignite-border text-gignite-muted shadow-none"
-          : "bg-gignite-accent text-black shadow-[0_3px_0_rgba(150,67,11,0.45)] hover:bg-gignite-accent-hover",
+          ? "cursor-not-allowed bg-[#E4E3EA] text-ignite-faint"
+          : "bg-ignite-ink text-white shadow-[0_8px_20px_rgba(44,29,68,0.18)] hover:bg-ignite-ink-soft",
       )}
     >
       {loading && <Spinner />}
@@ -204,7 +197,7 @@ export function SecondaryButton({
   return (
     <button
       {...props}
-      className="rounded-[10px] border-[1.5px] border-gignite-border-strong bg-transparent px-4 py-2 font-body text-[13px] font-semibold text-gignite-blue transition-colors hover:border-gignite-blue"
+      className="rounded-full border border-ignite-ink/70 bg-white/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>
@@ -220,13 +213,13 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
         aria-label="Back"
         disabled={!canGoBack}
         className={cn(
-          "flex h-[34px] w-[34px] items-center justify-center rounded-full border-[1.5px] border-gignite-border text-[15px] text-gignite-blue transition-colors",
-          canGoBack ? "hover:border-gignite-blue" : "cursor-not-allowed opacity-40",
+          "flex h-[34px] w-[34px] items-center justify-center rounded-full border border-ignite-line bg-white text-[15px] text-ignite-ink transition-colors",
+          canGoBack ? "hover:border-ignite-ink" : "cursor-not-allowed opacity-40",
         )}
       >
         ←
       </button>
-      <span className="font-heading text-[16px] font-bold text-black">Team Registration</span>
+      <span className="font-display text-[16px] font-bold text-ignite-ink">Team Registration</span>
       <div className="w-[34px]" />
     </div>
   );
@@ -245,7 +238,7 @@ export function DesktopSidebar({
   onStepClick?: (index: number) => void;
 }) {
   return (
-    <div className="sticky top-10 hidden w-[300px] flex-none flex-col gap-10 lg:flex">
+    <div className="sticky top-28 hidden w-[300px] flex-none flex-col gap-10 lg:flex">
       <button type="button" onClick={onHome} className="w-fit text-left" aria-label="Back to home">
         <BrandLogo className="h-20" />
       </button>
@@ -262,23 +255,23 @@ export function DesktopSidebar({
               onClick={() => onStepClick?.(i)}
               className={cn(
                 "flex items-center gap-3 rounded-lg py-2 text-left",
-                clickable ? "cursor-pointer hover:bg-gignite-surface" : "cursor-default",
+                clickable ? "cursor-pointer hover:bg-white/80" : "cursor-default",
               )}
             >
               <div
                 className={cn(
-                  "flex h-6 w-6 flex-none items-center justify-center rounded-full font-mono text-[11px] font-medium",
-                  state === "done" && "bg-gignite-accent text-black",
-                  state === "current" && "border-[1.5px] border-gignite-blue text-gignite-blue",
-                  state === "upcoming" && "border-[1.5px] border-gignite-border text-gignite-muted",
+                  "flex h-7 w-7 flex-none items-center justify-center rounded-full font-ui text-[12px] font-bold",
+                  state === "done" && "bg-brand-gradient text-white",
+                  state === "current" && "border-2 border-ignite-ink text-ignite-ink",
+                  state === "upcoming" && "border border-black/[0.15] text-ignite-faint",
                 )}
               >
                 {state === "done" ? "✓" : i + 1}
               </div>
               <span
                 className={cn(
-                  "font-body text-[14px]",
-                  state === "current" ? "font-semibold text-black" : "text-gignite-text/70",
+                  "font-ui text-[15px]",
+                  state === "current" ? "font-bold text-ignite-ink" : "font-medium text-ignite-muted",
                 )}
               >
                 {s.nav}
@@ -299,7 +292,7 @@ export function ProgressBar({ step, total }: { step: number; total: number }) {
           key={i}
           className={cn(
             "h-1 flex-1 rounded-full",
-            i <= step ? "bg-gignite-accent" : "bg-gignite-divider",
+            i <= step ? "bg-brand-gradient" : "bg-black/[0.08]",
           )}
         />
       ))}
@@ -310,10 +303,8 @@ export function ProgressBar({ step, total }: { step: number; total: number }) {
 export function StepMeta({ label, hint }: { label: string; hint: string }) {
   return (
     <div className="flex items-baseline justify-between">
-      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
-        {label}
-      </span>
-      <span className="font-mono text-[11px] text-gignite-text/65">{hint}</span>
+      <Eyebrow>{label}</Eyebrow>
+      <span className="font-ui text-[12px] font-medium text-ignite-muted">{hint}</span>
     </div>
   );
 }
@@ -321,22 +312,80 @@ export function StepMeta({ label, hint }: { label: string; hint: string }) {
 export function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <div className="flex flex-col gap-[6px]">
-      <h2 className="m-0 font-heading text-[28px] font-bold tracking-[-0.025em] text-black">
+      <h2 className="m-0 font-display text-[28px] font-bold tracking-[-0.02em] text-ignite-ink lg:text-[32px]">
         {title}
       </h2>
-      <p className="m-0 text-[15px] leading-[1.55] text-gignite-text">{subtitle}</p>
+      <p className="m-0 font-ui text-[16px] leading-[1.55] text-ignite-muted">{subtitle}</p>
     </div>
   );
 }
 
 export function FormCard({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-[18px] rounded-2xl border border-black/[0.08] bg-gignite-surface p-[22px] shadow-[0_2px_4px_rgba(44,44,44,0.05),0_16px_34px_rgba(32,65,154,0.09)] lg:border-black/[0.05] lg:p-8 lg:shadow-[0_1px_2px_rgba(44,44,44,0.03),0_8px_20px_rgba(32,65,154,0.05)]">
+    <div className="flex flex-col gap-[18px] rounded-[20px] border border-black/[0.06] bg-white p-[22px] shadow-[0_1px_6px_rgba(0,0,0,0.06)] lg:p-8">
       {children}
     </div>
   );
 }
 
 export function Divider() {
-  return <div className="h-px bg-gignite-divider" />;
+  return <div className="h-px bg-black/[0.07]" />;
+}
+
+/** Gadgeon-style section eyebrow: small label with a short gradient line before it. */
+export function Eyebrow({ children, onDark = false }: { children: ReactNode; onDark?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 font-ui text-[12px] font-bold uppercase tracking-[0.14em]",
+        onDark ? "text-white" : "text-ignite-ink",
+      )}
+    >
+      <span aria-hidden="true" className="h-[2px] w-5 rounded-full bg-brand-gradient" />
+      {children}
+    </span>
+  );
+}
+
+/** A word or phrase in the brand gradient, for key words in headlines. */
+export function GradientText({ children }: { children: ReactNode }) {
+  return <span className="text-brand-gradient">{children}</span>;
+}
+
+/**
+ * Dark hero layout matching the g-IGNITE page on Gadgeon.ai: navy backdrop
+ * with blue/magenta glows, a small status label, a large headline, and the
+ * page's actual content in a white card beside it (below it on mobile).
+ * Render LogoHeaderBar above it, as the other public pages do.
+ */
+export function HeroShell({
+  label,
+  title,
+  intro,
+  children,
+}: {
+  label: string;
+  title: ReactNode;
+  intro?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <main className="hero-dark relative flex min-h-[calc(100vh-88px)] items-center px-4 py-12 font-ui text-white lg:px-16 lg:py-20">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
+        <div className="flex max-w-[560px] flex-col gap-5">
+          <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-white">
+            <span aria-hidden="true" className="h-2 w-2 bg-ignite-orange" />
+            {label}
+          </span>
+          <h1 className="m-0 font-display text-[40px] font-medium leading-[1.08] tracking-[-0.03em] text-white lg:text-[60px]">
+            {title}
+          </h1>
+          {intro && <div className="flex flex-col gap-3 text-[16px] leading-[1.7] text-ignite-on-dark">{intro}</div>}
+        </div>
+        <div className="w-full max-w-[420px] self-center rounded-[24px] bg-white p-7 text-ignite-ink-soft shadow-[0_24px_60px_rgba(0,0,0,0.35)] lg:p-8">
+          {children}
+        </div>
+      </div>
+    </main>
+  );
 }

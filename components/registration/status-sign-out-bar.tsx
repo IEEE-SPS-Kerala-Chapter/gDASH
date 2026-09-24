@@ -22,7 +22,7 @@ export function StatusSignOutBar({ email }: { email: string }) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg bg-gignite-blue-pale px-4 py-2 text-[13px] text-gignite-blue">
+    <div className="flex items-center justify-between gap-3 rounded-full bg-white/10 px-5 py-2.5 font-ui text-[13px] text-ignite-on-dark ring-1 ring-white/15">
       <span className="min-w-0 truncate">
         Signed in as <span className="font-semibold">{email}</span>
       </span>
@@ -30,7 +30,7 @@ export function StatusSignOutBar({ email }: { email: string }) {
         type="button"
         onClick={handleSignOut}
         disabled={signingOut}
-        className="flex-none font-semibold hover:text-gignite-accent disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex-none font-semibold text-white hover:text-ignite-lime disabled:cursor-not-allowed disabled:opacity-60"
       >
         {signingOut ? "Signing out…" : "Sign out"}
       </button>

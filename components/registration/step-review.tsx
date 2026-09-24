@@ -12,7 +12,7 @@ function EditLink({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent"
+      className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
     >
       Edit
     </button>
@@ -22,8 +22,8 @@ function EditLink({ onClick }: { onClick: () => void }) {
 function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 text-[14px]">
-      <span className="text-gignite-text/70">{label}</span>
-      <span className="truncate text-right font-medium text-black">{value || "—"}</span>
+      <span className="text-ignite-muted">{label}</span>
+      <span className="truncate text-right font-medium text-ignite-ink">{value || "—"}</span>
     </div>
   );
 }
@@ -78,21 +78,21 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
             : undefined
         }
         className={cn(
-          "flex items-center gap-3 rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-card p-3",
-          ready && "cursor-pointer transition-colors hover:border-gignite-blue",
+          "flex items-center gap-3 rounded-[10px] border-[1.5px] border-black/[0.12] bg-ignite-bg p-3",
+          ready && "cursor-pointer transition-colors hover:border-ignite-ink",
         )}
       >
         {state.status === "ready" ? (
           // eslint-disable-next-line @next/next/no-img-element -- a short-lived signed URL, not an optimizable remote asset
           <img src={state.url} alt={`${label} ID card`} className="h-14 w-14 flex-none rounded-[8px] object-cover" />
         ) : (
-          <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[8px] bg-gignite-blue-pale font-mono text-[10px] text-gignite-blue">
+          <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[8px] bg-ignite-lavender font-ui text-[10px] text-ignite-ink">
             {state.status === "loading" ? <Spinner /> : "ID"}
           </div>
         )}
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="truncate text-[13px] font-semibold text-black">{label}</span>
-          <span className="text-[12px] text-gignite-text/70">
+          <span className="truncate text-[13px] font-semibold text-ignite-ink">{label}</span>
+          <span className="text-[12px] text-ignite-muted">
             {state.status === "ready"
               ? "Uploaded — tap to view full size"
               : state.status === "error"
@@ -125,7 +125,7 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
             type="button"
             onClick={() => setExpanded(false)}
             aria-label="Close"
-            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[16px] font-semibold text-black"
+            className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[16px] font-semibold text-ignite-ink"
           >
             ×
           </button>
@@ -149,7 +149,7 @@ export function StepReview({
     <div className="flex flex-col gap-5">
       <FormCard>
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">Team</span>
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">Team</span>
           <EditLink onClick={() => onEdit("team")} />
         </div>
         <ReviewRow label="Team name" value={team.teamName} />
@@ -166,7 +166,7 @@ export function StepReview({
 
       <FormCard>
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
             Other members ({members.length}) · team of {members.length + 1}
           </span>
           <EditLink onClick={() => onEdit("members")} />
@@ -174,8 +174,8 @@ export function StepReview({
         {members.map((m, i) => {
           const role = m.roleInTeam === OTHER_ROLE ? m.roleInTeamOther : m.roleInTeam;
           return (
-            <div key={i} className="flex flex-col gap-2.5 border-t border-gignite-divider pt-4 first:border-t-0 first:pt-0">
-              <span className="text-[13px] font-semibold text-black">{m.fullName || `Member ${i + 2}`}</span>
+            <div key={i} className="flex flex-col gap-2.5 border-t border-black/[0.07] pt-4 first:border-t-0 first:pt-0">
+              <span className="text-[13px] font-semibold text-ignite-ink">{m.fullName || `Member ${i + 2}`}</span>
               <ReviewRow label="Email" value={m.email} />
               <ReviewRow label="Phone" value={m.phone} />
               <ReviewRow label="Role" value={role ?? ""} />
@@ -188,7 +188,7 @@ export function StepReview({
 
       <FormCard>
         <div className="flex items-center justify-between">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">Idea</span>
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">Idea</span>
           <EditLink onClick={() => onEdit("idea")} />
         </div>
         <IdeaAnswer label="Problem statement" value={idea.problemStatement} />
@@ -205,8 +205,8 @@ export function StepReview({
 function IdeaAnswer({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-gignite-text/60">{label}</span>
-      <p className="m-0 whitespace-pre-wrap break-words text-[14px] leading-relaxed text-gignite-text">{value}</p>
+      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-muted">{label}</span>
+      <p className="m-0 whitespace-pre-wrap break-words text-[14px] leading-relaxed text-ignite-ink-soft">{value}</p>
     </div>
   );
 }

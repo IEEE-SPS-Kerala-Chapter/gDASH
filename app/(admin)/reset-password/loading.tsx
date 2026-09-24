@@ -1,4 +1,4 @@
-import { GridBackground, Skeleton } from "@/components/registration/ui";
+import { GridBackground, Skeleton } from "@/components/admin/ui";
 
 export default function ResetPasswordLoading() {
   return (

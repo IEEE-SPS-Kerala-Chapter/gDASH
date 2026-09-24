@@ -21,6 +21,7 @@ import {
   FormCard,
   Skeleton,
   Spinner,
+  Eyebrow,
 } from "./ui";
 import { StepTeam } from "./step-team";
 import { StepMembers } from "./step-members";
@@ -358,8 +359,8 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
       <div
         className={
-          "flex w-full flex-col overflow-hidden rounded-[30px] border border-black/[0.14] " +
-          "bg-gignite-card shadow-[0_18px_46px_rgba(44,44,44,0.13)] " +
+          "flex w-full flex-col overflow-hidden rounded-[28px] border border-black/[0.06] " +
+          "bg-ignite-bg shadow-[0_18px_46px_rgba(44,29,68,0.10)] " +
           // Desktop drops the outer card entirely — the form sits directly on
           // the page background, so only the per-section field groups below
           // (FormCard) read as cards, not the whole panel doubled up.
@@ -392,7 +393,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
           />
 
           {leaderEmail && (
-            <div className="flex items-center justify-between gap-3 rounded-lg bg-gignite-blue-pale px-4 py-2 text-[13px] text-gignite-blue lg:max-w-[760px]">
+            <div className="flex items-center justify-between gap-3 rounded-full border border-black/[0.06] bg-white px-5 py-2.5 font-ui text-[13px] text-ignite-ink-soft shadow-[0_1px_6px_rgba(0,0,0,0.05)] lg:max-w-[760px]">
               <span>
                 Signed in as <span className="font-semibold">{leaderEmail}</span>
               </span>
@@ -400,7 +401,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
                 type="button"
                 onClick={handleSignOut}
                 disabled={signingOut}
-                className="flex-none font-semibold hover:text-gignite-accent disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex-none font-semibold hover:text-ignite-magenta disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {signingOut ? "Signing out…" : "Sign out"}
               </button>
@@ -416,11 +417,9 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
               <StepMeta label={current.label} hint={hint} />
             </div>
 
-            <div className="hidden items-baseline justify-between lg:flex">
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
-                {current.label}
-              </span>
-              <span className="font-mono text-[11px] text-gignite-text/65">{hint}</span>
+            <div className="hidden items-baseline justify-between lg:flex lg:max-w-[760px]">
+              <Eyebrow>{current.label}</Eyebrow>
+              <span className="font-ui text-[12px] font-medium text-ignite-muted">{hint}</span>
             </div>
 
             <StepTitle title={current.title} subtitle={current.subtitle} />
@@ -433,7 +432,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
                 href={RULES_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-fit rounded-[8px] border-[1.5px] border-gignite-blue px-3 py-[6px] font-heading text-[13px] font-medium text-gignite-blue transition-colors hover:bg-gignite-blue hover:text-white"
+                className="w-fit rounded-full border border-ignite-ink/70 bg-white/60 px-4 py-[7px] font-ui text-[13px] font-semibold text-ignite-ink transition-colors hover:bg-ignite-ink hover:text-white"
               >
                 Rules to follow ↗
               </a>
@@ -487,7 +486,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 function RestoringDraft() {
   return (
     <div className="flex flex-col gap-[18px] lg:max-w-[760px]" role="status" aria-live="polite">
-      <div className="flex items-center gap-2.5 text-[14px] font-semibold text-gignite-blue">
+      <div className="flex items-center gap-2.5 text-[14px] font-semibold text-ignite-ink">
         <Spinner />
         Loading your saved progress…
       </div>

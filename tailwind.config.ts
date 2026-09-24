@@ -70,12 +70,40 @@ const config: Config = {
   				success: '#1F7A42',
   				'success-pale': '#E4F1E6',
   				muted: '#6B6355'
+  			},
+  			// Participant-facing palette, matched to the Gadgeon.ai site
+  			// (see gadgeon-design-reference.md). The admin side keeps `gignite`.
+  			ignite: {
+  				ink: '#2C1D44',
+  				'ink-soft': '#4C3D66',
+  				muted: '#6A7282',
+  				faint: '#99A1AF',
+  				bg: '#F4F6FA',
+  				lavender: '#F2F0F8',
+  				surface: '#FFFFFF',
+  				line: 'rgba(0, 0, 0, 0.10)',
+  				navy: '#0D0B18',
+  				'navy-2': '#16132B',
+  				'on-dark': '#D2CDE6',
+  				orange: '#F47920',
+  				magenta: '#C756D9',
+  				blue: '#3182FC',
+  				royal: '#2C5FFF',
+  				lime: '#D8D800',
+  				danger: '#D4183D',
+  				'danger-pale': '#FDE8EC',
+  				success: '#1F7A42',
+  				'success-pale': '#E4F1E6',
+  				warn: '#C25E0E',
+  				'warn-pale': '#FBEEDA'
   			}
   		},
   		fontFamily: {
   			heading: ['var(--font-heading)'],
   			body: ['var(--font-body)'],
-  			mono: ['var(--font-mono)']
+  			mono: ['var(--font-mono)'],
+  			display: ['var(--font-sora)', 'sans-serif'],
+  			ui: ['var(--font-urbanist)', 'sans-serif']
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

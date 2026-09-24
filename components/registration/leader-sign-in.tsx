@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
-import { BrandLogo, Field, GridBackground, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
+import { BrandLogo, Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -39,14 +39,9 @@ function SessionBlocked({
   return (
     <>
       <LogoHeaderBar />
-      <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-6 bg-gignite-bg p-8 text-center font-body text-gignite-text">
-        <GridBackground />
-        <BrandLogo className="relative z-10 h-16" />
-        <div className="relative z-10 flex max-w-sm flex-col gap-2">
-          <h1 className="font-heading text-2xl font-bold text-black">{title}</h1>
-          <p className="text-gignite-text/80">{message}</p>
-        </div>
-        <div className="relative z-10 flex w-full max-w-xs flex-col gap-3">
+      <HeroShell label="g-IGNITE 2026" title={title} intro={<p className="m-0">{message}</p>}>
+        <BrandLogo className="mx-auto mb-6 h-14" />
+        <div className="flex w-full flex-col gap-3">
           {statusUrl && (
             <PrimaryButton type="button" onClick={() => router.push(statusUrl)} disabled={signingOut}>
               View your registration status
@@ -62,7 +57,7 @@ function SessionBlocked({
             </PrimaryButton>
           )}
         </div>
-      </main>
+      </HeroShell>
     </>
   );
 }
@@ -142,34 +137,41 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
   return (
     <>
       <LogoHeaderBar />
-      <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-6 bg-gignite-bg p-8 text-center font-body text-gignite-text">
-        <GridBackground />
-        <BrandLogo className="relative z-10 h-16" />
-        <div className="relative z-10 flex max-w-sm flex-col gap-2">
-          <h1 className="font-heading text-2xl font-bold text-black">Sign in to register</h1>
-          <p className="text-gignite-text/80">
-            The team leader verifies their email with Google or a sign-in link to confirm it&apos;s
-            really theirs. Everyone else on the team is added by the leader — no account needed for
-            them.
-          </p>
-          <p className="text-[14px] text-gignite-text/70">
-            Already registered? Sign in with the same email to view your team&apos;s status.
-          </p>
-        </div>
+      <HeroShell
+        label="Registrations Open"
+        title={
+          <>
+            Sign in to <GradientText>register.</GradientText>
+          </>
+        }
+        intro={
+          <>
+            <p className="m-0">
+              The team leader verifies their email with Google or a sign-in link to confirm it&apos;s
+              really theirs. Everyone else on the team is added by the leader — no account needed for
+              them.
+            </p>
+            <p className="m-0 text-[14px]">
+              Already registered? Sign in with the same email to view your team&apos;s status.
+            </p>
+          </>
+        }
+      >
+        <BrandLogo className="mx-auto mb-6 h-14" />
 
         {googleError && (
-          <p className="relative z-10 max-w-sm rounded-lg bg-gignite-blue-pale px-4 py-2 text-sm text-gignite-blue">
+          <p className="mb-4 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
             Couldn&apos;t open Google sign-in. Check your connection and try again, or continue with email.
           </p>
         )}
 
         {authError && (
-          <p className="relative z-10 max-w-sm rounded-lg bg-gignite-blue-pale px-4 py-2 text-sm text-gignite-blue">
+          <p className="mb-4 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
             Sign-in didn&apos;t go through. Please try again.
           </p>
         )}
 
-        <div className="relative z-10 flex w-full max-w-xs flex-col gap-3">
+        <div className="flex w-full flex-col gap-3">
           <PrimaryButton
             type="button"
             onClick={handleGoogleSignIn}
@@ -181,10 +183,10 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
 
           {mode === "choose" && (
             <>
-              <div className="flex items-center gap-3 text-[12px] uppercase tracking-[0.12em] text-gignite-text/50">
-                <span className="h-px flex-1 bg-gignite-divider" />
+              <div className="flex items-center gap-3 font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ignite-faint">
+                <span className="h-px flex-1 bg-black/[0.07]" />
                 or
-                <span className="h-px flex-1 bg-gignite-divider" />
+                <span className="h-px flex-1 bg-black/[0.07]" />
               </div>
               <SecondaryButton type="button" onClick={() => setMode("email")}>
                 Continue with email
@@ -194,7 +196,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
 
           {mode === "email" && <EmailSignIn onBack={() => setMode("choose")} />}
         </div>
-      </main>
+      </HeroShell>
     </>
   );
 }
@@ -286,8 +288,8 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
 
   if (sentTo) {
     return (
-      <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-gignite-border bg-gignite-surface p-4 text-left">
-        <p className="text-[14px] leading-[1.5] text-gignite-text">
+      <div className="flex flex-col gap-3 rounded-2xl border border-black/[0.08] bg-ignite-bg p-4 text-left">
+        <p className="text-[14px] leading-[1.5] text-ignite-ink-soft">
           Check <span className="font-semibold">{sentTo}</span> for a sign-in link. It&apos;ll bring
           you straight back here, signed in.
         </p>
@@ -298,7 +300,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
               setSentTo(null);
               setError(null);
             }}
-            className="text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent"
+            className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
           >
             Use a different email
           </button>
@@ -306,7 +308,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
             type="button"
             onClick={handleSubmit}
             disabled={cooldown > 0 || loading}
-            className="text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent disabled:cursor-not-allowed disabled:text-gignite-text/40"
+            className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta disabled:cursor-not-allowed disabled:text-ignite-muted"
           >
             {cooldown > 0 ? `Resend in ${cooldown}s` : loading ? "Sending…" : "Resend link"}
           </button>
@@ -333,7 +335,7 @@ function EmailSignIn({ onBack }: { onBack: () => void }) {
       <button
         type="button"
         onClick={onBack}
-        className="text-[13px] font-semibold text-gignite-blue hover:text-gignite-accent"
+        className="text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
       >
         Back
       </button>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { checkMemberExists } from "@/app/actions/registration";
-import { BrandLogo } from "@/components/registration/ui";
+import { BrandLogo, GradientText } from "@/components/registration/ui";
 
 // Every gIGNITE ID card's QR code points here. For now this is a static
 // placeholder — see id-card-future-phases.md for what eventually replaces
@@ -13,10 +13,10 @@ export default async function MemberIdPage({ params }: { params: { memberId: str
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-gignite-bg p-8 text-center font-body text-gignite-text">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ignite-bg p-8 text-center font-ui text-ignite-ink-soft">
       <BrandLogo className="h-14" />
-      <h1 className="font-heading text-2xl font-bold text-black">gIGNITE — Coming Soon</h1>
-      <p className="max-w-sm text-gignite-text/80">
+      <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-ignite-ink">gIGNITE — <GradientText>Coming Soon</GradientText></h1>
+      <p className="max-w-sm text-ignite-muted">
         This QR code will soon show your team&apos;s results and event check-in. Check back closer to the event.
       </p>
     </main>

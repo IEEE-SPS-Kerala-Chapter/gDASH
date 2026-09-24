@@ -78,3 +78,32 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Participant-facing brand utilities, matched to the Gadgeon.ai site (see
+   gadgeon-design-reference.md). Only the public registration pages use
+   these; the admin side is unaffected. */
+@layer components {
+  .text-brand-gradient {
+    background-image: linear-gradient(90deg, #f47920 0%, #c756d9 50%, #3182fc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-brand-gradient {
+    background-image: linear-gradient(90deg, #f47920 0%, #c756d9 50%, #3182fc 100%);
+  }
+  /* 1px gradient border around a solid fill: set the fill with
+     --brand-border-fill (defaults to white). */
+  .border-brand-gradient {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--brand-border-fill, #fff), var(--brand-border-fill, #fff)) padding-box,
+      linear-gradient(90deg, #f47920 0%, #c756d9 50%, #3182fc 100%) border-box;
+  }
+  .hero-dark {
+    background-color: #0d0b18;
+    background-image:
+      radial-gradient(70% 55% at 18% 40%, rgba(49, 130, 252, 0.22), transparent 65%),
+      radial-gradient(55% 65% at 82% 45%, rgba(199, 86, 217, 0.14), transparent 65%);
+  }
+}

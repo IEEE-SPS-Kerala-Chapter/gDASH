@@ -84,7 +84,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
       )}
 
       <Divider />
-      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
+      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
         Team leader
       </span>
 
@@ -104,9 +104,9 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
                 type="email"
                 {...register("team.leaderEmail")}
                 readOnly
-                className="cursor-not-allowed bg-gignite-card text-gignite-text/80"
+                className="cursor-not-allowed bg-ignite-bg text-ignite-muted"
               />
-              <span className="text-[13px] leading-[1.45] text-gignite-text/70">
+              <span className="text-[13px] leading-[1.45] text-ignite-muted">
                 Verified — wrong account? Use the sign out link above.
               </span>
             </>

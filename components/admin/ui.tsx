@@ -23,7 +23,7 @@ export {
   Divider,
   Spinner,
   Skeleton,
-} from "@/components/registration/ui";
+} from "@/components/admin/base-ui";
 
 export function PageHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (

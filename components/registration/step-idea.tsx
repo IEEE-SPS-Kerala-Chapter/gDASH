@@ -91,7 +91,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
               href={DECK_TEMPLATE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-gignite-blue underline hover:text-gignite-accent"
+              className="font-semibold text-ignite-ink underline hover:text-ignite-magenta"
             >
               the official pitch deck template
             </a>
@@ -100,25 +100,25 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
         }
         error={e?.deckPath?.message}
       >
-        <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-gignite-border-strong bg-gignite-card px-[15px] py-[13px]">
+        <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-black/[0.18] bg-ignite-bg px-[15px] py-[13px]">
           <input
             type="file"
             accept=".pdf,.pptx"
             className="hidden"
             onChange={(ev) => handleFile(ev.target.files?.[0])}
           />
-          <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-gignite-blue-pale font-mono text-[10px] font-medium text-gignite-blue">
+          <div className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-lg bg-ignite-lavender font-ui text-[10px] font-medium text-ignite-ink">
             {uploadState.status === "uploading" ? <Spinner /> : deckBadge(uploadState)}
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-[14px] font-semibold text-black">
+            <span className="text-[14px] font-semibold text-ignite-ink">
               {uploadState.status === "uploading"
                 ? `Uploading ${uploadState.name}…`
                 : uploadState.status === "done"
                   ? `Uploaded: ${uploadState.name}`
                   : "Upload your deck"}
             </span>
-            <span className="text-[12px] text-gignite-text/70">
+            <span className="text-[12px] text-ignite-muted">
               {uploadState.status === "error" ? uploadState.message : "PDF or PPTX · 20 MB max"}
             </span>
           </div>
@@ -135,16 +135,16 @@ function CharCount({ guidance, value, min }: { guidance: string; value: string; 
   const len = value.length;
   const color =
     len > IDEA_MAX_CHARS
-      ? "text-gignite-danger"
+      ? "text-ignite-danger"
       : len > IDEA_MAX_CHARS * 0.85
-        ? "text-gignite-warn"
+        ? "text-ignite-warn"
         : len > 0 && len < min
-          ? "text-gignite-warn"
-          : "text-gignite-muted";
+          ? "text-ignite-warn"
+          : "text-ignite-muted";
   return (
     <div className="flex items-start justify-between gap-3">
-      <span className="flex-1 text-[13px] leading-[1.45] text-gignite-text/70">{guidance}</span>
-      <span className={cn("flex-none font-mono text-[12px]", color)}>
+      <span className="flex-1 text-[13px] leading-[1.45] text-ignite-muted">{guidance}</span>
+      <span className={cn("flex-none font-ui text-[12px]", color)}>
         {len < min ? `min ${min} · ` : ""}
         {len} / {IDEA_MAX_CHARS}
       </span>

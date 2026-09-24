@@ -1,6 +1,6 @@
 import { RegistrationWizard } from "@/components/registration/registration-wizard";
 import { LeaderSignIn, StaffSessionBlocked, AlreadyRegisteredBlocked } from "@/components/registration/leader-sign-in";
-import { BrandLogo, GridBackground, LogoHeaderBar } from "@/components/registration/ui";
+import { BrandLogo, GradientText, GridBackground, HeroShell, LogoHeaderBar } from "@/components/registration/ui";
 import { createClient } from "@/lib/supabase/server";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { getRegistrationWindow } from "@/app/actions/registration-window";
@@ -13,16 +13,19 @@ function ClosedScreen({ message }: { message?: string | null }) {
   return (
     <>
       <LogoHeaderBar />
-      <main className="relative flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-4 bg-gignite-bg p-8 text-center font-body text-gignite-text">
-        <GridBackground />
-        <BrandLogo className="relative z-10 h-16" />
-        <div className="relative z-10 flex max-w-sm flex-col gap-2">
-          <h1 className="font-heading text-2xl font-bold text-black">Registration is closed</h1>
-          <p className="text-gignite-text/80">
-            {message || "Registration for gIGNITE 2026 is no longer open. Contact the organizers if you think this is a mistake."}
-          </p>
-        </div>
-      </main>
+      <HeroShell
+        label="g-IGNITE 2026"
+        title={
+          <>
+            Registration is <GradientText>closed.</GradientText>
+          </>
+        }
+      >
+        <BrandLogo className="mx-auto mb-5 h-14" />
+        <p className="m-0 text-center text-[15px] leading-[1.6] text-ignite-muted">
+          {message || "Registration for gIGNITE 2026 is no longer open. Contact the organizers if you think this is a mistake."}
+        </p>
+      </HeroShell>
     </>
   );
 }
@@ -90,7 +93,7 @@ export default async function RegisterPage({
     return (
       <>
         <LogoHeaderBar />
-        <main className="relative min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text lg:px-16 lg:py-16">
+        <main className="relative min-h-screen bg-ignite-bg px-4 py-10 font-ui text-ignite-ink-soft lg:px-16 lg:py-16">
           <GridBackground />
           <div className="relative z-10">
             <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
@@ -106,7 +109,7 @@ export default async function RegisterPage({
   return (
     <>
       <LogoHeaderBar />
-      <main className="relative min-h-screen bg-gignite-bg px-4 py-10 font-body text-gignite-text lg:px-16 lg:py-16">
+      <main className="relative min-h-screen bg-ignite-bg px-4 py-10 font-ui text-ignite-ink-soft lg:px-16 lg:py-16">
         <GridBackground />
         <div className="relative z-10">
           <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">

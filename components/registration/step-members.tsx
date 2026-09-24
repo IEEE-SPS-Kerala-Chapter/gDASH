@@ -37,18 +37,18 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
 
   return (
     <div className="flex flex-col gap-[16px]">
-      <div className="flex items-center gap-3 rounded-xl bg-gignite-blue-pale px-4 py-[14px]">
-        <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gignite-blue font-heading text-[13px] font-bold text-white">
+      <div className="flex items-center gap-3 rounded-xl bg-ignite-lavender px-4 py-[14px]">
+        <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-brand-gradient font-display text-[13px] font-bold text-white">
           {initials(leaderName)}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-[15px] font-semibold text-black">{leaderName || "Team leader"}</span>
-            <span className="inline-flex rounded-full bg-gignite-blue px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-white">
+            <span className="text-[15px] font-semibold text-ignite-ink">{leaderName || "Team leader"}</span>
+            <span className="inline-flex rounded-full bg-ignite-ink px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-white">
               Leader
             </span>
           </div>
-          <span className="text-[12px] text-gignite-blue">{displayCollege}</span>
+          <span className="text-[12px] text-ignite-ink">{displayCollege}</span>
         </div>
       </div>
 
@@ -60,13 +60,13 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
         return (
           <FormCard key={field.id}>
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-gignite-blue">
+              <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
                 Member {index + 2}
               </span>
               <button
                 type="button"
                 onClick={() => remove(index)}
-                className="text-[13px] font-semibold text-gignite-muted hover:text-gignite-danger"
+                className="text-[13px] font-semibold text-ignite-muted hover:text-ignite-danger"
               >
                 Remove
               </button>
@@ -89,7 +89,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
                 />
               </Field>
               <Field label="College" hint="Same as the team's college">
-                <TextInput value={displayCollege ?? ""} readOnly className="cursor-not-allowed bg-gignite-card text-gignite-text/80" />
+                <TextInput value={displayCollege ?? ""} readOnly className="cursor-not-allowed bg-ignite-bg text-ignite-muted" />
               </Field>
             </div>
             <div className="flex gap-[10px]">
@@ -141,14 +141,14 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
       })}
 
       {membersArrayError && (
-        <span className="text-[13px] leading-[1.45] text-gignite-danger">{membersArrayError}</span>
+        <span className="text-[13px] leading-[1.45] text-ignite-danger">{membersArrayError}</span>
       )}
 
       {slotsLeft > 0 && (
         <button
           type="button"
           onClick={() => append(emptyMember)}
-          className="w-full rounded-[11px] border-[1.5px] border-dashed border-gignite-border-strong py-[13px] font-heading text-[15px] font-medium text-gignite-blue transition-colors hover:border-gignite-blue hover:bg-gignite-surface"
+          className="w-full rounded-full border-[1.5px] border-dashed border-black/[0.18] py-[13px] font-ui text-[15px] font-semibold text-ignite-ink transition-colors hover:border-ignite-ink hover:bg-white"
         >
           + Add member ({slotsLeft} slot{slotsLeft === 1 ? "" : "s"} left)
         </button>
