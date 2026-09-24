@@ -622,7 +622,7 @@ export async function getStaffAccounts(): Promise<
 const STAFF_ROLES = ["admin", "judge", "volunteer"] as const;
 const STAFF_EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
-type CreateStaffResult = { success: true } | { success: false; error: string };
+type CreateStaffResult = { success: true; account: StaffAccount } | { success: false; error: string };
 
 /**
  * Super-admin only: create a staff account (judge, volunteer, or admin)
@@ -703,7 +703,12 @@ export async function createStaffAccount(input: {
     metadata: { role: input.role },
   });
 
-  return { success: true };
+  // Return the real account (not something the client makes up) so the
+  // staff list can delete it straight away without a page reload.
+  return {
+    success: true,
+    account: { id: data.user.id, full_name: fullName, email, role: input.role, created_at: data.user.created_at },
+  };
 }
 
 type DeleteStaffResult = { success: true } | { success: false; error: string };

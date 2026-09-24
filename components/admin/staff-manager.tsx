@@ -36,10 +36,7 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
     }
 
     setJustCreated({ email, password });
-    setStaff((prev) => [
-      { id: crypto.randomUUID(), full_name: fullName, email, role, created_at: new Date().toISOString() },
-      ...prev,
-    ]);
+    setStaff((prev) => [result.account, ...prev]);
     setFullName("");
     setEmail("");
     setRole("judge");
