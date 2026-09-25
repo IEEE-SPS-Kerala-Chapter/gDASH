@@ -239,8 +239,11 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
   }
 
   async function handleContinue() {
-    const valid = await form.trigger(current.fields as Path<RegistrationForm>[]);
-    if (!valid) return;
+    const valid = await form.trigger(current.fields as Path<RegistrationForm>[], { shouldFocus: true });
+    if (!valid) {
+      revealFirstError();
+      return;
+    }
 
     if (!isLastStep) {
       const nextStep = step + 1;
@@ -287,6 +290,25 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     // replace, not push: the status page takes this form's place in the
     // browser history, so Back can't return to a stale, empty copy of it.
     router.replace(statusUrl);
+  }
+
+  // A failed Continue used to just return, which looked like a dead button:
+  // the errors were often in a member card scrolled far above it, or on a
+  // control shouldFocus can't reach (the ID-card upload has no input ref).
+  // So scroll to the first rendered error, and always say what's wrong in a
+  // toast — which also covers an error on a field that isn't on screen at
+  // all (e.g. a hidden "Role (specify)" value restored from a draft).
+  function revealFirstError() {
+    const message = firstErrorMessage(form.formState.errors, current.fields);
+    if (current.key === "members") {
+      toast.error(membersStepError(form.getValues("members"), form.formState.errors.members, message));
+    } else {
+      toast.error(message ?? "Please fix the highlighted fields.");
+    }
+    requestAnimationFrame(() => {
+      const el = document.querySelector("[data-field-error]");
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   function handleBack() {
@@ -464,6 +486,47 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       </div>
     </div>
   );
+}
+
+const MIN_TEAM_MESSAGE = "A team requires a minimum of 2 members.";
+
+/**
+ * Members-step toast: always leads with the 2-member minimum, since the
+ * usual cause is the leader alone or a second member added but left blank —
+ * then names which member card still needs work, and the first problem in it.
+ */
+function membersStepError(
+  members: RegistrationForm["members"] | undefined,
+  errors: unknown,
+  firstMessage: string | undefined,
+): string {
+  if (!members?.length) {
+    return `${MIN_TEAM_MESSAGE} Add a second member with their details to continue.`;
+  }
+  const index = Array.isArray(errors) ? errors.findIndex(Boolean) : -1;
+  if (index === -1) return firstMessage ?? `${MIN_TEAM_MESSAGE} Complete every member's details to continue.`;
+  return `${MIN_TEAM_MESSAGE} Complete Member ${index + 2}'s details to continue${firstMessage ? ` — ${firstMessage}` : "."}`;
+}
+
+/** First error message under any of `paths` in RHF's nested errors object (depth-first, in field order). */
+function firstErrorMessage(errors: unknown, paths: readonly string[]): string | undefined {
+  const find = (node: unknown): string | undefined => {
+    if (!node || typeof node !== "object") return undefined;
+    const { message } = node as { message?: unknown };
+    if (typeof message === "string" && message) return message;
+    for (const [key, child] of Object.entries(node)) {
+      if (key === "ref") continue;
+      const found = find(child);
+      if (found) return found;
+    }
+    return undefined;
+  };
+  for (const path of paths) {
+    const node = path.split(".").reduce<unknown>((acc, key) => (acc as Record<string, unknown> | undefined)?.[key], errors);
+    const found = find(node);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 function RestoringDraft() {

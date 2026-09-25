@@ -141,7 +141,9 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
       })}
 
       {membersArrayError && (
-        <span className="text-[13px] leading-[1.45] text-ignite-danger">{membersArrayError}</span>
+        <span data-field-error role="alert" className="text-[13px] leading-[1.45] text-ignite-danger">
+          {membersArrayError}
+        </span>
       )}
 
       {slotsLeft > 0 && (

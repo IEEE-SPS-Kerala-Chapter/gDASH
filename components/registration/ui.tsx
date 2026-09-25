@@ -110,7 +110,9 @@ export function Field({
       {children}
       {trailing}
       {error ? (
-        <span className="font-ui text-[13px] font-medium leading-[1.45] text-ignite-danger">{error}</span>
+        <span data-field-error role="alert" className="font-ui text-[13px] font-medium leading-[1.45] text-ignite-danger">
+          {error}
+        </span>
       ) : hint ? (
         <span className="font-ui text-[13px] leading-[1.45] text-ignite-muted">{hint}</span>
       ) : null}

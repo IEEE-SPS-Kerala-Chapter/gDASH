@@ -19,7 +19,15 @@ export const memberSchema = z
     branch: z.string().trim().min(2, "Enter a branch, e.g. CSE").max(60, "Branch can be at most 60 characters"),
     year: z.enum(MEMBER_YEARS, { message: "Choose a year" }),
     roleInTeam: z.enum(TEAM_ROLES, { message: "Choose a role" }),
-    roleInTeamOther: z.string().trim().max(60, "Role can be at most 60 characters").optional(),
+    // nullish, not just optional: this field is only rendered when the role
+    // is "Other", so a null restored from a draft would otherwise fail
+    // validation with no visible error and silently block Continue.
+    roleInTeamOther: z
+      .string()
+      .trim()
+      .max(60, "Role can be at most 60 characters")
+      .nullish()
+      .transform((v) => v ?? undefined),
     idCardPath: z.string().min(1, "Upload an ID card"),
   })
   .superRefine((data, ctx) => {

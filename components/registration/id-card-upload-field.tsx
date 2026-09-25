@@ -89,7 +89,7 @@ export function IdCardUploadField({
           </span>
         </div>
       </label>
-      {error && <span className="text-[13px] leading-[1.45] text-ignite-danger">{error}</span>}
+      {error && <span data-field-error role="alert" className="text-[13px] leading-[1.45] text-ignite-danger">{error}</span>}
     </div>
   );
 }
