@@ -49,8 +49,8 @@ keeps working exactly as before.
 
 ## Part 2 — Migrating the schema over (later, when you're ready to cut over)
 
-This replays the dev project's schema — all 16 migration files already in
-`supabase/migrations/` — onto the new prod project: same tables, same Row
+This replays the dev project's schema — every migration file in
+`supabase/migrations/`, oldest first — onto the new prod project: same tables, same Row
 Level Security policies, same RPC functions (`submit_registration`,
 `get_registration_by_token`, etc.), same storage buckets. No data rows come
 across — it's a clean slate, which is what you want for a real production
@@ -61,7 +61,11 @@ launch.
    `npx supabase link --project-ref <new-project-ref>` — the ref is in the
    new project's Settings → General.
 3. Push the schema: `npx supabase db push` — applies every migration in
-   order.
+   order. Then confirm the 2026-09-26 security fix
+   (`20260926000000_lock_down_staff_profiles.sql`) is in place — without
+   it, anyone can sign themselves up as an admin. In the SQL Editor:
+   `select tgname from pg_trigger where tgname in ('on_auth_user_created','profiles_protect_privileged_columns');`
+   must return only `profiles_protect_privileged_columns`.
 4. Seed the first super-admin account on the new project via
    `scripts/seed-super-admin.mjs` (it needs the new project's URL + service
    role key as env vars — check the script's header for the exact names).

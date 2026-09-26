@@ -678,18 +678,18 @@ export async function createStaffAccount(input: {
     return { success: false, error: "Could not create the account." };
   }
 
-  // handle_new_user() already inserted a profiles row (default role 'admin')
-  // — set it to the role actually requested.
+  // The staff profile is what grants dashboard access, and only ever gets
+  // created here (or by scripts/seed-*.mjs) — signing up through Supabase
+  // Auth never creates one (see 20260926000000_lock_down_staff_profiles.sql).
+  // Upsert, not insert: harmless if an older trigger already added a row.
   const { error: roleError } = await admin
     .from("profiles")
-    .update({ role: input.role, full_name: fullName })
-    .eq("id", data.user.id);
+    .upsert({ id: data.user.id, email, role: input.role, full_name: fullName }, { onConflict: "id" });
 
   if (roleError) {
-    return {
-      success: false,
-      error: "Account created, but couldn't set its role. Fix it via scripts/seed-staff.mjs.",
-    };
+    // Don't leave a login with no staff access behind.
+    await admin.auth.admin.deleteUser(data.user.id);
+    return { success: false, error: "Could not create the account." };
   }
 
   // Logged via the caller's own session client (not the service-role
