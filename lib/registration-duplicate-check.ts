@@ -87,10 +87,8 @@ export function useTeamNameCheck(form: UseFormReturn<RegistrationForm>) {
           type: "duplicate",
           message:
             result.reason === "taken"
-              ? "That team name is already taken."
-              : result.similarTo
-                ? `Too similar to an existing team ("${result.similarTo}") — try something more distinct.`
-                : "Too similar to an existing team — try something more distinct.",
+              ? "That team name is already taken. Try another."
+              : "This name is too close to an existing team. Try something more distinct.",
         });
       } else if (form.getFieldState("team.teamName").error?.type === "duplicate") {
         form.clearErrors("team.teamName");

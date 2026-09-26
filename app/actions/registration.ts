@@ -169,16 +169,12 @@ export async function submitRegistration(
         };
       }
       if (error.message?.includes("team name taken")) {
-        return { success: false, error: "That team name is taken — try another." };
+        return { success: false, error: "That team name is already taken. Try another." };
       }
       if (error.message?.includes("team name too similar to an existing team")) {
-        const similarTo = error.message.split(":").slice(1).join(":").trim();
-        return {
-          success: false,
-          error: similarTo
-            ? `That team name is too similar to an existing team ("${similarTo}") — try something more distinct.`
-            : "That team name is too similar to an existing team — try something more distinct.",
-        };
+        // Deliberately doesn't name the other team — that would let anyone
+        // discover registered team names by trying variations.
+        return { success: false, error: "This name is too close to an existing team. Try something more distinct." };
       }
       if (error.message?.includes("team size must be")) {
         return { success: false, error: "Teams need between 2 and 5 members." };
@@ -444,10 +440,10 @@ export async function checkContactAvailability(input: {
 }
 
 export type TeamNameAvailability =
-  | { available: true; reason: null; similarTo: null }
-  | { available: false; reason: "taken" | "similar"; similarTo: string | null };
+  | { available: true; reason: null }
+  | { available: false; reason: "taken" | "similar" };
 
-const TEAM_NAME_AVAILABLE: TeamNameAvailability = { available: true, reason: null, similarTo: null };
+const TEAM_NAME_AVAILABLE: TeamNameAvailability = { available: true, reason: null };
 
 /**
  * Live pre-submit check for the team name field: is it already taken
@@ -460,12 +456,11 @@ export async function checkTeamNameAvailability(teamName: string): Promise<TeamN
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("check_team_name_available", { p_team_name: teamName.trim() });
     if (error || !data) return TEAM_NAME_AVAILABLE;
-    const result = data as { available?: boolean; reason?: "taken" | "similar" | null; similar_to?: string | null };
+    const result = data as { available?: boolean; reason?: "taken" | "similar" | null };
     if (result.available !== false) return TEAM_NAME_AVAILABLE;
     return {
       available: false,
       reason: result.reason === "similar" ? "similar" : "taken",
-      similarTo: result.similar_to ?? null,
     };
   } catch (err) {
     console.error("checkTeamNameAvailability threw unexpectedly:", err);
