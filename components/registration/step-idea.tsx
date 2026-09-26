@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Field, TextArea, FormCard, Spinner } from "./ui";
 import { cn } from "@/lib/utils";
 import { displayFileName } from "@/lib/upload-file-name";
+import { buildUploadPath } from "@/lib/upload-path";
 
 const MAX_DECK_BYTES = 20 * 1024 * 1024;
 const ALLOWED_DECK_TYPES = [
@@ -42,7 +43,16 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
     setUploadState({ status: "uploading", name: file.name });
     const supabase = createClient();
-    const path = `${crypto.randomUUID()}-${file.name}`;
+    // Uploads go in the leader's own folder — the only place storage lets
+    // a signed-in user write (see lib/upload-path.ts).
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setUploadState({ status: "error", message: "Your session has expired. Sign in again to upload." });
+      return;
+    }
+    const path = buildUploadPath(user.id, file.name);
     const { error } = await supabase.storage.from("registration-decks").upload(path, file);
 
     if (error) {

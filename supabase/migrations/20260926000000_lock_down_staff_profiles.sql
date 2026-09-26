@@ -51,7 +51,9 @@ language plpgsql
 set search_path = public
 as $$
 begin
-  if coalesce(auth.role(), '') <> 'service_role' and current_user not in ('postgres', 'supabase_admin') then
+  -- (Tightened in 20260927000000: current_user is postgres inside any
+  -- SECURITY DEFINER function, so only auth.role() is trusted.)
+  if auth.role() is not null and auth.role() <> 'service_role' then
     if tg_op = 'INSERT' then
       raise exception 'staff profiles can only be created by the server' using errcode = '42501';
     end if;

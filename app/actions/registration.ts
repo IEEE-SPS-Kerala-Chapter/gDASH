@@ -8,6 +8,7 @@ import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { displayFileName } from "@/lib/upload-file-name";
+import { isOwnOrLegacyUploadPath } from "@/lib/upload-path";
 
 /** "Other" reveals a free-text field client-side; the server resolves it to
  * the actual typed value here so the DB never stores the literal "Other". */
@@ -84,6 +85,16 @@ export async function submitRegistration(
       leaderUserId = user.id;
     } else {
       leaderEmail = team.leaderEmail;
+    }
+
+    // Uploaded files must be the submitter's own (or pre-folder legacy
+    // ones) — the database enforces the same (enforce_own_upload_path), this
+    // just gives a clear message first.
+    if (leaderUserId) {
+      const paths = [team.idCardPath, ...members.map((m) => m.idCardPath), idea.deckPath];
+      if (!paths.every((p) => isOwnOrLegacyUploadPath(p, leaderUserId!))) {
+        return { success: false, error: "One of the uploaded files couldn't be verified. Please upload it again." };
+      }
     }
 
     const resolvedCollege = resolveCollege(team.college, team.collegeOther);
@@ -426,27 +437,35 @@ export async function checkTeamNameAvailability(teamName: string): Promise<TeamN
 type IdCardPreviewResult = { success: true; url: string } | { success: false; error: string };
 
 /**
+ * The signed-in leader's own uploads only: the Review step shows the files
+ * a leader uploaded this session or in a restored draft. Anyone else — no
+ * session, or a path in another user's folder — gets nothing. Legacy
+ * pre-folder paths (drafts saved before per-user folders) are still allowed;
+ * those are protected only by their unguessable uuid.
+ */
+async function canPreviewUpload(path: string): Promise<boolean> {
+  if (!path) return false;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return Boolean(user) && isOwnOrLegacyUploadPath(path, user!.id);
+}
+
+/**
  * A short-lived signed URL for a just-uploaded ID card, so the Review step
  * (components/registration/step-review.tsx) can show it back to the leader
  * before they submit — including after resuming a saved draft, when the
- * browser no longer has the original File in memory.
- *
- * Deliberately callable by anyone (no auth/staff check, unlike every other
- * use of the service-role client in this codebase — see createAdminClient's
- * own doc comment). Registration itself is authless-capable by design (see
- * init_schema.sql), and this needs to work in that mode too, not just when
- * LEADER_VERIFICATION_ENABLED. The path itself is the credential instead:
- * IdCardUploadField writes it as `${crypto.randomUUID()}-${file.name}`, so
- * knowing it already means either being the uploader (it's only ever handed
- * back to their own browser's form state) or being staff (who have their
- * own separate, gated path to the same files via getMemberIdCardDownloadUrl
- * in app/actions/admin.ts) — same trust model teams.access_token already
- * uses elsewhere in this schema. It's also never returned by
- * get_registration_by_token, so it can't leak via the public status page.
+ * browser no longer has the original File in memory. Signed with the service
+ * role (the bucket has no read policy), so it checks ownership first — see
+ * canPreviewUpload. Staff read ID cards through getMemberIdCardDownloadUrl.
  */
 export async function getIdCardPreviewUrl(path: string): Promise<IdCardPreviewResult> {
   if (!path) {
     return { success: false, error: "No ID card uploaded yet." };
+  }
+  if (!(await canPreviewUpload(path))) {
+    return { success: false, error: "Could not load ID card preview." };
   }
 
   const admin = createAdminClient();
@@ -461,13 +480,16 @@ export async function getIdCardPreviewUrl(path: string): Promise<IdCardPreviewRe
 /**
  * Same as getIdCardPreviewUrl, for the idea's supporting material (the
  * registration-decks bucket), so the Review step can open it back up —
- * same trust model: the uuid-prefixed path StepIdea wrote is the credential.
+ * same ownership check (canPreviewUpload).
  * A PDF is viewed in the browser; a PPTX (which browsers can't display) is
  * signed as a download under the participant's original file name.
  */
 export async function getDeckPreviewUrl(path: string): Promise<IdCardPreviewResult> {
   if (!path) {
     return { success: false, error: "No supporting material uploaded yet." };
+  }
+  if (!(await canPreviewUpload(path))) {
+    return { success: false, error: "Could not load your supporting material." };
   }
 
   const isPdf = path.toLowerCase().endsWith(".pdf");
