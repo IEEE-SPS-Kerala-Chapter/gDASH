@@ -1,7 +1,7 @@
 // Tab-scoped record of the last successful submission (sessionStorage, so
-// it lives only as long as this browser tab). Lets the Back button keep a
-// leader on their status page instead of returning them to the
-// registration form or sign-in screen after submitting.
+// it lives only as long as this browser tab). Lets the Back button take a
+// leader to the home page after submitting, instead of back to the
+// registration form or sign-in screen (see submission-back-guards.tsx).
 
 const SUBMITTED_KEY = "gignite-submitted";
 // Status page this tab signed out from (see StatusBackGuard).

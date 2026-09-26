@@ -7,9 +7,12 @@ import { cameFromBackForward, clearSignedOutFrom, readSubmitted, signedOutFrom }
 
 /**
  * Rendered on the status page. When this tab just submitted the team shown
- * here, the browser's Back button stays on the status page instead of
- * returning to the registration form: an extra history entry for this same
- * URL is added, and each Back that lands on it adds it again.
+ * here, the browser's Back button goes to the home page instead of back
+ * into the registration flow (the form is gone — submitted, draft deleted —
+ * and the leader was signed out on submit). An extra history entry for this
+ * same URL is added; Back lands on the one underneath and replaces it with
+ * the home page, so Forward still returns here. It used to keep Back on the
+ * status page itself, which left no way to leave the site with Back.
  *
  * Opening the status link any other way (bookmark, email, another device)
  * leaves Back working normally.
@@ -59,7 +62,7 @@ export function StatusBackGuard() {
 
     function onPopState() {
       if (window.location.pathname === statusPath) {
-        window.history.pushState(null, "", window.location.href);
+        window.location.replace("/");
       }
     }
     window.addEventListener("popstate", onPopState);
@@ -74,9 +77,11 @@ export function StatusBackGuard() {
 
 /**
  * Backup for the registration and sign-in screens: if this tab just
- * submitted a team and the screen was reached with Back/Forward (e.g. by
- * jumping several entries back through the browser's history menu), go
- * straight to that team's status page instead of showing a new form.
+ * submitted a team and the screen was reached with Back/Forward (e.g. Back
+ * again from the home page, or a jump through the browser's history menu),
+ * go to the home page instead of showing a new form — same as Back from the
+ * status page, so each Back keeps moving away from the finished flow. (The
+ * status page stays one sign-in away, or on the leader's bookmark.)
  * A normal visit to /register is unaffected.
  */
 export function RegisterBackGuard() {
@@ -84,9 +89,8 @@ export function RegisterBackGuard() {
 
   useEffect(() => {
     function check(persisted: boolean) {
-      const submitted = readSubmitted();
-      if (submitted && cameFromBackForward(persisted)) {
-        router.replace(submitted.statusUrl);
+      if (readSubmitted() && cameFromBackForward(persisted)) {
+        router.replace("/");
       }
     }
     check(false);
