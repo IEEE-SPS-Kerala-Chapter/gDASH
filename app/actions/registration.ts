@@ -7,6 +7,7 @@ import { verifyTurnstile } from "@/lib/turnstile";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
+import { displayFileName } from "@/lib/upload-file-name";
 
 /** "Other" reveals a free-text field client-side; the server resolves it to
  * the actual typed value here so the DB never stores the literal "Other". */
@@ -453,6 +454,30 @@ export async function getIdCardPreviewUrl(path: string): Promise<IdCardPreviewRe
 
   if (error || !data) {
     return { success: false, error: "Could not load ID card preview." };
+  }
+  return { success: true, url: data.signedUrl };
+}
+
+/**
+ * Same as getIdCardPreviewUrl, for the idea's supporting material (the
+ * registration-decks bucket), so the Review step can open it back up —
+ * same trust model: the uuid-prefixed path StepIdea wrote is the credential.
+ * A PDF is viewed in the browser; a PPTX (which browsers can't display) is
+ * signed as a download under the participant's original file name.
+ */
+export async function getDeckPreviewUrl(path: string): Promise<IdCardPreviewResult> {
+  if (!path) {
+    return { success: false, error: "No supporting material uploaded yet." };
+  }
+
+  const isPdf = path.toLowerCase().endsWith(".pdf");
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage
+    .from("registration-decks")
+    .createSignedUrl(path, 60 * 5, isPdf ? undefined : { download: displayFileName(path) }); // 5 minutes
+
+  if (error || !data) {
+    return { success: false, error: "Could not load your supporting material." };
   }
   return { success: true, url: data.signedUrl };
 }

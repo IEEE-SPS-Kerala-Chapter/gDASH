@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { RegistrationForm } from "@/lib/validations/registration";
-import { getIdCardPreviewUrl } from "@/app/actions/registration";
+import { getDeckPreviewUrl, getIdCardPreviewUrl } from "@/app/actions/registration";
+import { displayFileName } from "@/lib/upload-file-name";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { cn } from "@/lib/utils";
@@ -135,6 +136,136 @@ function IdCardThumb({ label, path }: { label: string; path: string }) {
   );
 }
 
+/**
+ * The idea's supporting material, opened back up the same way IdCardThumb
+ * does an ID card — a fresh short-lived signed URL (getDeckPreviewUrl), so
+ * it works after resuming a draft too. A PDF opens in an in-page viewer
+ * (with "Open in new tab", since many phone browsers won't render a PDF
+ * inside a page); a PPTX can't be shown by a browser, so it downloads.
+ */
+function DeckThumb({ path }: { path: string }) {
+  const [state, setState] = useState<{ status: "idle" } | { status: "loading" } | { status: "ready"; url: string } | { status: "error" }>(
+    { status: "idle" },
+  );
+  const [viewing, setViewing] = useState(false);
+  const isPdf = path.toLowerCase().endsWith(".pdf");
+  const fileName = path ? displayFileName(path) : "";
+
+  useEffect(() => {
+    if (!path) {
+      setState({ status: "idle" });
+      return;
+    }
+    let cancelled = false;
+    setState({ status: "loading" });
+    getDeckPreviewUrl(path)
+      .then((result) => {
+        if (!cancelled) setState(result.success ? { status: "ready", url: result.url } : { status: "error" });
+      })
+      .catch(() => {
+        if (!cancelled) setState({ status: "error" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  useEffect(() => {
+    if (!viewing) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") setViewing(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [viewing]);
+
+  const url = state.status === "ready" ? state.url : null;
+
+  function open() {
+    if (!url) return;
+    if (isPdf) setViewing(true);
+    else window.location.assign(url); // signed as a download — stays on this page
+  }
+
+  return (
+    <>
+      <div
+        role={url ? "button" : undefined}
+        tabIndex={url ? 0 : undefined}
+        onClick={url ? open : undefined}
+        onKeyDown={
+          url
+            ? (ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                  ev.preventDefault();
+                  open();
+                }
+              }
+            : undefined
+        }
+        className={cn(
+          "flex items-center gap-3 rounded-[10px] border-[1.5px] border-ignite-edge/[0.12] bg-ignite-bg p-3",
+          url && "cursor-pointer transition-colors hover:border-ignite-ink",
+        )}
+      >
+        <div className="flex h-14 w-14 flex-none items-center justify-center rounded-[8px] bg-ignite-lavender font-ui text-[11px] font-bold text-ignite-ink">
+          {state.status === "loading" ? <Spinner /> : isPdf ? "PDF" : path ? "PPTX" : "—"}
+        </div>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-[13px] font-semibold text-ignite-ink">{fileName || "Supporting material"}</span>
+          <span className="text-[12px] text-ignite-muted">
+            {!path
+              ? "Not uploaded"
+              : state.status === "ready"
+                ? isPdf
+                  ? "Uploaded — tap to view"
+                  : "Uploaded — tap to download and view"
+                : state.status === "error"
+                  ? "Uploaded — preview unavailable right now"
+                  : "Loading…"}
+          </span>
+        </div>
+      </div>
+
+      {viewing && url && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${fileName}, supporting material`}
+          onClick={() => setViewing(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 lg:p-8"
+        >
+          <div
+            onClick={(ev) => ev.stopPropagation()}
+            className="flex h-full w-full max-w-[1000px] flex-col overflow-hidden rounded-[14px] bg-ignite-surface shadow-2xl"
+          >
+            <div className="flex items-center gap-3 border-b border-ignite-edge/[0.08] px-4 py-3">
+              <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ignite-ink">{fileName}</span>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-none text-[13px] font-semibold text-ignite-ink hover:text-ignite-magenta"
+              >
+                Open in new tab ↗
+              </a>
+              <button
+                type="button"
+                onClick={() => setViewing(false)}
+                aria-label="Close"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-ignite-bg text-[16px] font-semibold text-ignite-ink"
+              >
+                ×
+              </button>
+            </div>
+            <iframe src={url} title={`${fileName}, supporting material`} className="h-full w-full flex-1 border-0 bg-white" />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function StepReview({
   form,
   onEdit,
@@ -196,7 +327,7 @@ export function StepReview({
         <IdeaAnswer label="AI approach" value={idea.aiApproach} />
         <IdeaAnswer label="Expected impact" value={idea.expectedImpact} />
         {idea.supportingLink && <ReviewRow label="Supporting link" value={idea.supportingLink} />}
-        <ReviewRow label="Supporting material" value={idea.deckPath ? "Uploaded" : "Not uploaded"} />
+        <DeckThumb path={idea.deckPath} />
       </FormCard>
     </div>
   );
