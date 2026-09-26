@@ -185,6 +185,9 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
                 onClick={handleGoogleSignIn}
                 disabled={googleLoading}
                 loading={googleLoading}
+                // White in dark mode (Google's own sign-in button style)
+                // instead of the theme's yellow primary.
+                className="dark:bg-white dark:text-[#1f1f1f] dark:hover:bg-neutral-200"
               >
                 {!googleLoading && <GoogleIcon />}
                 {googleLoading ? "Redirecting…" : "Continue with Google"}

@@ -183,6 +183,7 @@ export function PrimaryButton({
   children,
   disabled,
   loading,
+  className,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { loading?: boolean }) {
   return (
@@ -194,6 +195,7 @@ export function PrimaryButton({
         disabled
           ? "cursor-not-allowed bg-ignite-edge/[0.08] text-ignite-faint"
           : "bg-ignite-primary text-ignite-on-primary shadow-[0_8px_20px_rgba(44,29,68,0.18)] hover:bg-ignite-primary-hover",
+        className,
       )}
     >
       {loading && <Spinner />}
