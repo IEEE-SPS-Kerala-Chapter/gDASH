@@ -281,17 +281,9 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     setOpeningStatus(true);
     const statusUrl = `/register/status/${result.accessToken}`;
     markSubmitted({ email: leaderEmail.toLowerCase(), statusUrl });
-    // The status page is looked up entirely by the access token in its own
-    // URL — it needs no session at all — so there's no reason to leave the
-    // leader signed in past this point. Matters most on a shared/public
-    // device (e.g. a registration desk): without this, the next person to
-    // open /register here would silently inherit this session. Best-effort:
-    // a failure here shouldn't block a successful submission's redirect.
-    try {
-      await createClient().auth.signOut();
-    } catch (err) {
-      console.error("Sign-out after submit failed:", err);
-    }
+    // The leader stays signed in: the status page only shows a team to a
+    // signed-in member of it (get_registration_by_token). It shows a Sign
+    // out bar for shared devices (see StatusSignOutBar).
     toast.success("Registration submitted!");
     // replace, not push: the status page takes this form's place in the
     // browser history, so Back can't return to a stale, empty copy of it.

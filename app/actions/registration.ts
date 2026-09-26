@@ -267,12 +267,23 @@ type StatusResult =
         created_at: string;
       };
     }
-  | { found: false; systemError?: boolean };
+  | { found: false; systemError?: boolean; needsSignIn?: boolean };
 
-/** Looks up a team's registration status by its opaque access token. */
+/**
+ * Looks up a team's registration by its access token — for a signed-in
+ * member of that team only (get_registration_by_token checks the account's
+ * confirmed email against the team's members). Without a session the page
+ * asks the visitor to sign in; anyone else gets "not found".
+ */
 export async function getRegistrationStatus(token: string): Promise<StatusResult> {
   try {
     const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return { found: false, needsSignIn: true };
+    }
     const { data, error } = await supabase.rpc("get_registration_by_token", { p_token: token });
 
     if (error || !data) {

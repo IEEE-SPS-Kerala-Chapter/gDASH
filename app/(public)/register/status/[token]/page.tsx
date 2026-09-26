@@ -17,7 +17,32 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function StatusPage({ params }: { params: { token: string } }) {
   const result = await getRegistrationStatus(params.token);
 
+  if (!result.found && result.needsSignIn) {
+    return (
+      <>
+        <LogoHeaderBar />
+        <main className="flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-4 bg-ignite-bg p-8 text-center font-ui text-ignite-ink-soft">
+          <BrandLogo className="h-14 lg:h-16" />
+          <h1 className="font-display text-2xl font-bold text-ignite-ink">Sign in to view your team</h1>
+          <p className="max-w-sm text-ignite-muted">
+            For privacy, a team&apos;s details are only shown to its own members. Sign in with the email you
+            registered with — the team leader or any member — and you&apos;ll get a link back to this page.
+          </p>
+          <Link href="/" className="font-semibold text-ignite-ink hover:text-ignite-magenta">
+            Sign in →
+          </Link>
+        </main>
+      </>
+    );
+  }
+
   if (!result.found) {
+    // Signed in, but not a member of this team (or no such team) — offer to
+    // switch accounts, since a wrong account is the likely cause.
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     return (
       <>
         <LogoHeaderBar />
@@ -29,8 +54,13 @@ export default async function StatusPage({ params }: { params: { token: string }
           <p className="max-w-sm text-ignite-muted">
             {result.systemError
               ? "Something went wrong on our end — this isn't about your registration. Try refreshing in a moment."
-              : "That status link doesn't match a registration. Make sure the whole link was copied. Anyone on the team can also sign in on the registration page with their registered email to get back to this page."}
+              : "That status link doesn't match a registration for the account you're signed in with. Make sure the whole link was copied, and that you signed in with the email you registered with — the team leader or any member."}
           </p>
+          {!result.systemError && user?.email && (
+            <div className="w-full max-w-md">
+              <StatusSignOutBar email={user.email} />
+            </div>
+          )}
           <Link href="/" className="font-semibold text-ignite-ink hover:text-ignite-magenta">
             Go to registration →
           </Link>
