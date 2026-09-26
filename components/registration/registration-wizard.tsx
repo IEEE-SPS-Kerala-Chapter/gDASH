@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { submitRegistration, loadRegistrationDraft } from "@/app/actions/registration";
 import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
-import { markSubmitted, readSubmitted } from "@/lib/submitted-registration";
+import { clearSubmitted, markSubmitted } from "@/lib/submitted-registration";
 import { createClient } from "@/lib/supabase/client";
 import { RULES_URL } from "@/lib/config";
 import {
@@ -204,13 +204,13 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     // Progress used to be autosaved in this browser too; remove any such
     // leftover copy so a shared device keeps no one's details.
     purgeLegacyLocalDraft();
-    // Only for the same leader: on a shared device, the next person signs in
-    // with their own email and gets a fresh form as normal.
-    const submitted = readSubmitted();
-    if (submitted && leaderEmail && submitted.email === leaderEmail.toLowerCase()) {
-      router.replace(submitted.statusUrl);
-      return;
-    }
+    // The server only renders this form once it has checked the signed-in
+    // email has no registration (otherwise it shows AlreadyRegisteredBlocked
+    // with the real status link). So a "submitted" record left in this tab
+    // is stale — e.g. staff deleted that registration — and following it
+    // would open a status link that no longer exists. Drop it instead, which
+    // also stops the Back-button guards acting on it.
+    clearSubmitted();
     void restoreDraft();
     // Only ever run once, right after mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps

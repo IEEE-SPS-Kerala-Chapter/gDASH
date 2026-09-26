@@ -27,6 +27,16 @@ export function markSubmitted(record: SubmittedRegistration) {
   }
 }
 
+/** Forgets this tab's submission record (see RegistrationWizard: a record
+ * seen there is stale, since the form only opens for an unregistered email). */
+export function clearSubmitted() {
+  try {
+    sessionStorage.removeItem(SUBMITTED_KEY);
+  } catch {
+    // Nothing stored, or storage blocked.
+  }
+}
+
 /**
  * Signing out from a status page: forget this tab's submission (so the
  * Back-button guards stop sending it to the status page) and remember
