@@ -6,8 +6,8 @@ import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
-import { submitRegistration, saveRegistrationDraft, loadRegistrationDraft } from "@/app/actions/registration";
-import { saveDraft, loadDraft, clearDraft } from "@/lib/registration-draft";
+import { submitRegistration, loadRegistrationDraft } from "@/app/actions/registration";
+import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
 import { markSubmitted, readSubmitted } from "@/lib/submitted-registration";
 import { createClient } from "@/lib/supabase/client";
 import { RULES_URL } from "@/lib/config";
@@ -30,6 +30,7 @@ import { StepIdea } from "./step-idea";
 import { StepReview } from "./step-review";
 import { StepDeclarations } from "./step-declarations";
 import { TurnstileWidget } from "./turnstile-widget";
+import { useDraftAutosave, type SaveStatus } from "./use-draft-autosave";
 
 const STEPS = [
   {
@@ -134,19 +135,22 @@ function buildDefaults(leaderEmail: string) {
 export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // Mirrors `step` synchronously, so a save fired in the same tick as a
+  // step change sends the new step, not the one from the last render.
+  const stepRef = useRef(0);
   const [submitting, setSubmitting] = useState(false);
   const [openingStatus, setOpeningStatus] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  // True until the saved draft (server, then local) has been checked. The
-  // server lookup can take a moment after signing back in, and showing the
-  // empty form meanwhile looked like nothing was saved — and anything typed
-  // into it would be overwritten once the draft arrived. So the form stays
-  // hidden behind a loading state until then.
-  const [restoring, setRestoring] = useState(true);
+  // "loading" until the leader's saved draft has been checked. The form
+  // stays hidden until then: an empty form meanwhile looked like nothing was
+  // saved, anything typed into it would be overwritten once the draft
+  // arrived — and with autosave, an empty form shown after a *failed*
+  // lookup would overwrite the real draft on the first keystroke. So a
+  // failed lookup shows "error" with a retry instead.
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const honeypotRef = useRef<HTMLInputElement>(null);
-  const draftSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const form = useForm<RegistrationForm>({
     // The generic Resolver<T> type that @hookform/resolvers infers from a
     // schema this deep (nested enums/literals) doesn't structurally match
@@ -157,24 +161,49 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     mode: "onBlur",
   });
 
+  const autosave = useDraftAutosave({
+    // No signed-in leader (only when LEADER_VERIFICATION_ENABLED is off) means
+    // no identity to save a draft under.
+    enabled: Boolean(leaderEmail) && loadState === "ready",
+    getValues: () => form.getValues(),
+    getStep: () => stepRef.current,
+  });
+
   const current = STEPS[step];
   const decl = form.watch("declarations");
   const readyToSubmit = Boolean(decl?.eligibility && decl?.originality && decl?.rules);
   const isLastStep = step === STEPS.length - 1;
   const turnstileConfigured = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
-  // Restore a saved draft after mount — not during useForm()/render, since
-  // reading localStorage synchronously there would throw during SSR (this
-  // is a client component, but still goes through SSR for the initial
-  // HTML). Until it finishes, `restoring` shows a loading state instead of
-  // the empty form (see RestoringDraft below).
-  //
-  // The server-side draft (tied to the signed-in leader, not one browser)
-  // takes priority when one exists — that's the copy that's "there
-  // whenever they log in," even on a different device. The local one is
-  // just a same-session fallback for when there's no session yet, or the
-  // server round trip fails.
+  async function restoreDraft() {
+    setLoadState("loading");
+    if (!leaderEmail) {
+      setLoadState("ready");
+      return;
+    }
+    let draft: Awaited<ReturnType<typeof loadRegistrationDraft>>;
+    try {
+      draft = await loadRegistrationDraft();
+    } catch {
+      // The request never completed — a dropped connection.
+      draft = { status: "error" };
+    }
+    if (draft.status === "error") {
+      setLoadState("error");
+      return;
+    }
+    if (draft.status === "found") {
+      form.reset(draft.value);
+      stepRef.current = draft.step;
+      setStep(draft.step);
+    }
+    setLoadState("ready");
+  }
+
   useEffect(() => {
+    // Progress used to be autosaved in this browser too; remove any such
+    // leftover copy so a shared device keeps no one's details.
+    purgeLegacyLocalDraft();
     // Only for the same leader: on a shared device, the next person signs in
     // with their own email and gets a fresh form as normal.
     const submitted = readSubmitted();
@@ -182,60 +211,32 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       router.replace(submitted.statusUrl);
       return;
     }
-    (async () => {
-      try {
-        if (leaderEmail) {
-          const serverDraft = await loadRegistrationDraft();
-          if (serverDraft) {
-            form.reset(serverDraft.value);
-            setStep(serverDraft.step);
-            return;
-          }
-        }
-        const draft = loadDraft();
-        if (draft) {
-          form.reset(draft.value);
-          setStep(draft.step);
-        }
-      } catch (err) {
-        // A failed server lookup (e.g. dropped connection) shouldn't leave
-        // the leader stuck on the loading state — fall back to whatever
-        // local draft exists, or an empty form.
-        console.error("Could not restore registration draft:", err);
-        const draft = loadDraft();
-        if (draft) {
-          form.reset(draft.value);
-          setStep(draft.step);
-        }
-      } finally {
-        setRestoring(false);
-      }
-    })();
+    void restoreDraft();
     // Only ever run once, right after mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounced autosave on every field change (one shared timer, reset on
-  // each change, so a burst of keystrokes writes once, not per keystroke).
+  const scheduleSave = autosave.schedule;
+  // Debounced autosave on every field change. Subscribed only once the draft
+  // has loaded, so restoring it (form.reset) doesn't count as an edit.
   useEffect(() => {
-    const subscription = form.watch((value) => {
-      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
-      draftSaveTimer.current = setTimeout(() => {
-        saveDraft(value as RegistrationForm, step);
-      }, 500);
-    });
-    return () => {
-      subscription.unsubscribe();
-      if (draftSaveTimer.current) clearTimeout(draftSaveTimer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+    if (loadState !== "ready") return;
+    const subscription = form.watch(() => scheduleSave());
+    return () => subscription.unsubscribe();
+  }, [loadState, form, scheduleSave]);
+
+  // Step changes save straight away — a bare step change with no field
+  // edits wouldn't trigger the watch()-based autosave above.
+  function goToStep(index: number) {
+    stepRef.current = index;
+    setStep(index);
+    void autosave.saveNow();
+  }
 
   function jumpToStep(key: string) {
     const index = STEPS.findIndex((s) => s.key === key);
     if (index === -1) return;
-    setStep(index);
-    saveDraft(form.getValues(), index);
+    goToStep(index);
   }
 
   async function handleContinue() {
@@ -246,11 +247,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     }
 
     if (!isLastStep) {
-      const nextStep = step + 1;
-      setStep(nextStep);
-      // A bare step change with no field edits in between wouldn't trigger
-      // the watch()-based autosave above, so save explicitly here too.
-      saveDraft(form.getValues(), nextStep);
+      goToStep(step + 1);
       return;
     }
     if (turnstileConfigured && !turnstileToken) {
@@ -259,12 +256,16 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     }
 
     setSubmitting(true);
+    // Submitting deletes the draft row; an autosave landing after that would
+    // recreate it. So stop autosaving and let any save in flight finish first.
+    await autosave.pause();
     const result = await submitRegistration(form.getValues(), {
       honeypot: honeypotRef.current?.value,
       turnstileToken,
     });
     if (!result.success) {
       setSubmitting(false);
+      autosave.resume();
       toast.error(result.error);
       return;
     }
@@ -272,7 +273,6 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     // replaces this one — resetting it earlier put the idle "Submit
     // registration" button back on screen during sign-out and navigation.
     setOpeningStatus(true);
-    clearDraft();
     const statusUrl = `/register/status/${result.accessToken}`;
     markSubmitted({ email: leaderEmail.toLowerCase(), statusUrl });
     // The status page is looked up entirely by the access token in its own
@@ -313,30 +313,27 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
   function handleBack() {
     if (step === 0) return;
-    const prevStep = step - 1;
-    setStep(prevStep);
-    saveDraft(form.getValues(), prevStep);
+    goToStep(step - 1);
   }
 
-  // Explicit, deliberate save — unlike the silent local autosave above,
-  // this is the durable, cross-device copy tied to the leader's signed-in
-  // identity (see saveRegistrationDraft). Never validates first: the whole
-  // point of a draft is that it can hold incomplete/invalid progress.
+  // Same save as the autosave, on demand — for leaders who want to see it
+  // confirmed. Never validates first: a draft can hold incomplete progress.
+  // A failure already shows its own message (see useDraftAutosave).
   async function handleSaveDraft() {
     setSavingDraft(true);
-    const result = await saveRegistrationDraft(form.getValues(), step);
+    const saved = await autosave.saveNow();
     setSavingDraft(false);
-    if (result.success) {
-      toast.success("Draft saved");
-    } else {
-      toast.error(result.error);
-    }
+    if (saved) toast.success("Draft saved");
   }
 
   // Available from any step, not just Team — a leader who signed in with
   // the wrong account shouldn't have to navigate back to Step 1 to fix it.
   async function handleSignOut() {
     setSigningOut(true);
+    // Save what's unsaved while the session still exists, then stop, so a
+    // late request can't fail with "session expired" after signing out.
+    await autosave.saveNow();
+    await autosave.pause();
     const supabase = createClient();
     await supabase.auth.signOut();
     router.refresh();
@@ -399,9 +396,10 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
           {leaderEmail && (
             <div className="flex items-center justify-between gap-3 rounded-full border border-ignite-edge/[0.06] bg-ignite-surface px-5 py-2.5 font-ui text-[13px] text-ignite-ink-soft shadow-[0_1px_6px_rgba(0,0,0,0.05)] lg:max-w-[760px]">
-              <span>
+              <span className="min-w-0 truncate">
                 Signed in as <span className="font-semibold">{leaderEmail}</span>
               </span>
+              <SaveIndicator status={autosave.status} />
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -413,8 +411,10 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
             </div>
           )}
 
-          {restoring ? (
+          {loadState === "loading" ? (
             <RestoringDraft />
+          ) : loadState === "error" ? (
+            <DraftLoadFailed onRetry={() => void restoreDraft()} />
           ) : (
             <>
             <div className="flex flex-col gap-[9px] lg:hidden">
@@ -454,6 +454,23 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
             {isLastStep && (
               <div className="lg:max-w-[760px]">
                 <TurnstileWidget onToken={setTurnstileToken} />
+              </div>
+            )}
+
+            {autosave.errorMessage && (
+              <div
+                role="alert"
+                className="flex items-start justify-between gap-3 rounded-xl bg-ignite-danger-pale px-4 py-3 text-[14px] leading-[1.45] text-ignite-danger lg:max-w-[760px]"
+              >
+                <span>{autosave.errorMessage}</span>
+                <button
+                  type="button"
+                  onClick={() => void autosave.saveNow()}
+                  disabled={autosave.status === "saving"}
+                  className="flex-none font-semibold underline disabled:opacity-60"
+                >
+                  {autosave.status === "saving" ? "Retrying…" : "Retry now"}
+                </button>
               </div>
             )}
 
@@ -527,6 +544,41 @@ function firstErrorMessage(errors: unknown, paths: readonly string[]): string | 
     if (found) return found;
   }
   return undefined;
+}
+
+/** Small autosave state next to "Signed in as" — "Not saved" stays until a save succeeds (the banner above the buttons says why). */
+function SaveIndicator({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+  const label =
+    status === "saving" ? "Saving…" : status === "saved" ? "Saved ✓" : "Not saved";
+  return (
+    <span
+      aria-live="polite"
+      className={
+        "ml-auto flex-none text-[12px] font-semibold " +
+        (status === "offline" || status === "error" ? "text-ignite-danger" : "text-ignite-muted")
+      }
+    >
+      {label}
+    </span>
+  );
+}
+
+function DraftLoadFailed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" className="flex flex-col gap-4 lg:max-w-[760px]">
+      <FormCard>
+        <p className="m-0 text-[15px] font-semibold text-ignite-ink">Couldn&apos;t load your saved progress</p>
+        <p className="m-0 text-[14px] leading-[1.5] text-ignite-ink-soft">
+          This is usually a weak or dropped internet connection. Check your connection and try again — your saved
+          progress is safe and will load once you&apos;re back online.
+        </p>
+        <PrimaryButton type="button" onClick={onRetry}>
+          Try again
+        </PrimaryButton>
+      </FormCard>
+    </div>
+  );
 }
 
 function RestoringDraft() {

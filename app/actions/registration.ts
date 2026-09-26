@@ -295,11 +295,12 @@ export async function checkMemberExists(memberId: string): Promise<boolean> {
 type DraftResult = { success: true } | { success: false; error: string };
 
 /**
- * Explicit "Save draft" — upserts the signed-in leader's one server-side
- * draft row (one per leader, see registration_drafts' unique leader_id).
- * Only ever called when a leader session exists (the button only renders
- * then); with no signed-in user there's no identity to key a server-side
- * draft on, so this just returns a clear error rather than silently no-op.
+ * Upserts the signed-in leader's one server-side draft row (one per leader,
+ * see registration_drafts' unique leader_id). Called by the wizard's
+ * debounced autosave and its "Save draft" button — this is the only place
+ * registration progress is kept (nothing is stored in the browser). With no
+ * signed-in user (e.g. the session expired) there's no identity to key a
+ * draft on, so this returns a clear error rather than silently no-op.
  */
 export async function saveRegistrationDraft(value: RegistrationForm, step: number): Promise<DraftResult> {
   try {
@@ -308,7 +309,7 @@ export async function saveRegistrationDraft(value: RegistrationForm, step: numbe
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      return { success: false, error: "Please sign in to save a draft." };
+      return { success: false, error: "Your session has expired. Sign in again to keep saving your progress." };
     }
 
     const { error } = await supabase
@@ -325,13 +326,16 @@ export async function saveRegistrationDraft(value: RegistrationForm, step: numbe
   }
 }
 
-export type LoadedDraft = { value: RegistrationForm; step: number } | null;
+export type LoadedDraft =
+  | { status: "found"; value: RegistrationForm; step: number }
+  | { status: "none" }
+  | { status: "error" };
 
 /**
  * The signed-in leader's saved draft, if any — loaded whenever they return
- * to /register, so it's there "whenever they log in," not just in the
- * browser they last used (see lib/registration-draft.ts for that local,
- * same-browser fallback).
+ * to /register, on any device. "error" is kept distinct from "none": the
+ * wizard autosaves, so treating a failed lookup as "no draft" would show an
+ * empty form whose first autosave overwrites the real draft.
  */
 export async function loadRegistrationDraft(): Promise<LoadedDraft> {
   try {
@@ -339,7 +343,7 @@ export async function loadRegistrationDraft(): Promise<LoadedDraft> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) return { status: "none" };
 
     const { data, error } = await supabase
       .from("registration_drafts")
@@ -347,11 +351,15 @@ export async function loadRegistrationDraft(): Promise<LoadedDraft> {
       .eq("leader_id", user.id)
       .maybeSingle();
 
-    if (error || !data) return null;
-    return { value: data.value as RegistrationForm, step: data.step };
+    if (error) {
+      console.error("loadRegistrationDraft failed:", error);
+      return { status: "error" };
+    }
+    if (!data) return { status: "none" };
+    return { status: "found", value: data.value as RegistrationForm, step: data.step };
   } catch (err) {
     console.error("loadRegistrationDraft threw unexpectedly:", err);
-    return null;
+    return { status: "error" };
   }
 }
 

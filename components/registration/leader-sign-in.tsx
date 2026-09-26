@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
 import { Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
@@ -34,6 +35,7 @@ function SessionBlocked({
 
   async function handleSignOut() {
     setSigningOut(true);
+    purgeLegacyLocalDraft();
     const supabase = createClient();
     await supabase.auth.signOut();
     router.refresh();
