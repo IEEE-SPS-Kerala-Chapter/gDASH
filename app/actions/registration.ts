@@ -8,7 +8,7 @@ import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { displayFileName } from "@/lib/upload-file-name";
-import { isOwnOrLegacyUploadPath } from "@/lib/upload-path";
+import { isLegacyUploadPath } from "@/lib/upload-path";
 
 /** "Other" reveals a free-text field client-side; the server resolves it to
  * the actual typed value here so the DB never stores the literal "Other". */
@@ -87,12 +87,16 @@ export async function submitRegistration(
       leaderEmail = team.leaderEmail;
     }
 
-    // Uploaded files must be the submitter's own (or pre-folder legacy
-    // ones) — the database enforces the same (enforce_own_upload_path), this
+    // Every uploaded file must be one this leader actually uploaded — the
+    // database enforces the same on insert (enforce_own_upload_path), this
     // just gives a clear message first.
     if (leaderUserId) {
-      const paths = [team.idCardPath, ...members.map((m) => m.idCardPath), idea.deckPath];
-      if (!paths.every((p) => isOwnOrLegacyUploadPath(p, leaderUserId!))) {
+      const checks = await Promise.all([
+        ownsUpload("member-id-cards", team.idCardPath),
+        ...members.map((m) => ownsUpload("member-id-cards", m.idCardPath)),
+        ownsUpload("registration-decks", idea.deckPath),
+      ]);
+      if (!checks.every(Boolean)) {
         return { success: false, error: "One of the uploaded files couldn't be verified. Please upload it again." };
       }
     }
@@ -339,9 +343,32 @@ export async function saveRegistrationDraft(value: RegistrationForm, step: numbe
 }
 
 export type LoadedDraft =
-  | { status: "found"; value: RegistrationForm; step: number }
+  | { status: "found"; value: RegistrationForm; step: number; droppedFiles: boolean }
   | { status: "none" }
   | { status: "error" };
+
+/**
+ * Clears file paths from uploads made before per-user folders: those were
+ * anonymous, have no recorded owner, and can't be submitted any more — the
+ * leader uploads them again (see isLegacyUploadPath).
+ */
+function dropLegacyUploads(value: RegistrationForm): { value: RegistrationForm; droppedFiles: boolean } {
+  let droppedFiles = false;
+  const clear = (path: string | undefined) => {
+    if (path && isLegacyUploadPath(path)) {
+      droppedFiles = true;
+      return "";
+    }
+    return path ?? "";
+  };
+  const next = {
+    ...value,
+    team: value.team ? { ...value.team, idCardPath: clear(value.team.idCardPath) } : value.team,
+    members: (value.members ?? []).map((m) => ({ ...m, idCardPath: clear(m.idCardPath) })),
+    idea: value.idea ? { ...value.idea, deckPath: clear(value.idea.deckPath) } : value.idea,
+  } as RegistrationForm;
+  return { value: next, droppedFiles };
+}
 
 /**
  * The signed-in leader's saved draft, if any — loaded whenever they return
@@ -368,7 +395,8 @@ export async function loadRegistrationDraft(): Promise<LoadedDraft> {
       return { status: "error" };
     }
     if (!data) return { status: "none" };
-    return { status: "found", value: data.value as RegistrationForm, step: data.step };
+    const { value, droppedFiles } = dropLegacyUploads(data.value as RegistrationForm);
+    return { status: "found", value, step: data.step, droppedFiles };
   } catch (err) {
     console.error("loadRegistrationDraft threw unexpectedly:", err);
     return { status: "error" };
@@ -437,19 +465,16 @@ export async function checkTeamNameAvailability(teamName: string): Promise<TeamN
 type IdCardPreviewResult = { success: true; url: string } | { success: false; error: string };
 
 /**
- * The signed-in leader's own uploads only: the Review step shows the files
- * a leader uploaded this session or in a restored draft. Anyone else — no
- * session, or a path in another user's folder — gets nothing. Legacy
- * pre-folder paths (drafts saved before per-user folders) are still allowed;
- * those are protected only by their unguessable uuid.
+ * True only if the signed-in user uploaded this exact file — checked by the
+ * owns_upload() database function against Storage's own upload record, not
+ * the path. No session, someone else's file, or an ownerless legacy upload
+ * all return false.
  */
-async function canPreviewUpload(path: string): Promise<boolean> {
+async function ownsUpload(bucket: "registration-decks" | "member-id-cards", path: string): Promise<boolean> {
   if (!path) return false;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return Boolean(user) && isOwnOrLegacyUploadPath(path, user!.id);
+  const { data, error } = await supabase.rpc("owns_upload", { p_bucket: bucket, p_path: path });
+  return !error && data === true;
 }
 
 /**
@@ -458,13 +483,13 @@ async function canPreviewUpload(path: string): Promise<boolean> {
  * before they submit — including after resuming a saved draft, when the
  * browser no longer has the original File in memory. Signed with the service
  * role (the bucket has no read policy), so it checks ownership first — see
- * canPreviewUpload. Staff read ID cards through getMemberIdCardDownloadUrl.
+ * ownsUpload. Staff read ID cards through getMemberIdCardDownloadUrl.
  */
 export async function getIdCardPreviewUrl(path: string): Promise<IdCardPreviewResult> {
   if (!path) {
     return { success: false, error: "No ID card uploaded yet." };
   }
-  if (!(await canPreviewUpload(path))) {
+  if (!(await ownsUpload("member-id-cards", path))) {
     return { success: false, error: "Could not load ID card preview." };
   }
 
@@ -480,7 +505,7 @@ export async function getIdCardPreviewUrl(path: string): Promise<IdCardPreviewRe
 /**
  * Same as getIdCardPreviewUrl, for the idea's supporting material (the
  * registration-decks bucket), so the Review step can open it back up —
- * same ownership check (canPreviewUpload).
+ * same ownership check (ownsUpload).
  * A PDF is viewed in the browser; a PPTX (which browsers can't display) is
  * signed as a download under the participant's original file name.
  */
@@ -488,7 +513,7 @@ export async function getDeckPreviewUrl(path: string): Promise<IdCardPreviewResu
   if (!path) {
     return { success: false, error: "No supporting material uploaded yet." };
   }
-  if (!(await canPreviewUpload(path))) {
+  if (!(await ownsUpload("registration-decks", path))) {
     return { success: false, error: "Could not load your supporting material." };
   }
 

@@ -196,6 +196,12 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
       form.reset(draft.value);
       stepRef.current = draft.step;
       setStep(draft.step);
+      if (draft.droppedFiles) {
+        toast.message("Please upload your ID cards and supporting material again", {
+          description: "For security, files uploaded before 27 September need to be uploaded once more.",
+          duration: 10000,
+        });
+      }
     }
     setLoadState("ready");
   }
