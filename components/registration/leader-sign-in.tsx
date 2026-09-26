@@ -132,7 +132,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=/register` },
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
       });
       if (error) throw error;
     } catch (err) {
@@ -336,7 +336,7 @@ function EmailSignIn() {
       options: {
         shouldCreateUser: true,
         // Only used if the email template also includes the sign-in link.
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/register`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
         // Tags the new auth.users row so handle_new_user() can tell a
         // participant leader apart from staff signing in the same
         // provider="email" way (password) — see

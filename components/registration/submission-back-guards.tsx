@@ -35,7 +35,7 @@ export function StatusBackGuard() {
         .auth.getSession()
         .then(({ data }) => {
           if (data.session) clearSignedOutFrom();
-          else window.location.replace("/register");
+          else window.location.replace("/");
         });
       return true;
     }

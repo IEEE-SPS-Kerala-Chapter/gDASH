@@ -12,7 +12,7 @@ export default function NotFound() {
       <p className="max-w-sm text-ignite-muted">
         That page doesn&apos;t exist. Check the link, or head back to {staff ? "staff sign-in" : "registration"}.
       </p>
-      <Link href={staff ? "/login" : "/register"} className="font-semibold text-ignite-ink hover:text-ignite-magenta">
+      <Link href="/" className="font-semibold text-ignite-ink hover:text-ignite-magenta">
         {staff ? "Go to staff sign-in →" : "Go to registration →"}
       </Link>
     </main>

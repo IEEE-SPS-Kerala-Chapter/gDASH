@@ -22,8 +22,8 @@ export function StatusSignOutBar({ email }: { email: string }) {
     markSignedOutFrom(window.location.pathname);
     // A full page load rather than router.replace: this leaves Next.js's
     // client-side history for this page behind, so Back re-opens the status
-    // page for real and StatusBackGuard can send it to /register again.
-    window.location.replace("/register");
+    // page for real and StatusBackGuard can send it to the registration page again.
+    window.location.replace("/");
   }
 
   return (

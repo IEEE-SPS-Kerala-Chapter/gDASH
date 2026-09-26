@@ -31,7 +31,7 @@ export default async function StatusPage({ params }: { params: { token: string }
               ? "Something went wrong on our end — this isn't about your registration. Try refreshing in a moment."
               : "That status link doesn't match a registration. Make sure the whole link was copied. Anyone on the team can also sign in on the registration page with their registered email to get back to this page."}
           </p>
-          <Link href="/register" className="font-semibold text-ignite-ink hover:text-ignite-magenta">
+          <Link href="/" className="font-semibold text-ignite-ink hover:text-ignite-magenta">
             Go to registration →
           </Link>
         </main>
