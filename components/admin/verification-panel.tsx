@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { AdminRegistration, RegistrationReviewState, VerificationStatus } from "@/app/actions/admin";
-import { setVerificationStatus } from "@/app/actions/admin";
+import type { AdminRegistration, VerificationStatus } from "@/app/actions/admin";
 import { Badge, Panel, SectionLabel, TextArea } from "@/components/admin/ui";
 import {
   VERIFICATION_STATUS_BADGE_VARIANT,
@@ -12,21 +11,40 @@ import {
   VERIFICATION_STATUS_LABELS,
 } from "@/lib/registration-status";
 
+/** The fields the panel reads — an AdminRegistration has them all. */
+type VerifiableRegistration = Pick<
+  AdminRegistration,
+  | "id"
+  | "version"
+  | "verification_status"
+  | "verification_note"
+  | "verification_decided_at"
+  | "verification_decided_by_name"
+>;
+
+type SaveResult<S> = { success: true; state: S } | { success: false; error: string; state?: S };
+
 /**
- * Admin-only eligibility check that gates judge assignment: the admin checks
- * the members' ID cards (IdCardPanel) and details, then marks the entry
- * Verified or Ineligible. Ineligible needs a written reason. Changing a
- * Verified entry is refused server-side while judges are still assigned, so
- * that's surfaced up front here instead of only as an error toast.
- * Like the status select, a change made from a stale view (another admin
+ * Eligibility check that gates judge assignment, used by admins (team
+ * detail) and volunteers (volunteer team detail): check the members' ID
+ * cards and details, then mark the entry Verified or Ineligible. Ineligible
+ * needs a written reason. Changing a Verified entry is refused server-side
+ * while judges are still assigned, so that's surfaced up front here instead
+ * of only as an error toast. A change made from a stale view (someone else
  * changed this registration first) is refused and the latest is shown.
+ * `save` is the role's server action (setVerificationStatus for admins,
+ * setTeamVerification for volunteers); `onChange` receives its state.
  */
-export function VerificationPanel({
+export function VerificationPanel<S>({
   registration,
+  assignedJudgeCount,
+  save,
   onChange,
 }: {
-  registration: AdminRegistration;
-  onChange: (next: RegistrationReviewState) => void;
+  registration: VerifiableRegistration;
+  assignedJudgeCount: number;
+  save: (registrationId: string, status: VerificationStatus, expectedVersion: number, note?: string) => Promise<SaveResult<S>>;
+  onChange: (next: S) => void;
 }) {
   const router = useRouter();
   const verification = {
@@ -35,14 +53,14 @@ export function VerificationPanel({
     decidedAt: registration.verification_decided_at,
     decidedByName: registration.verification_decided_by_name,
   };
-  const assignedCount = registration.assignments.length;
+  const assignedCount = assignedJudgeCount;
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
 
   async function submit(status: VerificationStatus, note?: string) {
     setBusy(true);
-    const result = await setVerificationStatus(registration.id, status, registration.version, note);
+    const result = await save(registration.id, status, registration.version, note);
     setBusy(false);
     if (!result.success) {
       toast.error(result.error);
@@ -72,7 +90,7 @@ export function VerificationPanel({
     <Panel className="flex flex-col gap-3 p-5">
       <div className="flex items-center justify-between gap-3">
         <SectionLabel>Eligibility verification</SectionLabel>
-        <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Admin only</span>
+        <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Staff only</span>
       </div>
 
       <div>
@@ -88,7 +106,7 @@ export function VerificationPanel({
         <div className="flex flex-col gap-1 rounded-[10px] border border-ignite-edge/[0.07] bg-ignite-bg p-3 text-[13px] leading-[1.5]">
           {decidedLabel && (
             <span className="text-ignite-muted">
-              By {verification.decidedByName ?? "an admin"} · {decidedLabel}
+              By {verification.decidedByName ?? "a staff member"} · {decidedLabel}
             </span>
           )}
           {verification.note && (

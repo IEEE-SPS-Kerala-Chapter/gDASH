@@ -5,17 +5,22 @@ import { getMyProfile } from "@/app/actions/profile";
 import { redactMemberContactInfo } from "@/lib/admin-teams";
 import { isAdminLevelRole } from "@/lib/roles";
 import { TeamDetail } from "@/components/admin/team-detail";
+import { getVerificationTeam } from "@/app/actions/verification";
+import { VolunteerTeamDetail } from "@/components/volunteer/team-detail";
 
 export default async function TeamDetailPage({ params }: { params: { teamId: string } }) {
   const profile = await getMyProfile();
   if (!profile) {
     redirect("/login");
   }
-  // Volunteers have no dashboard view yet — RLS would deny the team query
-  // anyway, but bounce cleanly rather than showing a 404 for a role that
-  // was never meant to land here.
+  // Volunteers get the verification view only: team, members and ID cards
+  // (getVerificationTeam) — never the admin team data with the idea/deck.
   if (profile.role === "volunteer") {
-    redirect("/dashboard");
+    const result = await getVerificationTeam(params.teamId);
+    if (!result.success) {
+      notFound();
+    }
+    return <VolunteerTeamDetail detail={result.detail} />;
   }
 
   const [teamResult, judgesResult, queueResult] = await Promise.all([

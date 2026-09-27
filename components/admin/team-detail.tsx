@@ -11,7 +11,7 @@ import type {
   AdminMember,
   RegistrationReviewState,
 } from "@/app/actions/admin";
-import { updateRegistrationStatus, deleteRegistration } from "@/app/actions/admin";
+import { updateRegistrationStatus, deleteRegistration, setVerificationStatus } from "@/app/actions/admin";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
@@ -205,7 +205,12 @@ export function TeamDetail({
 
           <div className="flex flex-col gap-5">
             {reg && (
-              <VerificationPanel registration={reg} onChange={applyState} />
+              <VerificationPanel
+                registration={reg}
+                assignedJudgeCount={reg.assignments.length}
+                save={setVerificationStatus}
+                onChange={applyState}
+              />
             )}
 
             {reg && (
