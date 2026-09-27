@@ -36,9 +36,9 @@ export default function PrivacyPage() {
 
           <Section title="Who we are">
             <p>
-              gIGNITE 2026 is organised by the IEEE Signal Processing Society Kerala Chapter together with Gadgeon
-              Smart Systems (&ldquo;the organisers&rdquo;, &ldquo;we&rdquo;). This policy explains what information the
-              gIGNITE registration platform collects, why, and how it is protected.
+              gIGNITE 2026 is an event by Gadgeon Smart Systems, in collaboration with the IEEE Signal Processing
+              Society Kerala Chapter (&ldquo;the organisers&rdquo;, &ldquo;we&rdquo;). This policy explains what
+              information the gIGNITE registration platform collects, why, and how it is protected.
             </p>
           </Section>
 
@@ -87,10 +87,9 @@ export default function PrivacyPage() {
                 them. College ID card photos are visible only to organising administrators.
               </li>
               <li>
-                <b>Service providers</b> that run the platform on our behalf: Supabase (database, file storage and
-                sign-in; data stored in Singapore), Vercel (website hosting), Google (Google sign-in and delivery of
-                sign-in code emails) and Cloudflare (automated bot protection). They process data only to provide
-                these services.
+                <b>Trusted service providers</b> that host and run the platform for us — website hosting, secure data
+                storage, sign-in and email delivery. They process data only to provide these services, and data may
+                be stored outside India with them.
               </li>
             </ul>
             <p>Other teams can never see your team&apos;s details or your idea.</p>
@@ -103,17 +102,17 @@ export default function PrivacyPage() {
             </p>
           </Section>
 
-          <Section title="Cookies and browser storage">
+          <Section title="Cookies">
             <p>
-              We use only what the site needs to work: a sign-in session cookie, and small settings saved in your
-              browser (such as the light/dark theme). We do not use advertising or analytics trackers.
+              We use only the essential cookies needed to keep you signed in and remember basic preferences. We do not
+              use advertising or tracking cookies.
             </p>
           </Section>
 
           <Section title="Security">
             <p>
-              Data is sent over encrypted connections. Access is limited by role, uploaded files are stored privately,
-              and staff actions are recorded in an audit log.
+              Your information is sent over encrypted connections, kept in private storage, and accessible only to the
+              people who need it for the event.
             </p>
           </Section>
 
