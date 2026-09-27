@@ -1,0 +1,4 @@
+# Never upload environment files with a Vercel CLI deploy — the deployment
+# gets its values from the project's Environment Variables in Vercel.
+# (.env.production holds production keys; .env.local holds dev keys.)
+.env*
