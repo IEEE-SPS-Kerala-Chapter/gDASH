@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { isAdminLevelRole } from "@/lib/roles";
@@ -72,5 +74,6 @@ export async function updateRegistrationWindow(input: {
   await logAuditEvent(supabase, "registration_window.updated", {
     metadata: { isOpen: input.isOpen, closesAt: input.closesAt },
   });
+  revalidateDashboard();
   return { success: true };
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { isAdminLevelRole } from "@/lib/roles";
@@ -87,6 +89,7 @@ export async function updateResultsMessages(input: {
     return { success: false, error: "Could not save the messages." };
   }
   await logAuditEvent(supabase, "results.messages_updated");
+  revalidateDashboard();
   return { success: true };
 }
 
@@ -113,5 +116,6 @@ export async function setResultsPublished(publish: boolean): Promise<ActionResul
   await logAuditEvent(supabase, publish ? "results.published" : "results.unpublished", {
     metadata: current.success ? current.data.counts : undefined,
   });
+  revalidateDashboard();
   return { success: true };
 }

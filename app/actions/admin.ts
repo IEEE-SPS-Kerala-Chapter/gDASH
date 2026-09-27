@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminLevelRole } from "@/lib/roles";
@@ -161,6 +163,7 @@ export async function assignJudge(registrationId: string, judgeId: string): Prom
     metadata: { judgeId },
   });
   const judge = data.profiles as unknown as { full_name: string } | null;
+  revalidateDashboard();
   return {
     success: true,
     assignment: { id: data.id, judge_id: data.judge_id, judge_name: judge?.full_name ?? "Unknown" },
@@ -193,12 +196,14 @@ export async function unassignJudge(assignmentId: string): Promise<UnassignResul
     return { success: false, error: "Could not remove assignment." };
   }
   if (!data || data.length === 0) {
+    revalidateDashboard();
     return { success: true, alreadyRemoved: true };
   }
   await logAuditEvent(supabase, "judge.unassigned", {
     targetType: "registration_assignment",
     targetId: assignmentId,
   });
+  revalidateDashboard();
   return { success: true, alreadyRemoved: false };
 }
 
@@ -404,6 +409,7 @@ export async function updateRegistrationStatus(
       targetId: registrationId,
       metadata: { status },
     });
+    revalidateDashboard();
   }
   return result;
 }
@@ -455,6 +461,7 @@ export async function setVerificationStatus(
       targetId: registrationId,
       metadata: { verificationStatus: status, ...(trimmedNote ? { note: trimmedNote } : {}) },
     });
+    revalidateDashboard();
   }
   return result;
 }
@@ -593,6 +600,8 @@ export async function deleteRegistration(teamId: string): Promise<DeleteResult> 
     }
   }
 
+  revalidateDashboard();
+
   return { success: true };
 }
 
@@ -705,6 +714,7 @@ export async function createStaffAccount(input: {
 
   // Return the real account (not something the client makes up) so the
   // staff list can delete it straight away without a page reload.
+  revalidateDashboard();
   return {
     success: true,
     account: { id: data.user.id, full_name: fullName, email, role: input.role, created_at: data.user.created_at },
@@ -757,6 +767,8 @@ export async function deleteStaffAccount(userId: string): Promise<DeleteStaffRes
     targetLabel: target.email,
     metadata: { role: target.role },
   });
+
+  revalidateDashboard();
 
   return { success: true };
 }

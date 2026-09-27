@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { mapTeamRow, redactMemberContactInfo, TEAM_SELECT, type AdminTeam, type RawTeamRow } from "@/lib/admin-teams";
@@ -102,6 +104,7 @@ export async function saveScoreDraft(
     targetType: "registration",
     targetId: registrationId,
   });
+  revalidateDashboard();
   return { success: true };
 }
 
@@ -155,5 +158,6 @@ export async function submitScore(
     targetType: "registration",
     targetId: registrationId,
   });
+  revalidateDashboard();
   return { success: true };
 }
