@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   createMealCheckpoint,
@@ -18,21 +17,33 @@ import { Badge, FormCard, PrimaryButton, SecondaryButton, Switch, TextInput } fr
  * be closed but not deleted.
  */
 export function CheckpointsPanel({ checkpoints: initial }: { checkpoints: Checkpoint[] }) {
-  const router = useRouter();
   const [checkpoints, setCheckpoints] = useState(initial);
   useEffect(() => setCheckpoints(initial), [initial]);
   const [newLabel, setNewLabel] = useState("");
   const [adding, setAdding] = useState(false);
 
+  // The server actions revalidate the dashboard themselves, which re-renders
+  // this page with fresh data — no extra router.refresh() round trip needed.
   async function run(action: () => Promise<{ success: true } | { success: false; error: string }>, done: string) {
     const result = await action();
     if (result.success) {
       toast.success(done);
-      router.refresh();
     } else {
       toast.error(result.error);
     }
     return result.success;
+  }
+
+  // Flip the switch straight away; put it back if saving fails.
+  async function toggle(c: Checkpoint, open: boolean) {
+    setCheckpoints((prev) => prev.map((x) => (x.id === c.id ? { ...x, isOpen: open } : x)));
+    const ok = await run(
+      () => setCheckpointOpen(c.id, open),
+      open ? `${c.label} is open for scanning.` : `${c.label} is closed.`,
+    );
+    if (!ok) {
+      setCheckpoints((prev) => prev.map((x) => (x.id === c.id ? { ...x, isOpen: !open } : x)));
+    }
   }
 
   return (
@@ -44,7 +55,7 @@ export function CheckpointsPanel({ checkpoints: initial }: { checkpoints: Checkp
         </p>
         <div className="flex flex-col">
           {checkpoints.map((c) => (
-            <CheckpointRow key={c.id} checkpoint={c} run={run} />
+            <CheckpointRow key={c.id} checkpoint={c} run={run} toggle={toggle} />
           ))}
         </div>
       </FormCard>
@@ -81,13 +92,16 @@ export function CheckpointsPanel({ checkpoints: initial }: { checkpoints: Checkp
 function CheckpointRow({
   checkpoint: c,
   run,
+  toggle,
 }: {
   checkpoint: Checkpoint;
   run: (action: () => Promise<{ success: true } | { success: false; error: string }>, done: string) => Promise<boolean>;
+  toggle: (c: Checkpoint, open: boolean) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(c.label);
   const [busy, setBusy] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   return (
     <div className="flex flex-col gap-3 border-t border-ignite-edge/[0.07] py-4 first:border-t-0 sm:flex-row sm:items-center">
@@ -125,13 +139,16 @@ function CheckpointRow({
         <Switch
           checked={c.isOpen}
           ariaLabel={`${c.label} open`}
+          disabled={switching}
           onChange={async (open) => {
-            setBusy(true);
-            await run(() => setCheckpointOpen(c.id, open), open ? `${c.label} is open for scanning.` : `${c.label} is closed.`);
-            setBusy(false);
+            setSwitching(true);
+            await toggle(c, open);
+            setSwitching(false);
           }}
         />
-        <Badge variant={c.isOpen ? "success" : "neutral"}>{c.isOpen ? "Open" : "Closed"}</Badge>
+        <Badge variant={c.isOpen ? "success" : "neutral"}>
+          {switching ? "Saving…" : c.isOpen ? "Open" : "Closed"}
+        </Badge>
         {!editing && (
           <button
             type="button"

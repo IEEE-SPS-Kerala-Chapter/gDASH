@@ -158,10 +158,13 @@ export function Switch({
   checked,
   onChange,
   ariaLabel,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   ariaLabel?: string;
+  /** e.g. while the change is saving, so repeat clicks can't flip it back. */
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -169,9 +172,11 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={ariaLabel}
+      disabled={disabled}
+      aria-busy={disabled || undefined}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-11 flex-none items-center rounded-full transition-colors",
+        "relative inline-flex h-6 w-11 flex-none items-center rounded-full transition-colors disabled:cursor-wait disabled:opacity-60",
         checked ? "bg-ignite-success" : "bg-ignite-edge/[0.18]",
       )}
     >
