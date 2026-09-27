@@ -210,6 +210,13 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
               >
                 Continue with email
               </SecondaryButton>
+              <p className="m-0 text-center font-ui text-[12px] text-ignite-muted">
+                By continuing, you agree to our{" "}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-ignite-magenta">
+                  Privacy Policy
+                </a>
+                .
+              </p>
             </div>
           }
           back={
