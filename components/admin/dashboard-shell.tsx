@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
@@ -90,6 +90,18 @@ export function DashboardShell({
               <Users className="h-[17px] w-[17px]" />
               <span>Teams</span>
             </Link>
+            {(role === "volunteer" || isAdminLevelRole(role)) && (
+              <Link href="/dashboard/scan" className={navItemClass(pathname === "/dashboard/scan")}>
+                <ScanLine className="h-[17px] w-[17px]" />
+                <span>Scan</span>
+              </Link>
+            )}
+            {isAdminLevelRole(role) && (
+              <Link href="/dashboard/check-in" className={navItemClass(pathname === "/dashboard/check-in")}>
+                <ListChecks className="h-[17px] w-[17px]" />
+                <span>Check-in setup</span>
+              </Link>
+            )}
             {role === "super_admin" && (
               <Link href="/dashboard/staff" className={navItemClass(pathname === "/dashboard/staff")}>
                 <UserCog className="h-[17px] w-[17px]" />
@@ -150,6 +162,29 @@ export function DashboardShell({
             {signingOut ? "Signing out…" : "Sign out"}
           </button>
         </header>
+        {/* Mobile/tablet navigation — volunteers scan on phones, so Scan must be reachable here. */}
+        <nav className="flex gap-1.5 overflow-x-auto border-b border-ignite-edge/[0.08] bg-ignite-surface px-4 py-2 lg:hidden">
+          {[
+            { href: "/dashboard", label: "Teams", show: true, active: pathname === "/dashboard" || pathname.startsWith("/dashboard/teams") },
+            { href: "/dashboard/scan", label: "Scan", show: role === "volunteer" || isAdminLevelRole(role), active: pathname === "/dashboard/scan" },
+            { href: "/dashboard/check-in", label: "Check-in setup", show: isAdminLevelRole(role), active: pathname === "/dashboard/check-in" },
+            { href: "/dashboard/staff", label: "Staff", show: role === "super_admin", active: pathname === "/dashboard/staff" },
+            { href: "/dashboard/audit-logs", label: "Audit logs", show: role === "super_admin", active: pathname === "/dashboard/audit-logs" },
+          ]
+            .filter((item) => item.show)
+            .map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex-none rounded-full px-3.5 py-1.5 font-ui text-[13px] font-semibold",
+                  item.active ? "bg-ignite-primary text-ignite-on-primary" : "text-ignite-ink-soft hover:bg-ignite-lavender",
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
+        </nav>
 
         <main className="min-h-screen flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
       </div>

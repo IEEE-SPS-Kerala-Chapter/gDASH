@@ -41,26 +41,24 @@ Built in `supabase/migrations/20260928000000_results_publication.sql`:
   signed-in, confirmed-email member of that team, who gets `pending` or
   `result` with team name, outcome and message.
 
-## 2. Food-token check-in (breakfast / lunch / dinner)
+## 2 & 3. Meal tokens and venue check-in — BUILT (2026-09-29)
 
-On event day, volunteers scan a team member's QR (the same
-`/id/[memberId]` URL, or a dedicated `/scan/[memberId]` volunteer-only
-route) to mark that meal as claimed, preventing double-claims.
+Built together as one scanner (`supabase/migrations/20260929000000_event_checkpoints.sql`):
 
-Needs:
-- New table, e.g. `food_tokens (member_id uuid references team_members(id), meal text check (meal in ('breakfast','lunch','dinner')), claimed_at timestamptz, claimed_by uuid references profiles(id), primary key (member_id, meal))`.
-- A `security definer` RPC (e.g. `claim_food_token(p_member_id uuid, p_meal text)`) restricted to `authenticated` staff with the `volunteer` (or `admin`) role — checked inside the function body against `profiles.role`, not just by grant, so a stolen anon session can't call it. Returns whether the claim succeeded or the meal was already claimed (and by whom/when), so the scanning UI can show a clear "already used" state instead of silently double-granting food.
-- A volunteer-facing scan UI: camera-based QR scan (likely a small client library) → resolves to a member id → shows the member's name/team/photo (from the now-admin-only `id_card_path` — this phase would need to decide whether volunteers get a narrow, scan-triggered exception to the current admin-only visibility, e.g. a signed URL minted only in response to a valid, freshly-scanned QR, never a browsable list) → one tap per meal to claim.
-
-## 3. Physical check-in / "registration complete" scan
-
-Same QR, scanned once at event arrival by a volunteer, to mark the team
-member as physically checked in (distinct from the food tokens above).
-
-Needs: a `checked_in_at timestamptz` column on `team_members` (or a shared
-generic `event_scans` table alongside food tokens, if it turns out check-in
-and food scans want the same audit shape) plus a small `security definer`
-RPC gated to volunteer/admin the same way as `claim_food_token`.
+- `event_checkpoints`: a built-in "Venue check-in" plus admin-created meal
+  slots ("Day 1 · Lunch"), each opened/closed by admins on
+  `/dashboard/check-in` (`components/checkin/checkpoints-panel.tsx`).
+- `checkpoint_scans`: primary key (checkpoint, member) — one claim per meal /
+  one check-in per member, enforced by the database. Tables are admin-only.
+- Scanners (volunteers, admins, super-admins) use `scan_list_checkpoints`,
+  `scan_member(checkpoint, member id or member code)` and `undo_scan`
+  (admins any time; the scanning volunteer within 2 minutes). Only teams whose
+  registration is `shortlisted` are accepted.
+- `/dashboard/scan` (`components/checkin/scanner.tsx`, `qr-scanner` library):
+  camera + manual member-code entry; result shows name, team and the ID-card
+  photo (via `getVerificationIdCardUrl`); online only.
+- QR parsing: `lib/member-ref.ts` (any domain's `/id/<uuid>`, bare uuid, or
+  member code).
 
 ## 4. Admin dashboard — food-token / check-in tab
 
@@ -79,10 +77,6 @@ photos.
 
 ## Not yet decided (flag for whoever picks this up)
 
-- Whether volunteers scanning for food/check-in need to see the member's
-  photo at all, or just name + team + role is enough to prevent fraud —
-  this determines whether item 2 needs any carve-out to the current
-  admin-only ID-card visibility rule at all.
 - Rate-limiting/anti-abuse on the scan RPCs (e.g. a volunteer's phone losing
   connectivity and replaying a claim) — likely fine as-is since claims are
   idempotent per `(member_id, meal)`, but worth a second look once the scan
