@@ -21,22 +21,25 @@ check-in or food-token claims when a QR won't scan: a volunteer can type it in.
 
 ---
 
-## 1. Results / shortlist reveal
+## 1. Results / shortlist reveal — BUILT (2026-09-28)
 
-Once shortlisting decisions exist (they already can — `registrations.status`
-supports `shortlisted`/`rejected` today via the admin team-detail page),
-`/id/[memberId]` should be extended to show the team's result instead of (or
-alongside) "Coming Soon" — e.g. "Your team has been shortlisted!" with next
-steps, or a neutral "results not yet announced" state before organizers flip
-the switch.
+Built in `supabase/migrations/20260928000000_results_publication.sql`:
 
-Needs: a new RPC (e.g. `get_member_result(p_member_id uuid)`) that joins
-`team_members` → `teams` → `registrations` and returns just the status (not
-the full registration/team object — same anon-facing minimalism as
-`member_exists`), plus a global "results are live" flag (a settings row, or
-simply gating on whether any team has a non-`submitted` status) so cards
-don't leak an individual team's status before organizers are ready to
-announce broadly.
+- `results_publication` singleton: `is_published`, `published_at/by`, and one
+  organiser message each for shortlisted and not-selected teams. Readable and
+  editable only by `is_admin()` (admin, super_admin). Admin UI:
+  `components/admin/results-panel.tsx` on the dashboard, actions in
+  `app/actions/results.ts` (audit-logged as `results.published`,
+  `results.unpublished`, `results.messages_updated`).
+- Manual switch, reversible. Publishing with undecided teams is allowed (with
+  a warning); those teams see "Under review" until decided.
+- `get_registration_by_token` masks `shortlisted`/`rejected` as
+  `under_review` until published, and adds `result: { outcome, message }`.
+  (Before this, a team saw its decision the moment an admin set it.)
+- `get_member_result(p_member_id)` backs `/id/[memberId]`: returns only a
+  state (`not_published` / `sign_in_required`) unless the caller is a
+  signed-in, confirmed-email member of that team, who gets `pending` or
+  `result` with team name, outcome and message.
 
 ## 2. Food-token check-in (breakfast / lunch / dinner)
 
@@ -80,9 +83,6 @@ photos.
   photo at all, or just name + team + role is enough to prevent fraud —
   this determines whether item 2 needs any carve-out to the current
   admin-only ID-card visibility rule at all.
-- Whether results-reveal (item 1) should be a manual "flip a switch" action
-  by an admin, or automatically tied to every team having a final
-  `shortlisted`/`rejected` status.
 - Rate-limiting/anti-abuse on the scan RPCs (e.g. a volunteer's phone losing
   connectivity and replaying a claim) — likely fine as-is since claims are
   idempotent per `(member_id, meal)`, but worth a second look once the scan

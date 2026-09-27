@@ -14,6 +14,16 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: "bg-ignite-danger-pale text-ignite-danger",
 };
 
+// Until results are published, get_registration_by_token reports a decided
+// team as "under_review", so "shortlisted"/"rejected" only ever show here
+// after an admin publishes results.
+const STATUS_LABELS: Record<string, string> = {
+  submitted: "Submitted",
+  under_review: "Under review",
+  shortlisted: "Shortlisted",
+  rejected: "Not shortlisted",
+};
+
 export default async function StatusPage({ params }: { params: { token: string } }) {
   const result = await getRegistrationStatus(params.token);
 
@@ -70,6 +80,7 @@ export default async function StatusPage({ params }: { params: { token: string }
   }
 
   const { team, members, registration } = result;
+  const outcome = result.result ?? null;
 
   // A participant session left over on this device (see StatusSignOutBar).
   // Staff sessions are left alone — an organizer opening a team's status
@@ -110,13 +121,33 @@ export default async function StatusPage({ params }: { params: { token: string }
                 </span>
               </div>
               <span className={cn("rounded-full px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.1em]", statusStyle)}>
-                {registration.status.replace("_", " ")}
+                {STATUS_LABELS[registration.status] ?? registration.status.replace("_", " ")}
               </span>
             </div>
           </div>
         </section>
 
         <div className="mx-auto flex max-w-[760px] flex-col gap-6 px-4 py-10 lg:px-0">
+          {outcome && (
+            <div
+              className={cn(
+                "flex flex-col gap-2 rounded-[20px] border p-6",
+                outcome.outcome === "shortlisted"
+                  ? "border-ignite-success/30 bg-ignite-success-pale"
+                  : "border-ignite-edge/[0.08] bg-ignite-surface",
+              )}
+            >
+              <Eyebrow>Result</Eyebrow>
+              <h2 className="m-0 font-display text-[24px] font-bold text-ignite-ink">
+                {outcome.outcome === "shortlisted" ? "Your team has been shortlisted 🎉" : "Not shortlisted this time"}
+              </h2>
+              {outcome.message && (
+                <p className="m-0 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-ignite-ink-soft">
+                  {outcome.message}
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex flex-col gap-5 rounded-[20px] border border-ignite-edge/[0.06] bg-ignite-surface p-6 shadow-[0_1px_6px_rgba(0,0,0,0.06)]">
             <div className="flex flex-col gap-3">
               <Eyebrow>Members</Eyebrow>

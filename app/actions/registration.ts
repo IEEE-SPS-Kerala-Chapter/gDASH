@@ -262,8 +262,12 @@ type StatusResult =
         status: string;
         created_at: string;
       };
+      /** Set only once results are published and this team has a decision. */
+      result: { outcome: ResultOutcome; message: string | null } | null;
     }
   | { found: false; systemError?: boolean; needsSignIn?: boolean };
+
+export type ResultOutcome = "shortlisted" | "not_selected";
 
 /**
  * Looks up a team's registration by its access token — for a signed-in
@@ -295,6 +299,35 @@ export async function getRegistrationStatus(token: string): Promise<StatusResult
     // registration" instead.
     console.error("getRegistrationStatus threw unexpectedly:", err);
     return { found: false, systemError: true };
+  }
+}
+
+export type MemberResult =
+  | { state: "not_published" | "sign_in_required" }
+  | { state: "pending"; teamName: string }
+  | { state: "result"; teamName: string; outcome: ResultOutcome; message: string | null };
+
+/**
+ * The shortlisting result behind an ID card's QR code (/id/[memberId]).
+ * get_member_result only reveals it to a signed-in member of that team, and
+ * only once an admin has published results; everyone else gets a bare state.
+ * Any failure reads as "not published", which reveals nothing.
+ */
+export async function getMemberResult(memberId: string): Promise<MemberResult> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("get_member_result", { p_member_id: memberId });
+    if (error || !data) return { state: "not_published" };
+    const r = data as { state?: string; team_name?: string; outcome?: string; message?: string | null };
+    if (r.state === "result" && (r.outcome === "shortlisted" || r.outcome === "not_selected")) {
+      return { state: "result", teamName: r.team_name ?? "", outcome: r.outcome, message: r.message ?? null };
+    }
+    if (r.state === "pending") return { state: "pending", teamName: r.team_name ?? "" };
+    if (r.state === "sign_in_required") return { state: "sign_in_required" };
+    return { state: "not_published" };
+  } catch (err) {
+    console.error("getMemberResult threw unexpectedly:", err);
+    return { state: "not_published" };
   }
 }
 
