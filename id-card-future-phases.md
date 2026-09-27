@@ -60,20 +60,18 @@ Built together as one scanner (`supabase/migrations/20260929000000_event_checkpo
 - QR parsing: `lib/member-ref.ts` (any domain's `/id/<uuid>`, bare uuid, or
   member code).
 
-## 4. Admin dashboard — food-token / check-in tab
+## 4. Attendance dashboard — BUILT (2026-09-30)
 
-A new tab in the existing admin sidebar (`components/admin/dashboard-shell.tsx`)
-showing, per team or per member, which meals/check-in have been claimed and
-when — mirroring the existing team-list/analytics pattern
-(`components/admin/registrations-analytics.tsx`) but reading from the new
-`food_tokens`/check-in table instead of `registrations`. Likely wants the
-same admin-only gating already established for ID-card visibility
-(`app/actions/admin.ts`'s `caller.role === "admin"` checks) since it exposes
-attendance data — though a "how many teams have arrived / eaten" summary
-view could reasonably be opened to volunteers too, unlike raw ID-card
-photos.
+`/dashboard/attendance` (`supabase/migrations/20260930000000_attendance.sql`,
+`app/actions/attendance.ts`, `components/attendance/*`), refreshing every 15 s:
 
----
+- Everyone who can scan (volunteers, admins, super-admins) sees counts per
+  check-in point — scanned of eligible (shortlisted participants) — via
+  `attendance_summary()`. No names for volunteers.
+- Admins also get every shortlisted participant × check-in point, search, a
+  "Not yet: <point>" filter, CSV export (`lib/csv.ts`, formula-injection safe),
+  and click-a-cell corrections via `admin_set_scan()` (mark manually — even on
+  a closed meal — or remove), audit-logged.
 
 ## Not yet decided (flag for whoever picks this up)
 

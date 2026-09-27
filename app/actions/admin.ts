@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+import { csvField } from "@/lib/csv";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -467,13 +468,6 @@ export async function setVerificationStatus(
 }
 
 type CsvResult = { success: true; csv: string; filename: string } | { success: false; error: string };
-
-function csvField(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
 
 /**
  * Admin (or super-admin) only: build a CSV of all registrations for offline
