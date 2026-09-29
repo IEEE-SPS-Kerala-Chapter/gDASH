@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PILL_OPTION_CLASS } from "./select-option";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AdminAssignment, AdminJudge } from "@/app/actions/admin";
@@ -110,13 +111,13 @@ export function InlineJudgeAssign({
             disabled={busy}
             value=""
             onChange={(e) => handlePick(e.target.value)}
-            className="cursor-pointer rounded-full border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-transparent px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-ink outline-none transition-colors hover:border-ignite-ink disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-full border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-ignite-surface px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-ink outline-none transition-colors hover:border-ignite-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <option value="" disabled>
+            <option value="" disabled className={PILL_OPTION_CLASS}>
               {busy ? "Assigning…" : "+ Assign judge"}
             </option>
             {available.map((j) => (
-              <option key={j.id} value={j.id}>
+              <option key={j.id} value={j.id} className={PILL_OPTION_CLASS}>
                 {j.full_name}
               </option>
             ))}

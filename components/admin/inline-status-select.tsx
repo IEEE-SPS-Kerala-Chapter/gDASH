@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PILL_OPTION_CLASS } from "./select-option";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { AdminRegistration, RegistrationReviewState } from "@/app/actions/admin";
@@ -73,7 +74,7 @@ export function InlineStatusSelect({
       {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => {
         const blocked = !canDecide && value !== status && DECISION_STATUSES.includes(value as AdminRegistration["status"]);
         return (
-          <option key={value} value={value} disabled={blocked}>
+          <option key={value} value={value} disabled={blocked} className={PILL_OPTION_CLASS}>
             {blocked ? `${label} (scores pending)` : label}
           </option>
         );
