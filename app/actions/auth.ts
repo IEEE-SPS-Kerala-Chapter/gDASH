@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { staffLoginSchema, resetPasswordSchema } from "@/lib/validations/auth";
@@ -7,18 +8,67 @@ import { logAuditEvent } from "@/lib/audit-log";
 
 type SignInResult = { success: true } | { success: false; error: string };
 
-/** Staff (admin/judge/volunteer) email+password sign-in. */
+const LOCKED_MESSAGE = (minutes: number) =>
+  `Too many failed sign-in attempts. For security, sign-in is locked — try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+
+/** The visitor's IP as seen by Vercel's edge (first x-forwarded-for entry). */
+function clientIp(): string {
+  const h = headers();
+  return (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "").trim();
+}
+
+function minutesUntil(iso: string): number {
+  return Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 60_000));
+}
+
+/**
+ * Staff (admin/judge/volunteer/super-admin) email+password sign-in.
+ *
+ * Lockout: 5 failed attempts for an email (or 20 from one IP) within an
+ * hour lock sign-in for 1 hour — see
+ * supabase/migrations/20261001000000_staff_login_lockout.sql. Counted for
+ * any email typed, so the response never reveals which emails are staff
+ * accounts. If the lockout check itself can't run, sign-in is refused
+ * rather than allowed unchecked.
+ */
 export async function signIn(data: { email: string; password: string }): Promise<SignInResult> {
   const parsed = staffLoginSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: "Enter a valid email and password." };
   }
+  const { email } = parsed.data;
+  const ip = clientIp();
+  const admin = createAdminClient();
+
+  const { data: status, error: statusError } = await admin.rpc("staff_login_status", { p_email: email, p_ip: ip });
+  if (statusError || !status) {
+    console.error("staff_login_status failed:", statusError);
+    return { success: false, error: "Sign-in is temporarily unavailable. Please try again shortly." };
+  }
+  const before = status as { locked: boolean; locked_until: string | null };
+  if (before.locked && before.locked_until) {
+    return { success: false, error: LOCKED_MESSAGE(minutesUntil(before.locked_until)) };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  await admin.rpc("staff_login_record", { p_email: email, p_ip: ip, p_succeeded: !error });
 
   if (error) {
-    return { success: false, error: "Incorrect email or password." };
+    // This failure may have been the 5th — say so straight away.
+    const { data: after } = await admin.rpc("staff_login_status", { p_email: email, p_ip: ip });
+    const now = after as { locked: boolean; locked_until: string | null; email_failures: number } | null;
+    if (now?.locked && now.locked_until) {
+      return { success: false, error: LOCKED_MESSAGE(minutesUntil(now.locked_until)) };
+    }
+    const left = now ? Math.max(0, 5 - now.email_failures) : null;
+    return {
+      success: false,
+      error:
+        left !== null && left <= 2
+          ? `Incorrect email or password. ${left} attempt${left === 1 ? "" : "s"} left before sign-in is locked for 1 hour.`
+          : "Incorrect email or password.",
+    };
   }
   await logAuditEvent(supabase, "auth.signed_in");
   return { success: true };
