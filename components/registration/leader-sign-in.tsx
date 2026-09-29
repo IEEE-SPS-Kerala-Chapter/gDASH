@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/app/actions/auth";
 import { establishSession, startGoogleSignIn } from "@/app/actions/session";
 import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
-import { checkContactAvailability } from "@/app/actions/registration";
 import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
 import { Field, GradientText, HeroShell, LogoHeaderBar, PrimaryButton, SecondaryButton, TextInput } from "./ui";
 import { FlipCard } from "./flip-card";
@@ -268,7 +267,6 @@ function GoogleIcon() {
   );
 }
 
-const ALREADY_REGISTERED_MESSAGE = "This email is already registered with another team.";
 const RATE_LIMITED_MESSAGE = "Too many attempts. Please wait a minute and try again.";
 // Supabase's code length is a project setting (Authentication → Email →
 // Email OTP Length, 6–10 digits; this project currently sends 8), so accept
@@ -303,22 +301,6 @@ function EmailSignIn() {
   const [verifying, setVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [returnedFromCode, setReturnedFromCode] = useState(false);
-  // Guards a slow response from overwriting a newer one — only the result
-  // for the latest-checked value is ever applied.
-  const latestChecked = useRef("");
-
-  async function handleEmailBlur(rawValue: string) {
-    const value = rawValue.trim().toLowerCase();
-    latestChecked.current = value;
-    if (!EMAIL_PATTERN.test(value)) return;
-    const { emailTaken } = await checkContactAvailability({ email: value });
-    if (latestChecked.current !== value) return;
-    if (emailTaken) {
-      setError(ALREADY_REGISTERED_MESSAGE);
-    } else if (error === ALREADY_REGISTERED_MESSAGE) {
-      setError(null);
-    }
-  }
 
   function startCooldown() {
     setCooldown(RESEND_COOLDOWN_SECONDS);
@@ -377,15 +359,12 @@ function EmailSignIn() {
     }
     setError(null);
     setLoading(true);
-    // Re-checked here, not just on blur — a paste-and-Enter never fires the
-    // blur handler, and this is the last chance to catch it before an email
-    // actually goes out.
-    const { emailTaken } = await checkContactAvailability({ email: trimmed });
-    if (emailTaken) {
-      setError(ALREADY_REGISTERED_MESSAGE);
-      setLoading(false);
-      return;
-    }
+    // No "already registered" check here: registered leaders and members sign
+    // in exactly like with Google, and /register then shows their team's
+    // status link (AlreadyRegisteredBlocked). Blocking them here left email
+    // users no way back to their status page — and told anyone which emails
+    // are registered. A second registration with the same email is still
+    // refused by the page and by submit_registration().
     const sent = await sendCode(trimmed);
     setLoading(false);
     if (sent) {
@@ -516,7 +495,6 @@ function EmailSignIn() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onBlur={(e) => void handleEmailBlur(e.target.value)}
           placeholder="you@college.ac.in"
           data-flip-focus
         />
