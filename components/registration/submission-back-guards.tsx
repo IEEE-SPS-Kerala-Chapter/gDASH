@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { hasSession } from "@/app/actions/session";
 import { cameFromBackForward, clearSignedOutFrom, readSubmitted, signedOutFrom } from "@/lib/submitted-registration";
 
 /**
@@ -31,12 +31,10 @@ export function StatusBackGuard() {
     // rendered while the leader was still signed in).
     function leaveIfSignedOut() {
       if (signedOutFrom() !== statusPath) return false;
-      void createClient()
-        .auth.getSession()
-        .then(({ data }) => {
-          if (data.session) clearSignedOutFrom();
-          else window.location.replace("/");
-        });
+      void hasSession().then((signedIn) => {
+        if (signedIn) clearSignedOutFrom();
+        else window.location.replace("/");
+      });
       return true;
     }
 

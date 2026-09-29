@@ -9,7 +9,7 @@ import { registrationFormSchema, type RegistrationForm } from "@/lib/validations
 import { submitRegistration, loadRegistrationDraft } from "@/app/actions/registration";
 import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
 import { clearSubmitted, markSubmitted } from "@/lib/submitted-registration";
-import { createClient } from "@/lib/supabase/client";
+import { signOut } from "@/app/actions/auth";
 import { RULES_URL } from "@/lib/config";
 import {
   WizardHeader,
@@ -332,8 +332,7 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     // late request can't fail with "session expired" after signing out.
     await autosave.saveNow();
     await autosave.pause();
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     router.refresh();
   }
 

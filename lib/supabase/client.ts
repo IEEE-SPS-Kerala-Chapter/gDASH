@@ -1,31 +1,15 @@
-import { createBrowserClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
-import { AUTH_COOKIE_OPTIONS, withSessionMaxAge } from "./cookie-options";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**
- * Supabase client for use in Client Components / the browser.
- * Safe to call multiple times — each call returns a new client backed
- * by the same singleton auth/session state in the browser.
- *
- * Cookies are read and written here rather than by the library's built-in
- * document.cookie handling so the sign-in cookie gets the same Secure flag
- * and 7-day lifetime as on the server (see lib/supabase/cookie-options.ts).
+ * Session-less Supabase client for the browser. It never stores or reads a
+ * session: the sign-in cookies are HttpOnly (lib/supabase/cookie-options.ts),
+ * so page JavaScript can't see them. Used only for calls that don't need a
+ * signed-in user — sending and checking the email sign-in code (the new
+ * session is then handed to the server via establishSession) and uploading
+ * a file with a signed upload link (createUploadUrl).
  */
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookieOptions: AUTH_COOKIE_OPTIONS,
-      cookies: {
-        getAll() {
-          return parseCookieHeader(document.cookie).map(({ name, value }) => ({ name, value: value ?? "" }));
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            document.cookie = serializeCookieHeader(name, value, withSessionMaxAge(options));
-          });
-        },
-      },
-    },
-  );
+  return createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
 }

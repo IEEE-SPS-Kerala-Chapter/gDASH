@@ -4,6 +4,8 @@ import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { signOut } from "@/app/actions/auth";
+import { establishSession, startGoogleSignIn } from "@/app/actions/session";
 import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { EMAIL_INVALID_MESSAGE, EMAIL_SPACES_MESSAGE } from "@/lib/validations/email";
@@ -36,8 +38,7 @@ function SessionBlocked({
   async function handleSignOut() {
     setSigningOut(true);
     purgeLegacyLocalDraft();
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     router.refresh();
   }
 
@@ -124,17 +125,14 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
   async function handleGoogleSignIn() {
     setGoogleLoading(true);
     setGoogleError(false);
-    const supabase = createClient();
-    // On success the browser navigates away to Google, so nothing below
-    // runs. signInWithOAuth reports a failure to start (network, provider
-    // misconfigured) by returning an error rather than throwing — without
-    // this, the button stayed on "Redirecting…" forever.
+    // The server builds the Google link (keeping the sign-in verifier in an
+    // HttpOnly cookie); on success the browser navigates away to Google, so
+    // nothing below runs. A failure to start (network, provider
+    // misconfigured) is reported instead of leaving "Redirecting…" forever.
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=/` },
-      });
-      if (error) throw error;
+      const result = await startGoogleSignIn();
+      if (!result.success) throw new Error("Google sign-in could not start");
+      window.location.assign(result.url);
     } catch (err) {
       console.error("Google sign-in failed to start:", err);
       setGoogleLoading(false);
@@ -335,7 +333,11 @@ function EmailSignIn() {
     }, 1000);
   }
 
-  /** Asks Supabase to email a code to `address`. Returns whether it went out. */
+  /**
+   * Asks Supabase to email a code to `address`. Returns whether it went out.
+   * Sent from the browser (session-less client) so Supabase's per-IP rate
+   * limits apply to this participant, not to our server's shared IPs.
+   */
   async function sendCode(address: string): Promise<boolean> {
     const supabase = createClient();
     const { error: sendError } = await supabase.auth.signInWithOtp({
@@ -410,14 +412,31 @@ function EmailSignIn() {
     }
     setError(null);
     setVerifying(true);
+    // Checked from the browser for the same per-IP rate-limit reason; the
+    // resulting session is then handed to the server, which stores it only
+    // in HttpOnly cookies that page JavaScript can't read.
     const supabase = createClient();
-    const { error: verifyError } = await supabase.auth.verifyOtp({ email: sentTo, token: code, type: "email" });
-    if (verifyError) {
+    const { data: verified, error: verifyError } = await supabase.auth.verifyOtp({
+      email: sentTo,
+      token: code,
+      type: "email",
+    });
+    if (!verifyError && verified.session) {
+      const stored = await establishSession(verified.session.access_token, verified.session.refresh_token).catch(
+        () => ({ success: false as const, error: "Couldn't complete sign-in. Please try again." }),
+      );
+      if (!stored.success) {
+        setVerifying(false);
+        setError(stored.error);
+        return;
+      }
+    }
+    if (verifyError || !verified.session) {
       setVerifying(false);
       setError(
-        isRateLimited(verifyError)
+        verifyError && isRateLimited(verifyError)
           ? RATE_LIMITED_MESSAGE
-          : verifyError.status && verifyError.status < 500
+          : verifyError?.status && verifyError.status < 500
             ? "That code is incorrect or has expired. Check the latest email, or send a new code."
             : "Couldn't verify the code. Please try again.",
       );

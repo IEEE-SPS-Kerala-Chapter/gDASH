@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { signOut } from "@/app/actions/auth";
 import { markSignedOutFrom } from "@/lib/submitted-registration";
 
 /**
@@ -18,7 +18,7 @@ export function StatusSignOutBar({ email }: { email: string }) {
 
   async function handleSignOut() {
     setSigningOut(true);
-    await createClient().auth.signOut();
+    await signOut();
     markSignedOutFrom(window.location.pathname);
     // A full page load rather than router.replace: this leaves Next.js's
     // client-side history for this page behind, so Back re-opens the status

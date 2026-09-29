@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "./ui";
 import { displayFileName } from "@/lib/upload-file-name";
-import { buildUploadPath } from "@/lib/upload-path";
+import { createUploadUrl } from "@/app/actions/uploads";
 
 const MAX_ID_CARD_BYTES = 8 * 1024 * 1024;
 const ALLOWED_ID_CARD_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -50,18 +50,17 @@ export function IdCardUploadField({
     }
 
     setState({ status: "uploading", name: file.name });
-    const supabase = createClient();
-    // Uploads go in the leader's own folder — the only place storage lets
-    // a signed-in user write (see lib/upload-path.ts).
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setState({ status: "error", message: "Your session has expired. Sign in again to upload." });
+    // The server issues a one-time upload link into the leader's own folder
+    // (the session cookie is HttpOnly, so it can't be used from here).
+    const link = await createUploadUrl("id-card", file.name).catch(() => null);
+    if (!link || !link.success) {
+      setState({ status: "error", message: link && !link.success ? link.error : "Upload failed. Try again." });
       return;
     }
-    const uploadPath = buildUploadPath(user.id, file.name);
-    const { error: uploadError } = await supabase.storage.from("member-id-cards").upload(uploadPath, file);
+    const uploadPath = link.path;
+    const { error: uploadError } = await createClient()
+      .storage.from("member-id-cards")
+      .uploadToSignedUrl(link.path, link.token, file, { contentType: file.type });
 
     if (uploadError) {
       setState({ status: "error", message: "Upload failed. Try again." });

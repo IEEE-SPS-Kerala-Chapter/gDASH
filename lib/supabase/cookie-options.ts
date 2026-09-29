@@ -13,10 +13,11 @@ export const AUTH_SESSION_MAX_AGE = 60 * 60 * 24 * 7;
  *   runs on http://localhost, where a Secure cookie wouldn't be stored.
  * - sameSite "lax": required — "strict" would drop the cookie on the
  *   return from Google sign-in.
- * - httpOnly stays false for now: the participant flows still use the
- *   browser Supabase client (email code, Google sign-in start, uploads,
- *   sign-out), which reads this cookie. Moving those server-side is the
- *   follow-up that lets it become HttpOnly.
+ * - httpOnly: page JavaScript can never read the session, so an injected
+ *   script couldn't steal it. Nothing in the browser needs it: sign-in is
+ *   stored by the server (app/actions/session.ts), uploads use server-issued
+ *   signed links (app/actions/uploads.ts), and sign-out is a server action.
+ *   The browser Supabase client is session-less (lib/supabase/client.ts).
  * - maxAge: @supabase/ssr ignores a maxAge given here and always writes
  *   its 400-day default, so the lifetime is applied where cookies are
  *   actually written — see withSessionMaxAge.
@@ -25,7 +26,7 @@ export const AUTH_COOKIE_OPTIONS: CookieOptionsWithName = {
   path: "/",
   sameSite: "lax",
   secure: process.env.NODE_ENV === "production",
-  httpOnly: false,
+  httpOnly: true,
 };
 
 /**
