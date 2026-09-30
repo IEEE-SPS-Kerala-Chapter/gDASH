@@ -26,7 +26,8 @@ function resolveCollege(college: string, other?: string): string {
 
 type SubmitResult =
   | { success: true; accessToken: string }
-  | { success: false; error: string };
+  /** `field`, when set, is the form field the error belongs to — the wizard shows it there. */
+  | { success: false; error: string; field?: string };
 
 type SubmitOptions = {
   /** Value of the hidden honeypot input — must be empty for a real user. */
@@ -106,8 +107,8 @@ export async function submitRegistration(
     // Everyone on the form, labelled the way the wizard shows them — used to
     // name the person in a "already on another team" error below.
     const people: ContactPerson[] = [
-      { label: `the team leader (${team.leaderName})`, email: leaderEmail, phone: team.leaderPhone },
-      ...members.map((m, i) => ({ label: `Member ${i + 2} (${m.fullName})`, email: m.email, phone: m.phone })),
+      { label: `the team leader (${team.leaderName})`, email: leaderEmail, phone: team.leaderPhone, path: "team.leader" },
+      ...members.map((m, i) => ({ label: `Member ${i + 2} (${m.fullName})`, email: m.email, phone: m.phone, path: `members.${i}.` })),
     ];
 
     const { data: result, error } = await supabase.rpc("submit_registration", {
@@ -148,7 +149,11 @@ export async function submitRegistration(
 
     if (error) {
       if (error.hint === "invalid_ambassador") {
-        return { success: false, error: "That ambassador ID isn't valid any more — choose it again from the list on the Team step." };
+        return {
+          success: false,
+          error: "That ambassador ID isn't valid any more — choose it again from the list.",
+          field: "team.ambassador",
+        };
       }
       // Both exceptions share the same Postgres error class (23505, unique
       // violation), so the message — not the code — is what tells them apart.
@@ -162,6 +167,7 @@ export async function submitRegistration(
           error: who
             ? `The email for ${who.label}, ${who.value}, is already registered with another team. Each person can only be on one team.`
             : "One of your team's emails is already registered with another team. Each person can only be on one team.",
+          field: who ? contactField(who.path, "email") : undefined,
         };
       }
       if (error.message?.includes("member phone already registered")) {
@@ -171,15 +177,20 @@ export async function submitRegistration(
           error: who
             ? `The phone number for ${who.label}, ${who.value}, is already registered with another team.`
             : "One of your team's phone numbers is already registered with another team.",
+          field: who ? contactField(who.path, "phone") : undefined,
         };
       }
       if (error.message?.includes("team name taken")) {
-        return { success: false, error: "That team name is already taken. Try another." };
+        return { success: false, error: "That team name is already taken. Try another.", field: "team.teamName" };
       }
       if (error.message?.includes("team name too similar to an existing team")) {
         // Deliberately doesn't name the other team — that would let anyone
         // discover registered team names by trying variations.
-        return { success: false, error: "This name is too close to an existing team. Try something more distinct." };
+        return {
+          success: false,
+          error: "This name is too close to an existing team. Try something more distinct.",
+          field: "team.teamName",
+        };
       }
       if (error.message?.includes("team size must be")) {
         return { success: false, error: "Teams need between 2 and 5 members." };
@@ -218,7 +229,12 @@ export async function submitRegistration(
   }
 }
 
-type ContactPerson = { label: string; email: string; phone: string };
+/** `path` is the form-field prefix: "team.leader" (→ team.leaderEmail) or "members.<i>." (→ members.<i>.email). */
+type ContactPerson = { label: string; email: string; phone: string; path: string };
+
+function contactField(path: string, kind: "email" | "phone"): string {
+  return path === "team.leader" ? `team.leader${kind === "email" ? "Email" : "Phone"}` : `${path}${kind}`;
+}
 
 /**
  * submit_registration() only says *that* an email/phone is already on
@@ -229,7 +245,7 @@ async function findAlreadyRegistered(
   supabase: Awaited<ReturnType<typeof createClient>>,
   people: ContactPerson[],
   kind: "email" | "phone",
-): Promise<{ label: string; value: string } | null> {
+): Promise<{ label: string; value: string; path: string } | null> {
   for (const person of people) {
     const value = kind === "email" ? person.email : person.phone;
     const { data } = await supabase.rpc("check_duplicate_contact", {
@@ -238,7 +254,7 @@ async function findAlreadyRegistered(
     });
     const result = data as { email_taken?: boolean; phone_taken?: boolean } | null;
     if (kind === "email" ? result?.email_taken : result?.phone_taken) {
-      return { label: person.label, value };
+      return { label: person.label, value, path: person.path };
     }
   }
   return null;
@@ -504,6 +520,48 @@ export async function checkTeamNameAvailability(teamName: string): Promise<TeamN
     console.error("checkTeamNameAvailability threw unexpectedly:", err);
     return TEAM_NAME_AVAILABLE;
   }
+}
+
+export type StepConflict = { path: string; message: string };
+
+/**
+ * Everything on one wizard step that the database would reject at submit
+ * because another team already has it — the team name (taken or too
+ * close), and each person's email and phone. The wizard awaits this on
+ * Continue so the message shows under the field, instead of only as a
+ * pop-up at the final Submit. Same checks as the on-blur ones
+ * (checkTeamNameAvailability, checkContactAvailability).
+ */
+export async function checkStepConflicts(input: {
+  teamName?: string;
+  contacts: { path: string; email?: string; phone?: string }[];
+}): Promise<StepConflict[]> {
+  const contacts = input.contacts.slice(0, 5);
+  const [nameResult, ...contactResults] = await Promise.all([
+    input.teamName && input.teamName.trim().length >= 3 ? checkTeamNameAvailability(input.teamName) : Promise.resolve(null),
+    ...contacts.map((c) => checkContactAvailability({ email: c.email, phone: c.phone })),
+  ]);
+
+  const conflicts: StepConflict[] = [];
+  if (nameResult && !nameResult.available) {
+    conflicts.push({
+      path: "team.teamName",
+      message:
+        nameResult.reason === "taken"
+          ? "That team name is already taken. Try another."
+          : "This name is too close to an existing team. Try something more distinct.",
+    });
+  }
+  contacts.forEach((c, i) => {
+    const result = contactResults[i];
+    if (c.email && result.emailTaken) {
+      conflicts.push({ path: contactField(c.path, "email"), message: "This email is already registered with another team." });
+    }
+    if (c.phone && result.phoneTaken) {
+      conflicts.push({ path: contactField(c.path, "phone"), message: "This phone number is already registered with another team." });
+    }
+  });
+  return conflicts;
 }
 
 type IdCardPreviewResult = { success: true; url: string } | { success: false; error: string };

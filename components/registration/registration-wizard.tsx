@@ -6,7 +6,7 @@ import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
-import { submitRegistration, loadRegistrationDraft } from "@/app/actions/registration";
+import { submitRegistration, loadRegistrationDraft, checkStepConflicts, type StepConflict } from "@/app/actions/registration";
 import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
 import { clearSubmitted, markSubmitted } from "@/lib/submitted-registration";
 import { signOut } from "@/app/actions/auth";
@@ -149,6 +149,8 @@ export function RegistrationWizard({
   // step change sends the new step, not the one from the last render.
   const stepRef = useRef(0);
   const [submitting, setSubmitting] = useState(false);
+  // Continue is waiting for the "already registered with another team" checks.
+  const [checking, setChecking] = useState(false);
   const [openingStatus, setOpeningStatus] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -276,6 +278,25 @@ export function RegistrationWizard({
       return;
     }
 
+    // Format is fine — now ask the database whether another team already
+    // has this team name / any of these emails or phones, so the message
+    // shows under the field here instead of only at the final Submit.
+    // (Continue's validation above also clears the on-blur messages, so
+    // this re-check is what keeps them.) Fails open: if the check itself
+    // can't run, submit_registration() still refuses a real clash.
+    if (current.key === "team" || current.key === "members") {
+      setChecking(true);
+      const conflicts = await checkStepConflicts(stepConflictInput(current.key, form.getValues())).catch(() => [] as StepConflict[]);
+      setChecking(false);
+      if (conflicts.length > 0) {
+        for (const c of conflicts) {
+          form.setError(c.path as Path<RegistrationForm>, { type: "duplicate", message: c.message });
+        }
+        revealFirstError();
+        return;
+      }
+    }
+
     if (!isLastStep) {
       goToStep(step + 1);
       return;
@@ -304,6 +325,15 @@ export function RegistrationWizard({
       setSubmitting(false);
       autosave.resume();
       toast.error(result.error);
+      // Put the message under the field it's about, on that field's step.
+      if (result.field) {
+        const field = result.field as Path<RegistrationForm>;
+        form.setError(field, { type: "duplicate", message: result.error });
+        jumpToStep(field.startsWith("members.") ? "members" : "team");
+        setTimeout(() => {
+          document.querySelector("[data-field-error]")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 150);
+      }
       return;
     }
     // Deliberately stays "submitting" from here until the status page
@@ -506,10 +536,10 @@ export function RegistrationWizard({
               <div className="lg:flex-1">
                 <PrimaryButton
                   type="submit"
-                  disabled={submitting || (isLastStep && !readyToSubmit)}
-                  loading={submitting}
+                  disabled={submitting || checking || (isLastStep && !readyToSubmit)}
+                  loading={submitting || checking}
                 >
-                  {openingStatus ? "Opening your status page…" : submitting ? "Submitting…" : current.cta}
+                  {openingStatus ? "Opening your status page…" : submitting ? "Submitting…" : checking ? "Checking…" : current.cta}
                 </PrimaryButton>
               </div>
               {step > 0 && (
@@ -626,4 +656,17 @@ function RestoringDraft() {
       </FormCard>
     </div>
   );
+}
+
+/** What checkStepConflicts needs for the Team or Members step. */
+function stepConflictInput(step: "team" | "members", values: RegistrationForm) {
+  if (step === "team") {
+    return {
+      teamName: values.team.teamName,
+      contacts: [{ path: "team.leader", email: values.team.leaderEmail, phone: values.team.leaderPhone }],
+    };
+  }
+  return {
+    contacts: values.members.map((m, i) => ({ path: `members.${i}.`, email: m.email, phone: m.phone })),
+  };
 }
