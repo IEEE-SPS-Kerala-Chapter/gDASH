@@ -64,6 +64,8 @@ export type AdminRegistration = {
   expected_impact: string;
   supporting_link: string | null;
   deck_path: string | null;
+  /** Ambassador who referred the team (AMGIG-<n>, see lib/ambassador.ts); null = none. */
+  ambassador_number: number | null;
   status: "submitted" | "under_review" | "shortlisted" | "rejected";
   /**
    * Admin eligibility check (ID cards etc.) — separate from `status`, which
@@ -114,7 +116,7 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
      team_members ( id, member_no, member_code, full_name, email, phone, college, branch, year, role_in_team, is_leader ),
      registrations (
        id, problem_statement, proposed_solution, ai_approach, expected_impact,
-       supporting_link, deck_path, status, created_at,
+       supporting_link, deck_path, ambassador_number, status, created_at,
        verification_status, verification_note, verification_decided_at,
        verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name ),
        version, status_changed_at,

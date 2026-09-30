@@ -67,6 +67,12 @@ export const teamDetailsSchema = z
     branch: z.string().trim().min(2, "Enter a branch, e.g. CSE").max(60, "Branch can be at most 60 characters"),
     year: z.enum(MEMBER_YEARS, { message: "Choose a year" }),
     idCardPath: z.string().min(1, "Upload your ID card"),
+    // "none" or an ambassador number as text (see lib/ambassador.ts). When
+    // no ambassador IDs are set up, the form hides the field and fills in
+    // "none" itself. submit_registration() checks the number is in range.
+    ambassador: z
+      .string({ message: 'Choose who referred you, or "No ambassador referred"' })
+      .regex(/^(none|\d{1,3})$/, 'Choose who referred you, or "No ambassador referred"'),
   })
   .superRefine((data, ctx) => {
     if (data.college === OTHER_COLLEGE && !data.collegeOther?.trim()) {

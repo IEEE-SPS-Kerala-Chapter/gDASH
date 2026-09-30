@@ -7,6 +7,7 @@ import { isAdminLevelRole } from "@/lib/roles";
 import { TeamDetail } from "@/components/admin/team-detail";
 import { getVerificationTeam } from "@/app/actions/verification";
 import { VolunteerTeamDetail } from "@/components/volunteer/team-detail";
+import { getAmbassadorNames, getAmbassadorRange } from "@/app/actions/ambassadors";
 
 export default async function TeamDetailPage({ params }: { params: { teamId: string } }) {
   const profile = await getMyProfile();
@@ -23,12 +24,16 @@ export default async function TeamDetailPage({ params }: { params: { teamId: str
     return <VolunteerTeamDetail detail={result.detail} />;
   }
 
-  const [teamResult, judgesResult, queueResult] = await Promise.all([
+  const isSuperAdmin = profile.role === "super_admin";
+  const [teamResult, judgesResult, queueResult, ambassadorLastNumber, ambassadorNames] = await Promise.all([
     getTeamDetail(params.teamId),
     isAdminLevelRole(profile.role) ? getJudges() : Promise.resolve({ success: true as const, judges: [] }),
     // Only judges get prev/next queue navigation — same ordering as the
     // submission queue on their dashboard, so "next" there matches "next" here.
     profile.role === "judge" ? getMyAssignedTeams() : Promise.resolve({ success: true as const, teams: [] }),
+    // Super-admin only: the edit form's ambassador list, and names (staff-only).
+    isSuperAdmin ? getAmbassadorRange() : Promise.resolve(null),
+    isSuperAdmin ? getAmbassadorNames() : Promise.resolve({} as Record<number, string>),
   ]);
 
   if (!teamResult.success) {
@@ -58,6 +63,8 @@ export default async function TeamDetailPage({ params }: { params: { teamId: str
       judges={judgesResult.success ? judgesResult.judges : []}
       viewerRole={profile.role}
       queueNav={queueNav}
+      ambassadorLastNumber={ambassadorLastNumber}
+      ambassadorNames={ambassadorNames}
     />
   );
 }

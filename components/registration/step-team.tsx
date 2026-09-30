@@ -8,8 +8,15 @@ import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { useDuplicateContactCheck, useTeamNameCheck } from "@/lib/registration-duplicate-check";
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
+import { AmbassadorSelect } from "./ambassador-select";
 
-export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
+export function StepTeam({
+  form,
+  ambassadorLastNumber,
+}: {
+  form: UseFormReturn<RegistrationForm>;
+  ambassadorLastNumber: number | null;
+}) {
   const {
     register,
     watch,
@@ -20,6 +27,7 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const college = watch("team.college");
   const idCardPath = watch("team.idCardPath");
   const leaderEmail = watch("team.leaderEmail");
+  const ambassador = watch("team.ambassador");
   const { checkValue, onBlurCheck } = useDuplicateContactCheck(form);
   const { onBlur: onTeamNameBlur } = useTeamNameCheck(form);
 
@@ -158,6 +166,21 @@ export function StepTeam({ form }: { form: UseFormReturn<RegistrationForm> }) {
           ))}
         </Select>
       </Field>
+
+      {ambassadorLastNumber !== null && (
+        <Field
+          label="Referred by a gIGNITE ambassador?"
+          hint="Pick the ambassador ID that referred your team, or “No ambassador referred”."
+          error={e?.ambassador?.message}
+        >
+          <AmbassadorSelect
+            value={ambassador ?? ""}
+            lastNumber={ambassadorLastNumber}
+            invalid={Boolean(e?.ambassador)}
+            onChange={(v) => setValue("team.ambassador", v, { shouldValidate: true, shouldDirty: true })}
+          />
+        </Field>
+      )}
 
       <IdCardUploadField
         path={idCardPath}

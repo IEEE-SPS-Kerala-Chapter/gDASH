@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
 import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
+import { ambassadorFormValueToNumber, ambassadorLabel, formatAmbassadorId } from "@/lib/ambassador";
 import {
   TEAM_SELECT,
   mapTeamRow,
@@ -496,6 +497,7 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
     "Team Name",
     "Theme",
     "District",
+    "Ambassador",
     "Leader Name",
     "Leader Email",
     "Leader Phone",
@@ -513,6 +515,7 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
       team.name,
       team.ai_theme,
       team.district,
+      team.registration?.ambassador_number != null ? formatAmbassadorId(team.registration.ambassador_number) : "",
       leader?.full_name ?? "",
       leader?.email ?? "",
       leader?.phone ?? "",
@@ -608,6 +611,7 @@ const EDIT_GUARD_MESSAGES: Record<string, string> = {
   name_similar: "This name is too close to another team's name.",
   bad_member: "Member list is out of date — reload the page.",
   not_found: "Registration not found.",
+  invalid_ambassador: "That ambassador ID is outside the current range.",
 };
 
 /**
@@ -670,6 +674,7 @@ export async function updateRegistrationDetails(
       expected_impact: edit.idea.expectedImpact,
       supporting_link: edit.idea.supportingLink ?? "",
       deck_path: edit.idea.deckPath,
+      ambassador_number: ambassadorFormValueToNumber(edit.ambassador),
     },
   });
 
@@ -729,6 +734,11 @@ export async function updateRegistrationDetails(
   note("Expected impact", reg.expected_impact, edit.idea.expectedImpact);
   note("Supporting link", reg.supporting_link, edit.idea.supportingLink || null);
   if (edit.idea.deckPath) changes.push({ field: "Deck replaced" });
+  note(
+    "Ambassador",
+    ambassadorLabel(reg.ambassador_number),
+    ambassadorLabel(ambassadorFormValueToNumber(edit.ambassador)),
+  );
 
   await logAuditEvent(supabase, "registration.details_edited", {
     targetType: "team",

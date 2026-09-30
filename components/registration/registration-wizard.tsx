@@ -25,6 +25,7 @@ import {
   Eyebrow,
 } from "./ui";
 import { StepTeam } from "./step-team";
+import { NO_AMBASSADOR } from "@/lib/ambassador";
 import { StepMembers } from "./step-members";
 import { StepIdea } from "./step-idea";
 import { StepReview } from "./step-review";
@@ -52,6 +53,7 @@ const STEPS = [
       "team.branch",
       "team.year",
       "team.idCardPath",
+      "team.ambassador",
     ] satisfies Path<RegistrationForm>[],
   },
   {
@@ -113,6 +115,7 @@ function buildDefaults(leaderEmail: string) {
       branch: "",
       year: "",
       idCardPath: "",
+      ambassador: "",
     },
     members: [],
     idea: {
@@ -132,7 +135,14 @@ function buildDefaults(leaderEmail: string) {
   } as unknown as RegistrationForm;
 }
 
-export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string }) {
+export function RegistrationWizard({
+  leaderEmail = "",
+  ambassadorLastNumber = null,
+}: {
+  leaderEmail?: string;
+  /** Ambassador IDs run AMGIG-00 … this; null = none set up (field hidden). */
+  ambassadorLastNumber?: number | null;
+}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   // Mirrors `step` synchronously, so a save fired in the same tick as a
@@ -222,6 +232,20 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The ambassador answer (team step) can be missing from a draft saved
+  // before the field existed, or out of range if the super-admin changed
+  // the IDs since. With no IDs set up the field is hidden, so answer it
+  // for the participant; otherwise clear a stale number so they choose.
+  useEffect(() => {
+    if (loadState !== "ready") return;
+    const current = form.getValues("team.ambassador");
+    if (ambassadorLastNumber === null) {
+      if (current !== NO_AMBASSADOR) form.setValue("team.ambassador", NO_AMBASSADOR);
+    } else if (current && current !== NO_AMBASSADOR && Number(current) > ambassadorLastNumber) {
+      form.setValue("team.ambassador", "");
+    }
+  }, [loadState, ambassadorLastNumber, form]);
+
   const scheduleSave = autosave.schedule;
   // Debounced autosave on every field change. Subscribed only once the draft
   // has loaded, so restoring it (form.reset) doesn't count as an edit.
@@ -254,6 +278,13 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
 
     if (!isLastStep) {
       goToStep(step + 1);
+      return;
+    }
+    // A draft restored past the team step may not have answered the
+    // ambassador question yet — send them back to it rather than failing.
+    if (!(await form.trigger("team.ambassador"))) {
+      toast.error("Tell us whether an ambassador referred your team.");
+      jumpToStep("team");
       return;
     }
     if (turnstileConfigured && !turnstileToken) {
@@ -441,10 +472,10 @@ export function RegistrationWizard({ leaderEmail = "" }: { leaderEmail?: string 
             )}
 
             <div className="lg:max-w-[760px]">
-              {current.key === "team" && <StepTeam form={form} />}
+              {current.key === "team" && <StepTeam form={form} ambassadorLastNumber={ambassadorLastNumber} />}
               {current.key === "members" && <StepMembers form={form} />}
               {current.key === "idea" && <StepIdea form={form} />}
-              {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} />}
+              {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} ambassadorLastNumber={ambassadorLastNumber} />}
               {current.key === "declarations" && <StepDeclarations form={form} />}
             </div>
 

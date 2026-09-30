@@ -17,6 +17,7 @@ import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
 import { EditRegistration } from "./edit-registration";
+import { formatAmbassadorId } from "@/lib/ambassador";
 import { useLiveRefresh } from "./use-live-refresh";
 import { allAssignedScoresIn, applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
 import { JudgeScoresSummary } from "./judge-scores-summary";
@@ -39,10 +40,16 @@ export function TeamDetail({
   judges,
   viewerRole,
   queueNav,
+  ambassadorLastNumber = null,
+  ambassadorNames = {},
 }: {
   team: AdminTeam;
   judges: AdminJudge[];
   viewerRole: string;
+  /** Super-admin only (edit form): ambassador IDs run AMGIG-00 … this. */
+  ambassadorLastNumber?: number | null;
+  /** Super-admin only: staff-only ambassador names by number. */
+  ambassadorNames?: Record<number, string>;
   /** Judge-only: prev/next through their assigned-teams queue, in the same order as their dashboard. */
   queueNav?: { prevTeamId: string | null; nextTeamId: string | null; position: string } | null;
 }) {
@@ -223,6 +230,7 @@ export function TeamDetail({
             {editing && isSuperAdmin && reg ? (
               <EditRegistration
                 team={team}
+                ambassadorLastNumber={ambassadorLastNumber}
                 onDone={() => {
                   setEditing(false);
                   router.refresh();
@@ -325,6 +333,19 @@ export function TeamDetail({
               <RecordRow label="Submitted" value={submittedLabel ?? "—"} />
               <RecordRow label="Members" value={`${team.members.length} of 5`} />
               <RecordRow label="Deck" value={reg?.deck_path ? "Uploaded" : "Not uploaded"} />
+              {reg && (
+                <RecordRow
+                  label="Referred by"
+                  value={
+                    reg.ambassador_number === null
+                      ? "No ambassador"
+                      : `${formatAmbassadorId(reg.ambassador_number)}${
+                          ambassadorNames[reg.ambassador_number] ? ` · ${ambassadorNames[reg.ambassador_number]}` : ""
+                        }`
+                  }
+                  mono={reg.ambassador_number !== null}
+                />
+              )}
               {reg && (
                 <RecordRow
                   label="Declarations"

@@ -4,6 +4,7 @@ import { BrandLogo, GradientText, GridBackground, HeroShell, LogoHeaderBar } fro
 import { createClient } from "@/lib/supabase/server";
 import { LEADER_VERIFICATION_ENABLED } from "@/lib/config";
 import { getRegistrationWindow } from "@/app/actions/registration-window";
+import { getAmbassadorRange } from "@/app/actions/ambassadors";
 import { isRegistrationCurrentlyOpen } from "@/lib/registration-window";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { RegisterBackGuard } from "@/components/registration/submission-back-guards";
@@ -110,7 +111,7 @@ async function RegisterScreen({
             <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
               <BrandLogo className="h-14" />
             </div>
-            <RegistrationWizard leaderEmail={user.email} />
+            <RegistrationWizard leaderEmail={user.email} ambassadorLastNumber={await getAmbassadorRange()} />
           </div>
         </main>
       </>
@@ -126,7 +127,7 @@ async function RegisterScreen({
           <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
             <BrandLogo className="h-14" />
           </div>
-          <RegistrationWizard />
+          <RegistrationWizard ambassadorLastNumber={await getAmbassadorRange()} />
         </div>
       </main>
     </>

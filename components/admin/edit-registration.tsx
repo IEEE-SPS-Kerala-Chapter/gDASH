@@ -10,6 +10,8 @@ import { MEMBER_YEARS } from "@/lib/validations/member";
 import { TEAM_ROLES } from "@/lib/validations/roles";
 import { KERALA_BTECH_COLLEGES } from "@/lib/kerala-colleges";
 import type { RegistrationEdit } from "@/lib/validations/registration-edit";
+import { NO_AMBASSADOR } from "@/lib/ambassador";
+import { AmbassadorSelect } from "@/components/registration/ambassador-select";
 import { Field, Panel, PrimaryButton, SecondaryButton, SectionLabel, Select, Spinner, TextArea, TextInput } from "@/components/admin/ui";
 
 const FILE_RULES: Record<UploadKind, { bucket: string; types: string[]; accept: string; maxBytes: number; label: string }> = {
@@ -56,6 +58,7 @@ function initialForm(team: AdminTeam): RegistrationEdit {
       roleInTeam: m.role_in_team ?? "",
       idCardPath: null,
     })),
+    ambassador: reg.ambassador_number === null ? NO_AMBASSADOR : String(reg.ambassador_number),
     idea: {
       problemStatement: reg.problem_statement,
       proposedSolution: reg.proposed_solution,
@@ -74,10 +77,13 @@ function initialForm(team: AdminTeam): RegistrationEdit {
  */
 export function EditRegistration({
   team,
+  ambassadorLastNumber,
   onDone,
   onStale,
 }: {
   team: AdminTeam;
+  /** Ambassador IDs run AMGIG-00 … this; null = none set up. */
+  ambassadorLastNumber: number | null;
   onDone: () => void;
   /** Someone else changed the team meanwhile — reload the latest. */
   onStale: () => void;
@@ -146,6 +152,15 @@ export function EditRegistration({
               ))}
             </Select>
           </Field>
+          {ambassadorLastNumber !== null && (
+            <Field label="Referred by ambassador">
+              <AmbassadorSelect
+                value={form.ambassador}
+                lastNumber={ambassadorLastNumber}
+                onChange={(v) => setForm((f) => ({ ...f, ambassador: v }))}
+              />
+            </Field>
+          )}
           <Field label="College (all members)">
             <TextInput
               value={form.team.college}

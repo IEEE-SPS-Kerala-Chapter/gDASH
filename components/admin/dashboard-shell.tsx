@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
@@ -115,6 +115,12 @@ export function DashboardShell({
               </Link>
             )}
             {role === "super_admin" && (
+              <Link href="/dashboard/ambassadors" className={navItemClass(pathname === "/dashboard/ambassadors")}>
+                <Megaphone className="h-[17px] w-[17px]" />
+                <span>Ambassadors</span>
+              </Link>
+            )}
+            {role === "super_admin" && (
               <Link href="/dashboard/audit-logs" className={navItemClass(pathname === "/dashboard/audit-logs")}>
                 <ScrollText className="h-[17px] w-[17px]" />
                 <span>Audit logs</span>
@@ -176,6 +182,7 @@ export function DashboardShell({
             { href: "/dashboard/attendance", label: "Attendance", show: role === "volunteer" || isAdminLevelRole(role), active: pathname === "/dashboard/attendance" },
             { href: "/dashboard/check-in", label: "Check-in setup", show: isAdminLevelRole(role), active: pathname === "/dashboard/check-in" },
             { href: "/dashboard/staff", label: "Staff", show: role === "super_admin", active: pathname === "/dashboard/staff" },
+            { href: "/dashboard/ambassadors", label: "Ambassadors", show: role === "super_admin", active: pathname === "/dashboard/ambassadors" },
             { href: "/dashboard/audit-logs", label: "Audit logs", show: role === "super_admin", active: pathname === "/dashboard/audit-logs" },
           ]
             .filter((item) => item.show)

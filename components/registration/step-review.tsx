@@ -7,6 +7,7 @@ import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { cn } from "@/lib/utils";
 import { FormCard, Divider, Spinner } from "./ui";
+import { ambassadorFormValueToNumber, ambassadorLabel } from "@/lib/ambassador";
 
 function EditLink({ onClick }: { onClick: () => void }) {
   return (
@@ -269,9 +270,11 @@ function DeckThumb({ path }: { path: string }) {
 export function StepReview({
   form,
   onEdit,
+  ambassadorLastNumber,
 }: {
   form: UseFormReturn<RegistrationForm>;
   onEdit: (stepKey: string) => void;
+  ambassadorLastNumber: number | null;
 }) {
   const { team, members, idea } = form.getValues();
   const displayCollege = team.college === OTHER_COLLEGE ? team.collegeOther : team.college;
@@ -287,6 +290,9 @@ export function StepReview({
         <ReviewRow label="AI theme" value={team.aiTheme} />
         <ReviewRow label="College" value={displayCollege ?? ""} />
         <ReviewRow label="District" value={team.district} />
+        {ambassadorLastNumber !== null && (
+          <ReviewRow label="Referred by" value={ambassadorLabel(ambassadorFormValueToNumber(team.ambassador ?? ""))} />
+        )}
         <Divider />
         <ReviewRow label="Leader" value={team.leaderName} />
         <ReviewRow label="Email" value={team.leaderEmail} />

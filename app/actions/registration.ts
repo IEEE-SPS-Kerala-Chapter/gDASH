@@ -9,6 +9,7 @@ import { OTHER_ROLE } from "@/lib/validations/roles";
 import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { displayFileName } from "@/lib/upload-file-name";
 import { isLegacyUploadPath } from "@/lib/upload-path";
+import { ambassadorFormValueToNumber } from "@/lib/ambassador";
 
 /** "Other" reveals a free-text field client-side; the server resolves it to
  * the actual typed value here so the DB never stores the literal "Other". */
@@ -142,9 +143,13 @@ export async function submitRegistration(
       p_declaration_originality: declarations.originality,
       p_declaration_rules: declarations.rules,
       p_declaration_media_consent: declarations.mediaConsent,
+      p_ambassador_number: ambassadorFormValueToNumber(team.ambassador),
     });
 
     if (error) {
+      if (error.hint === "invalid_ambassador") {
+        return { success: false, error: "That ambassador ID isn't valid any more — choose it again from the list on the Team step." };
+      }
       // Both exceptions share the same Postgres error class (23505, unique
       // violation), so the message — not the code — is what tells them apart.
       // Checking error.code alone here previously matched the member-email

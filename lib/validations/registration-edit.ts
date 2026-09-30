@@ -40,6 +40,8 @@ export const registrationEditSchema = z
       college: z.string().trim().min(2, "Enter the college").max(120, "College can be at most 120 characters"),
     }),
     members: z.array(editMemberSchema).min(1).max(5),
+    /** "none" or an ambassador number as text (see lib/ambassador.ts). */
+    ambassador: z.string().regex(/^(none|\d{1,3})$/, "Choose an ambassador or \"No ambassador referred\""),
     idea: ideaSchema.omit({ deckPath: true }).extend({
       /** A newly uploaded deck, or null to keep the current one. */
       deckPath: z.string().min(1).nullable(),
