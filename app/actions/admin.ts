@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
+import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
 import {
   TEAM_SELECT,
   mapTeamRow,
@@ -596,6 +597,160 @@ export async function deleteRegistration(teamId: string): Promise<DeleteResult> 
 
   revalidateDashboard();
 
+  return { success: true };
+}
+
+type EditDetailsResult = { success: true } | { success: false; error: string; stale?: boolean };
+
+const EDIT_GUARD_MESSAGES: Record<string, string> = {
+  judging_started: "Judging has started for this team — its details are locked. Unassign all judges to edit.",
+  name_taken: "Another team already has this name.",
+  name_similar: "This name is too close to another team's name.",
+  bad_member: "Member list is out of date — reload the page.",
+  not_found: "Registration not found.",
+};
+
+/**
+ * Super-admin only: correct a submitted registration when a participant
+ * reports a mistake — team details, member details, the idea answers, and
+ * replacing a member's ID card or the deck (uploaded with createUploadUrl
+ * first). Refused once any judge is assigned, or if someone else changed
+ * the registration since expectedVersion. The whole edit is applied in one
+ * transaction by super_admin_update_registration()
+ * (supabase/migrations/20261002000000_super_admin_edit_registration.sql);
+ * every changed field is audit-logged as old → new.
+ */
+export async function updateRegistrationDetails(
+  teamId: string,
+  expectedVersion: number,
+  input: RegistrationEdit,
+): Promise<EditDetailsResult> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can edit a registration." };
+  }
+
+  const parsed = registrationEditSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Some details are invalid." };
+  }
+  const edit = parsed.data;
+
+  const current = await getTeamDetail(teamId);
+  if (!current.success || !current.team.registration) {
+    return { success: false, error: "Registration not found." };
+  }
+  const before = current.team;
+  const reg = current.team.registration;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("super_admin_update_registration", {
+    p_team_id: teamId,
+    p_expected_version: expectedVersion,
+    p_team: {
+      name: edit.team.name,
+      ai_theme: edit.team.aiTheme,
+      district: edit.team.district,
+      college: edit.team.college,
+    },
+    p_members: edit.members.map((m) => ({
+      id: m.id,
+      full_name: m.fullName,
+      email: m.email,
+      phone: m.phone,
+      branch: m.branch,
+      year: m.year,
+      role_in_team: m.isLeader ? "" : m.roleInTeam,
+      id_card_path: m.idCardPath,
+    })),
+    p_registration: {
+      problem_statement: edit.idea.problemStatement,
+      proposed_solution: edit.idea.proposedSolution,
+      ai_approach: edit.idea.aiApproach,
+      expected_impact: edit.idea.expectedImpact,
+      supporting_link: edit.idea.supportingLink ?? "",
+      deck_path: edit.idea.deckPath,
+    },
+  });
+
+  if (error) {
+    const hint = error.hint ?? "";
+    if (hint === "stale") {
+      return {
+        success: false,
+        stale: true,
+        error: "Someone else changed this team while you were editing. Showing the latest — make your change again.",
+      };
+    }
+    const [kind, memberId] = hint.split(":");
+    if (kind === "email_taken" || kind === "phone_taken") {
+      const who = edit.members.find((m) => m.id === memberId)?.fullName ?? "a member";
+      return {
+        success: false,
+        error: `The ${kind === "email_taken" ? "email" : "phone number"} for ${who} is already registered with another team.`,
+      };
+    }
+    if (EDIT_GUARD_MESSAGES[hint]) {
+      return { success: false, error: EDIT_GUARD_MESSAGES[hint] };
+    }
+    if (error.code === "23514") {
+      return { success: false, error: "Some details are in the wrong format — check the highlighted rules and try again." };
+    }
+    if (error.code === "42501") {
+      return { success: false, error: "That file wasn't uploaded from this account — upload it again." };
+    }
+    return { success: false, error: "Could not save the changes." };
+  }
+
+  // Old → new for everything that actually changed, for the audit log.
+  const changes: { field: string; member?: string; from?: string | null; to?: string | null }[] = [];
+  const note = (field: string, from: string | null, to: string | null, member?: string) => {
+    if ((from ?? "") !== (to ?? "")) changes.push({ field, member, from, to });
+  };
+  note("Team name", before.name, edit.team.name);
+  note("AI theme", before.ai_theme, edit.team.aiTheme);
+  note("District", before.district, edit.team.district);
+  note("College", before.members[0]?.college ?? null, edit.team.college);
+  for (const m of edit.members) {
+    const old = before.members.find((b) => b.id === m.id);
+    if (!old) continue;
+    const who = `${old.full_name} (${old.member_code})`;
+    note("Name", old.full_name, m.fullName, who);
+    note("Email", old.email, m.email, who);
+    note("Phone", old.phone, m.phone, who);
+    note("Branch", old.branch, m.branch, who);
+    note("Year", old.year, m.year, who);
+    if (!m.isLeader) note("Role", old.role_in_team, m.roleInTeam, who);
+    if (m.idCardPath) changes.push({ field: "ID card replaced", member: who });
+  }
+  note("Problem statement", reg.problem_statement, edit.idea.problemStatement);
+  note("Proposed solution", reg.proposed_solution, edit.idea.proposedSolution);
+  note("AI approach", reg.ai_approach, edit.idea.aiApproach);
+  note("Expected impact", reg.expected_impact, edit.idea.expectedImpact);
+  note("Supporting link", reg.supporting_link, edit.idea.supportingLink || null);
+  if (edit.idea.deckPath) changes.push({ field: "Deck replaced" });
+
+  await logAuditEvent(supabase, "registration.details_edited", {
+    targetType: "team",
+    targetId: teamId,
+    targetLabel: edit.team.name,
+    metadata: { changes },
+  });
+
+  // The replaced files are no longer referenced anywhere — best-effort
+  // cleanup, like deleteRegistration.
+  const replaced = ((data as { replaced_files?: { bucket: string; path: string }[] } | null)?.replaced_files ?? []);
+  if (replaced.length > 0) {
+    const admin = createAdminClient();
+    for (const file of replaced) {
+      const { error: storageError } = await admin.storage.from(file.bucket).remove([file.path]);
+      if (storageError) {
+        console.error(`Could not remove replaced file for team ${teamId}:`, storageError.message);
+      }
+    }
+  }
+
+  revalidateDashboard();
   return { success: true };
 }
 

@@ -16,6 +16,7 @@ import { InlineJudgeAssign } from "./inline-judge-assign";
 import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
+import { EditRegistration } from "./edit-registration";
 import { useLiveRefresh } from "./use-live-refresh";
 import { allAssignedScoresIn, applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
 import { JudgeScoresSummary } from "./judge-scores-summary";
@@ -62,6 +63,10 @@ export function TeamDetail({
   const [deleting, setDeleting] = useState(false);
 
   const [statusBusy, setStatusBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  // Same rule as super_admin_update_registration(): once a judge is
+  // assigned, judging has started and the details are locked.
+  const editLocked = (reg?.assignments.length ?? 0) > 0;
 
   function applyState(state: RegistrationReviewState) {
     setTeam((prev) => (prev.registration ? { ...prev, registration: applyReviewState(prev.registration, state) } : prev));
@@ -158,14 +163,27 @@ export function TeamDetail({
           <span className="text-ignite-muted">/</span>
           <span className="font-semibold text-ignite-ink">{team.name}</span>
         </div>
-        {leader && isAdmin && (
-          <a
-            href={`mailto:${leader.email}`}
-            className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary"
-          >
-            Message team
-          </a>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {isSuperAdmin && reg && !editing && (
+            <button
+              type="button"
+              disabled={editLocked}
+              title={editLocked ? "Locked — judging has started for this team (unassign all judges to edit)" : undefined}
+              onClick={() => setEditing(true)}
+              className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-ignite-ink"
+            >
+              {editLocked ? "Editing locked" : "Edit details"}
+            </button>
+          )}
+          {leader && isAdmin && (
+            <a
+              href={`mailto:${leader.email}`}
+              className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary"
+            >
+              Message team
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-8 border-b border-ignite-edge/[0.07] pb-6">
@@ -201,7 +219,23 @@ export function TeamDetail({
 
       {isAdmin ? (
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex min-w-0 flex-col gap-5">{contentSections}</div>
+          <div className="flex min-w-0 flex-col gap-5">
+            {editing && isSuperAdmin && reg ? (
+              <EditRegistration
+                team={team}
+                onDone={() => {
+                  setEditing(false);
+                  router.refresh();
+                }}
+                onStale={() => {
+                  setEditing(false);
+                  router.refresh();
+                }}
+              />
+            ) : (
+              contentSections
+            )}
+          </div>
 
           <div className="flex flex-col gap-5">
             {reg && (
