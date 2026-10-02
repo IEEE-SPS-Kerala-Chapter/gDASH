@@ -10,6 +10,7 @@ import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { displayFileName } from "@/lib/upload-file-name";
 import { isLegacyUploadPath } from "@/lib/upload-path";
 import { ambassadorFormValueToNumber } from "@/lib/ambassador";
+import { getAmbassadorRange } from "./ambassadors";
 
 /** "Other" reveals a free-text field client-side; the server resolves it to
  * the actual typed value here so the DB never stores the literal "Other". */
@@ -27,7 +28,13 @@ function resolveCollege(college: string, other?: string): string {
 type SubmitResult =
   | { success: true; accessToken: string }
   /** `field`, when set, is the form field the error belongs to — the wizard shows it there. */
-  | { success: false; error: string; field?: string };
+  | {
+      success: false;
+      error: string;
+      field?: string;
+      /** Set when the ambassador ID was refused: the range as it is now, so the form can refresh its list. */
+      ambassadorLastNumber?: number | null;
+    };
 
 type SubmitOptions = {
   /** Value of the hidden honeypot input — must be empty for a real user. */
@@ -153,6 +160,7 @@ export async function submitRegistration(
           success: false,
           error: "That ambassador ID isn't valid any more — choose it again from the list.",
           field: "team.ambassador",
+          ambassadorLastNumber: await getAmbassadorRange(),
         };
       }
       // Both exceptions share the same Postgres error class (23505, unique

@@ -13,9 +13,12 @@ import { AmbassadorSelect } from "./ambassador-select";
 export function StepTeam({
   form,
   ambassadorLastNumber,
+  onRefreshAmbassadors,
 }: {
   form: UseFormReturn<RegistrationForm>;
   ambassadorLastNumber: number | null;
+  /** Re-reads the ambassador range (the super-admin may have changed it). */
+  onRefreshAmbassadors?: () => void;
 }) {
   const {
     register,
@@ -170,7 +173,7 @@ export function StepTeam({
       {ambassadorLastNumber !== null && (
         <Field
           label="Referred by a gIGNITE ambassador?"
-          hint="Pick the ambassador ID that referred your team, or “No ambassador referred”."
+          hint="Pick the ambassador who referred your team, or “No ambassador referred”. Tip: type an ID like 07 to find it."
           error={e?.ambassador?.message}
         >
           <AmbassadorSelect
@@ -178,6 +181,7 @@ export function StepTeam({
             lastNumber={ambassadorLastNumber}
             invalid={Boolean(e?.ambassador)}
             onChange={(v) => setValue("team.ambassador", v, { shouldValidate: true, shouldDirty: true })}
+            onOpen={onRefreshAmbassadors}
           />
         </Field>
       )}

@@ -29,11 +29,14 @@ export function AmbassadorSelect({
   value,
   lastNumber,
   onChange,
+  onOpen,
   invalid,
 }: {
   value: string;
   lastNumber: number;
   onChange: (value: string) => void;
+  /** Called each time the list opens — the form uses it to re-read the current range. */
+  onOpen?: () => void;
   invalid?: boolean;
 }) {
   const listId = useId();
@@ -67,6 +70,7 @@ export function AmbassadorSelect({
   }
 
   function openList() {
+    if (!open) onOpen?.();
     setOpen(true);
     setActive(0);
   }
@@ -91,7 +95,9 @@ export function AmbassadorSelect({
         aria-autocomplete="list"
         aria-invalid={invalid || undefined}
         autoComplete="off"
-        placeholder="Choose, or type an ID like AMGIG-07"
+        // Closed, it reads like the form's other dropdowns ("Choose a
+        // district" in normal text); open, the placeholder invites typing.
+        placeholder={open ? "Type an ID like 07" : "Choose an ambassador"}
         value={open ? query : labelFor(value)}
         onFocus={openList}
         onClick={openList}
@@ -118,9 +124,8 @@ export function AmbassadorSelect({
             setOpen(false);
           }
         }}
-        className="pr-10"
+        className={cn(!open && "cursor-pointer placeholder:text-ignite-ink")}
       />
-      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[12px] text-ignite-muted">▾</span>
       {open && (
         <ul
           id={listId}

@@ -26,6 +26,7 @@ import {
 } from "./ui";
 import { StepTeam } from "./step-team";
 import { NO_AMBASSADOR } from "@/lib/ambassador";
+import { getAmbassadorRange } from "@/app/actions/ambassadors";
 import { StepMembers } from "./step-members";
 import { StepIdea } from "./step-idea";
 import { StepReview } from "./step-review";
@@ -137,7 +138,7 @@ function buildDefaults(leaderEmail: string) {
 
 export function RegistrationWizard({
   leaderEmail = "",
-  ambassadorLastNumber = null,
+  ambassadorLastNumber: initialAmbassadorLastNumber = null,
 }: {
   leaderEmail?: string;
   /** Ambassador IDs run AMGIG-00 … this; null = none set up (field hidden). */
@@ -149,6 +150,10 @@ export function RegistrationWizard({
   // step change sends the new step, not the one from the last render.
   const stepRef = useRef(0);
   const [submitting, setSubmitting] = useState(false);
+  // The range can change while this form is open (the super-admin lowers or
+  // raises it), so it's re-read on the Team step and after a rejected ID —
+  // the dropdown must never offer IDs that are no longer valid.
+  const [ambassadorLastNumber, setAmbassadorLastNumber] = useState(initialAmbassadorLastNumber);
   // Continue is waiting for the "already registered with another team" checks.
   const [checking, setChecking] = useState(false);
   const [openingStatus, setOpeningStatus] = useState(false);
@@ -248,6 +253,18 @@ export function RegistrationWizard({
     }
   }, [loadState, ambassadorLastNumber, form]);
 
+  // Re-read on reaching the Team step and each time the ambassador list is
+  // opened. A failed read keeps the list as it was.
+  function refreshAmbassadorRange() {
+    getAmbassadorRange()
+      .then(setAmbassadorLastNumber)
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    if (STEPS[step]?.key === "team") refreshAmbassadorRange();
+  }, [step]);
+
   const scheduleSave = autosave.schedule;
   // Debounced autosave on every field change. Subscribed only once the draft
   // has loaded, so restoring it (form.reset) doesn't count as an edit.
@@ -325,6 +342,12 @@ export function RegistrationWizard({
       setSubmitting(false);
       autosave.resume();
       toast.error(result.error);
+      if (result.ambassadorLastNumber !== undefined) {
+        // The ID was refused because the range changed: show the current
+        // list and clear the stale choice so they pick again.
+        setAmbassadorLastNumber(result.ambassadorLastNumber);
+        form.setValue("team.ambassador", "");
+      }
       // Put the message under the field it's about, on that field's step.
       if (result.field) {
         const field = result.field as Path<RegistrationForm>;
@@ -502,7 +525,7 @@ export function RegistrationWizard({
             )}
 
             <div className="lg:max-w-[760px]">
-              {current.key === "team" && <StepTeam form={form} ambassadorLastNumber={ambassadorLastNumber} />}
+              {current.key === "team" && <StepTeam form={form} ambassadorLastNumber={ambassadorLastNumber} onRefreshAmbassadors={refreshAmbassadorRange} />}
               {current.key === "members" && <StepMembers form={form} />}
               {current.key === "idea" && <StepIdea form={form} />}
               {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} ambassadorLastNumber={ambassadorLastNumber} />}
