@@ -24,9 +24,10 @@ export function TwoFactor({ initialMode, email }: { initialMode: "setup" | "veri
   const [mode, setMode] = useState<Mode>(initialMode === "done" ? "verify" : initialMode);
   const [signingOut, setSigningOut] = useState(false);
 
+  // One navigation only — /dashboard is rendered fresh on the server
+  // anyway, so an extra router.refresh() just loaded it a second time.
   function goToDashboard() {
     router.replace("/dashboard");
-    router.refresh();
   }
 
   useEffect(() => {
@@ -110,6 +111,7 @@ function VerifyStep({ onDone, onUseBackup }: { onDone: () => void; onUseBackup: 
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
 
   async function submit(value: string) {
     if (busy) return;
@@ -117,6 +119,8 @@ function VerifyStep({ onDone, onUseBackup }: { onDone: () => void; onUseBackup: 
     setError(null);
     const result = await verifyTotp(value).catch(() => ({ success: false as const, error: "No connection — try again." }));
     if (result.success) {
+      // Stays busy until the dashboard replaces this page.
+      setOpening(true);
       onDone();
       return;
     }
@@ -138,7 +142,7 @@ function VerifyStep({ onDone, onUseBackup }: { onDone: () => void; onUseBackup: 
         <CodeInput value={code} onChange={setCode} onComplete={submit} disabled={busy} />
       </Field>
       <PrimaryButton type="submit" disabled={busy || code.length !== 6} loading={busy}>
-        {busy ? "Checking…" : "Continue"}
+        {opening ? "Opening dashboard…" : busy ? "Checking…" : "Continue"}
       </PrimaryButton>
       <button
         type="button"
@@ -314,6 +318,7 @@ function SetupStep({ email, onDone }: { email: string; onDone: () => void }) {
 
 function BackupCodes({ codes, email, onDone }: { codes: string[]; email: string; onDone: () => void }) {
   const [saved, setSaved] = useState(false);
+  const [opening, setOpening] = useState(false);
   const text = `gIGNITE Staff — backup codes for ${email}\nEach code works once. Use one if you lose your phone.\n\n${codes.join("\n")}\n`;
 
   async function copy() {
@@ -357,8 +362,18 @@ function BackupCodes({ codes, email, onDone }: { codes: string[]; email: string;
         <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="h-4 w-4" />
         I&apos;ve saved these codes somewhere safe
       </label>
-      <PrimaryButton type="button" disabled={!saved} onClick={onDone}>
-        Continue to dashboard
+      <PrimaryButton
+        type="button"
+        disabled={!saved || opening}
+        loading={opening}
+        onClick={() => {
+          // Disabled from the first click until the dashboard replaces this
+          // page, which takes a moment — no repeated clicks.
+          setOpening(true);
+          onDone();
+        }}
+      >
+        {opening ? "Opening dashboard…" : "Continue to dashboard"}
       </PrimaryButton>
     </div>
   );
