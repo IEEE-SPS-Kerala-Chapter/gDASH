@@ -90,7 +90,7 @@ export default async function StatusPage(props: { params: Promise<{ token: strin
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { data: isStaff } = user ? await supabase.rpc("is_staff") : { data: false };
+  const { data: isStaff } = user ? await supabase.rpc("is_staff_account") : { data: false };
   const participantEmail = user?.email && !isStaff ? user.email : null;
   const statusStyle = STATUS_STYLES[registration.status] ?? STATUS_STYLES.submitted;
 

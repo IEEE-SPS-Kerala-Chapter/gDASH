@@ -1,25 +1,12 @@
 "use server";
 
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { staffLoginSchema, resetPasswordSchema } from "@/lib/validations/auth";
 import { logAuditEvent } from "@/lib/audit-log";
+import { LOCKED_MESSAGE, clientIp, minutesUntil } from "@/lib/staff-lockout";
 
 type SignInResult = { success: true } | { success: false; error: string };
-
-const LOCKED_MESSAGE = (minutes: number) =>
-  `Too many failed sign-in attempts. For security, sign-in is locked — try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
-
-/** The visitor's IP as seen by Vercel's edge (first x-forwarded-for entry). */
-async function clientIp(): Promise<string> {
-  const h = await headers();
-  return (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "").trim();
-}
-
-function minutesUntil(iso: string): number {
-  return Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 60_000));
-}
 
 /**
  * Staff (admin/judge/volunteer/super-admin) email+password sign-in.

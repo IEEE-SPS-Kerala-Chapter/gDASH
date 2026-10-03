@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
+import { sessionIsAal2 } from "@/lib/staff-mfa";
 import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
 import { ambassadorFormValueToNumber, ambassadorLabel, formatAmbassadorId } from "@/lib/ambassador";
 import {
@@ -32,13 +33,19 @@ export type {
   RegistrationReviewState,
 } from "@/lib/admin-teams";
 
-/** Returns the caller's profile role, or null if not signed in / no profile. */
+/**
+ * Returns the caller's profile role, or null if not signed in, no profile,
+ * or the session hasn't passed the 2FA code yet (staff powers need aal2 —
+ * some actions use the service-role client after this check, so it must
+ * hold the same line as the database does).
+ */
 export async function getCallerRole(): Promise<{ userId: string; role: string } | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  if (!(await sessionIsAal2(supabase))) return null;
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (!profile) return null;
@@ -780,7 +787,15 @@ export async function updateRegistrationDetails(
   return { success: true };
 }
 
-export type StaffAccount = { id: string; full_name: string; email: string; role: string; created_at: string };
+export type StaffAccount = {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+  /** Whether they've set up two-factor sign-in (an authenticator app). */
+  mfaEnabled?: boolean;
+};
 
 /** Super-admin only: every staff account (admin/judge/volunteer/super_admin), for the staff management page. */
 export async function getStaffAccounts(): Promise<
@@ -800,7 +815,68 @@ export async function getStaffAccounts(): Promise<
   if (error) {
     return { success: false, error: "Could not load staff accounts." };
   }
-  return { success: true, staff: data ?? [] };
+
+  // 2FA status per person — factors live in Supabase Auth, read with the
+  // service role (the caller is already confirmed super-admin above).
+  const admin = createAdminClient();
+  const staff = await Promise.all(
+    (data ?? []).map(async (s) => {
+      const { data: factors } = await admin.auth.admin.mfa.listFactors({ userId: s.id });
+      const mfaEnabled = (factors?.factors ?? []).some((f) => f.factor_type === "totp" && f.status === "verified");
+      return { ...s, mfaEnabled };
+    }),
+  );
+  return { success: true, staff };
+}
+
+/**
+ * Super-admin only: reset someone's two-factor sign-in (lost phone and
+ * backup codes). Removes their authenticator and backup codes and ends their
+ * sessions; they set up a new authenticator at their next sign-in. Not for
+ * your own account — a locked-out super-admin uses the SQL in
+ * supabase/migrations/20261006000000_staff_mfa.sql.
+ */
+export async function resetStaffMfa(userId: string): Promise<{ success: true } | { success: false; error: string }> {
+  const caller = await getCallerRole();
+  if (!caller || caller.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can reset two-factor sign-in." };
+  }
+  if (userId === caller.userId) {
+    return { success: false, error: "You can't reset your own two-factor sign-in here." };
+  }
+
+  const supabase = await createClient();
+  const { data: target } = await supabase.from("profiles").select("email, role").eq("id", userId).single();
+  if (!target) {
+    return { success: false, error: "Account not found." };
+  }
+
+  const admin = createAdminClient();
+  const { data: factors, error: listError } = await admin.auth.admin.mfa.listFactors({ userId });
+  if (listError) {
+    return { success: false, error: "Could not reset two-factor sign-in." };
+  }
+  for (const f of factors?.factors ?? []) {
+    const { error } = await admin.auth.admin.mfa.deleteFactor({ id: f.id, userId });
+    if (error) {
+      return { success: false, error: "Could not reset two-factor sign-in." };
+    }
+  }
+  await admin.from("staff_mfa_backup_codes").delete().eq("user_id", userId);
+  // A session that already passed 2FA shouldn't outlive the reset.
+  const { error: revokeError } = await admin.rpc("revoke_user_sessions", { p_user_id: userId });
+  if (revokeError) {
+    console.error(`Could not end sessions after 2FA reset for ${userId}:`, revokeError.message);
+  }
+
+  await logAuditEvent(supabase, "auth.mfa_reset", {
+    targetType: "profile",
+    targetId: userId,
+    targetLabel: target.email,
+    metadata: { role: target.role },
+  });
+  revalidateDashboard();
+  return { success: true };
 }
 
 const STAFF_ROLES = ["admin", "judge", "volunteer"] as const;

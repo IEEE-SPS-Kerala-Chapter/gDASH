@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/admin/dashboard-shell";
+import { sessionIsAal2 } from "@/lib/staff-mfa";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -31,6 +32,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // nested under /dashboard, so it isn't itself subject to this check.
   if (profile.must_reset_password) {
     redirect("/reset-password");
+  }
+
+  // Then 2FA: set up an authenticator app (first time) or enter its code.
+  // Every staff power needs this — the database refuses a password-only
+  // session regardless (supabase/migrations/20261006000000_staff_mfa.sql).
+  if (!(await sessionIsAal2(supabase))) {
+    redirect("/login/2fa");
   }
 
   return (

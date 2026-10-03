@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { createStaffAccount, deleteStaffAccount, type StaffAccount } from "@/app/actions/admin";
+import { createStaffAccount, deleteStaffAccount, resetStaffMfa, type StaffAccount } from "@/app/actions/admin";
 import { Badge, Field, FormCard, Panel, PrimaryButton, SecondaryButton, SectionLabel, Select, TextInput } from "@/components/admin/ui";
 import { ROLE_LABELS } from "@/lib/roles";
 
@@ -24,6 +24,8 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
   const [justCreated, setJustCreated] = useState<{ email: string; password: string } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<StaffAccount | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState<StaffAccount | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -57,6 +59,21 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
     setStaff((prev) => prev.filter((s) => s.id !== target.id));
     setConfirmingDelete(null);
     toast.success("Account deleted.");
+  }
+
+  async function handleConfirmedReset() {
+    if (!confirmingReset) return;
+    const target = confirmingReset;
+    setResetting(true);
+    const result = await resetStaffMfa(target.id);
+    setResetting(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    setStaff((prev) => prev.map((s) => (s.id === target.id ? { ...s, mfaEnabled: false } : s)));
+    setConfirmingReset(null);
+    toast.success(`Two-factor sign-in reset — ${target.full_name} sets it up again at their next sign-in.`);
   }
 
   async function copyCredentials() {
@@ -140,8 +157,25 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                   <div className="font-semibold text-ignite-ink">{s.full_name}</div>
                   <div className="text-ignite-muted">{s.email}</div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Badge variant={s.mfaEnabled ? "success" : "neutral"}>{s.mfaEnabled ? "2FA on" : "2FA not set up"}</Badge>
                   <Badge>{ROLE_LABELS[s.role] ?? s.role}</Badge>
+                  {/* Only for others — the super-admin's own reset is the
+                      SQL step in the 2FA migration (resetStaffMfa refuses
+                      your own account too). */}
+                  {s.role !== "super_admin" && s.mfaEnabled && (
+                    <button
+                      type="button"
+                      aria-label={`Reset two-factor sign-in for ${s.full_name}`}
+                      onClick={() => {
+                        setConfirmingDelete(null);
+                        setConfirmingReset(s);
+                      }}
+                      className="rounded-[7px] border-[1.5px] border-ignite-edge/[0.25] px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-ink-soft transition-colors hover:border-ignite-ink hover:text-ignite-ink"
+                    >
+                      Reset 2FA
+                    </button>
+                  )}
                   {/* Super-admin accounts can't be deleted here at all — the
                       server rejects it too (see deleteStaffAccount), this
                       just avoids offering a button that would always fail. */}
@@ -149,7 +183,10 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                     <button
                       type="button"
                       aria-label={`Delete ${s.full_name}`}
-                      onClick={() => setConfirmingDelete(s)}
+                      onClick={() => {
+                        setConfirmingReset(null);
+                        setConfirmingDelete(s);
+                      }}
                       className="rounded-[7px] border-[1.5px] border-ignite-danger/50 px-2.5 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em] text-ignite-danger transition-colors hover:border-ignite-danger hover:bg-ignite-danger hover:text-white"
                     >
                       Delete
@@ -157,6 +194,34 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                   )}
                 </div>
               </div>
+
+              {confirmingReset?.id === s.id && (
+                <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-ignite-ink/40 bg-ignite-bg p-4">
+                  <span className="text-[14px] leading-[1.55] text-ignite-ink-soft">
+                    Reset two-factor sign-in for <span className="font-semibold text-ignite-ink">{s.full_name}</span>? Their
+                    authenticator app and backup codes stop working and they&apos;re signed out everywhere. At their next sign-in
+                    they set up a new authenticator. Only do this after confirming it&apos;s really them asking.
+                  </span>
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleConfirmedReset}
+                      disabled={resetting}
+                      className="flex-1 rounded-[9px] bg-ignite-primary px-4 py-2.5 font-display text-[14px] font-medium text-ignite-on-primary transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {resetting ? "Resetting…" : "Reset 2FA"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingReset(null)}
+                      disabled={resetting}
+                      className="flex-1 rounded-[9px] border-[1.5px] border-ignite-edge/[0.18] bg-ignite-surface px-4 py-2.5 font-display text-[14px] font-medium text-ignite-ink-soft transition-colors hover:border-ignite-ink hover:text-ignite-ink"
+                    >
+                      Keep
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {confirmingDelete?.id === s.id && (
                 <div className="flex flex-col gap-3 rounded-[10px] border-[1.5px] border-ignite-danger bg-ignite-bg p-4">

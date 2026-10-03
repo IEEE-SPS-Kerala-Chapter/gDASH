@@ -75,11 +75,11 @@ async function RegisterScreen({
     // Staff and participant leaders share the same Supabase Auth session.
     // Without this check, a staff member signed in at /login would land
     // here on their own staff session and get silently treated as a
-    // verified leader — is_staff() (safe to call as anon/authenticated,
-    // no grant needed: SQL functions default to PUBLIC execute) tells the
-    // two apart now that only staff get a `profiles` row (see
-    // 20260922020000_fix_staff_trigger_role_intent.sql).
-    const { data: isStaff } = await supabase.rpc("is_staff");
+    // verified leader — is_staff_account() tells the two apart now that
+    // only staff get a `profiles` row (see
+    // 20260922020000_fix_staff_trigger_role_intent.sql). Not is_staff(),
+    // which is false for a staff session that hasn't passed 2FA yet.
+    const { data: isStaff } = await supabase.rpc("is_staff_account");
     if (isStaff) {
       return <StaffSessionBlocked email={user.email} />;
     }
