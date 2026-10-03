@@ -4,12 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export type Page<T> = { items: T[]; total: number };
 
-/** Rows per page: 30, or ?pageSize=N (1–100) in the URL — handy for testing scrolling with few teams. */
-export function pageSizeFrom(value: string | string[] | undefined): number {
-  const n = Number(Array.isArray(value) ? value[0] : value);
-  return Number.isInteger(n) && n >= 1 && n <= 100 ? n : 30;
-}
-
 /**
  * A list that loads page by page as you scroll (the dashboard team lists).
  * `queryKey` identifies the current search/filters/sort — when it changes,

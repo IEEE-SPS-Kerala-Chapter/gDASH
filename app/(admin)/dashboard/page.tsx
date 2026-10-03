@@ -10,7 +10,7 @@ import { RegistrationWindowPanel } from "@/components/admin/registration-window-
 import { ResultsPanel } from "@/components/admin/results-panel";
 import { VolunteerTeamsBrowser } from "@/components/volunteer/teams-browser";
 import { PageHeading, Panel } from "@/components/admin/ui";
-import { pageSizeFrom } from "@/components/admin/use-paged-list";
+import { pageSizeFrom } from "@/lib/page-size";
 
 // Team lists load 30 at a time (more as you scroll); ?pageSize=N changes
 // that, e.g. to test scrolling on pre-prod with only a few teams.
