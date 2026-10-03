@@ -12,6 +12,8 @@ import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations
 import { ambassadorFormValueToNumber, ambassadorLabel, formatAmbassadorId } from "@/lib/ambassador";
 import {
   TEAM_SELECT,
+  TEAM_LIST_SELECT,
+  mapListRow,
   mapTeamRow,
   type RawTeamRow,
   type AdminAssignment,
@@ -81,6 +83,98 @@ export async function getTeamsForAdmin(): Promise<
   }
 
   return { success: true, teams: (data ?? []).map((t) => mapTeamRow(t as unknown as RawTeamRow)) };
+}
+
+export type AdminTeamQuery = {
+  search?: string;
+  status?: string | null;
+  verification?: string | null;
+  theme?: string | null;
+  district?: string | null;
+  newestFirst?: boolean;
+  offset?: number;
+  limit?: number;
+};
+
+type TeamPageResult = { success: true; teams: AdminTeam[]; total: number } | { success: false; error: string };
+
+/** Loads TEAM_LIST_SELECT rows for these ids, in the given order (deleted teams drop out). */
+async function loadListRows(ids: string[]): Promise<AdminTeam[] | null> {
+  if (ids.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("teams").select(TEAM_LIST_SELECT).in("id", ids);
+  if (error) return null;
+  const byId = new Map((data ?? []).map((row) => [(row as { id: string }).id, mapListRow(row as Record<string, unknown>)]));
+  return ids.map((id) => byId.get(id)).filter((t): t is AdminTeam => Boolean(t));
+}
+
+/**
+ * Admin only: one page of the Registrations list. Search, filters and
+ * sorting run in the database (admin_team_page) so the dashboard never
+ * downloads every team; the list loads more as the admin scrolls.
+ */
+export async function listAdminTeams(query: AdminTeamQuery): Promise<TeamPageResult> {
+  const caller = await getCallerRole();
+  if (!caller || !isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can view registrations." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_team_page", {
+    p_search: query.search?.trim() || null,
+    p_status: query.status || null,
+    p_verification: query.verification || null,
+    p_theme: query.theme || null,
+    p_district: query.district || null,
+    p_newest_first: query.newestFirst ?? true,
+    p_offset: Math.max(0, query.offset ?? 0),
+    p_limit: Math.min(100, Math.max(1, query.limit ?? 30)),
+  });
+  if (error || !data) {
+    return { success: false, error: "Could not load teams." };
+  }
+  const page = data as { ids: string[]; total: number };
+  const teams = await loadListRows(page.ids);
+  if (!teams) {
+    return { success: false, error: "Could not load teams." };
+  }
+  return { success: true, teams, total: page.total };
+}
+
+/** Admin only: fresh rows for the teams already on screen (the list's live refresh). */
+export async function refreshAdminTeams(ids: string[]): Promise<{ success: true; teams: AdminTeam[] } | { success: false; error: string }> {
+  const caller = await getCallerRole();
+  if (!caller || !isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can view registrations." };
+  }
+  const teams = await loadListRows(ids.slice(0, 500));
+  return teams ? { success: true, teams } : { success: false, error: "Could not refresh teams." };
+}
+
+export type RegistrationStats = {
+  total: number;
+  byStatus: Record<string, number>;
+  byTheme: Record<string, number>;
+  byVerification: Record<string, number>;
+  /** Registrations per day (YYYY-MM-DD, India time), last 8 days. */
+  daily: Record<string, number>;
+};
+
+/** Admin only: the totals behind the dashboard charts (admin_registration_stats, ~1 KB). */
+export async function getRegistrationStats(): Promise<{ success: true; stats: RegistrationStats } | { success: false; error: string }> {
+  const caller = await getCallerRole();
+  if (!caller || !isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can view registrations." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_registration_stats");
+  if (error || !data) {
+    return { success: false, error: "Could not load the registration totals." };
+  }
+  const raw = data as { total: number; by_status: Record<string, number>; by_theme: Record<string, number>; by_verification: Record<string, number>; daily: Record<string, number> };
+  return {
+    success: true,
+    stats: { total: raw.total, byStatus: raw.by_status, byTheme: raw.by_theme, byVerification: raw.by_verification, daily: raw.daily },
+  };
 }
 
 /** Staff-only data fetch: one team by id, for the detail page. */

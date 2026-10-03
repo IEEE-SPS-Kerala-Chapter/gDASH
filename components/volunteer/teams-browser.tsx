@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, List } from "lucide-react";
-import type { VerificationTeamSummary } from "@/app/actions/verification";
-import { useLiveRefresh } from "@/components/admin/use-live-refresh";
+import { getVerificationTeamPage, type VerificationCounts, type VerificationTeamSummary } from "@/app/actions/verification";
+import { useDebounced, usePagedList, useVisiblePolling } from "@/components/admin/use-paged-list";
 import { Badge, Panel, SecondaryButton, SegmentedToggle, Select, TextInput } from "@/components/admin/ui";
 import { VERIFICATION_STATUS_BADGE_VARIANT, VERIFICATION_STATUS_LABELS } from "@/lib/registration-status";
 import { KERALA_DISTRICTS } from "@/lib/validations/team";
@@ -21,15 +21,24 @@ function formatDate(value: string) {
  * Volunteer view of every registered team for eligibility verification —
  * team, college and member names only (see app/actions/verification.ts);
  * nothing about the idea or deck. Opening a team shows its members and ID
- * cards and the verify / ineligible controls.
+ * cards and the verify / ineligible controls. Loads 30 teams at a time and
+ * more as you scroll; search and filters run on the server.
  */
-export function VolunteerTeamsBrowser({ teams: initialTeams }: { teams: VerificationTeamSummary[] }) {
+export function VolunteerTeamsBrowser({
+  initialTeams,
+  initialTotal,
+  initialCounts,
+  pageSize,
+}: {
+  initialTeams: VerificationTeamSummary[];
+  initialTotal: number;
+  initialCounts: VerificationCounts;
+  pageSize: number;
+}) {
   const router = useRouter();
-  const [teams, setTeams] = useState(initialTeams);
-  useEffect(() => setTeams(initialTeams), [initialTeams]);
-  useLiveRefresh();
-
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounced(search, 300);
+  const [counts, setCounts] = useState(initialCounts);
   const [verificationFilter, setVerificationFilter] = useState<string | null>(null);
   const [districtFilter, setDistrictFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
@@ -52,21 +61,44 @@ export function VolunteerTeamsBrowser({ teams: initialTeams }: { teams: Verifica
     }
   }
 
-  const counts = useMemo(() => {
-    const c = { pending: 0, verified: 0, ineligible: 0 };
-    for (const t of teams) c[t.verificationStatus] += 1;
-    return c;
-  }, [teams]);
+  const query = useMemo(
+    () => ({ search: debouncedSearch, verification: verificationFilter, district: districtFilter }),
+    [debouncedSearch, verificationFilter, districtFilter],
+  );
+  const {
+    items: teams,
+    setItems: setTeams,
+    total,
+    loading,
+    failed,
+    hasMore,
+    loadMore,
+    sentinelRef,
+  } = usePagedList<VerificationTeamSummary>({
+    initialItems: initialTeams,
+    initialTotal,
+    queryKey: JSON.stringify(query),
+    pageSize,
+    load: async (offset, limit) => {
+      const result = await getVerificationTeamPage({ ...query, offset, limit });
+      if (!result.success) return null;
+      setCounts(result.counts);
+      return { items: result.teams, total: result.total };
+    },
+  });
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return teams.filter((t) => {
-      if (verificationFilter && t.verificationStatus !== verificationFilter) return false;
-      if (districtFilter && t.district !== districtFilter) return false;
-      if (!q) return true;
-      return [t.name, t.entryCode, t.college ?? "", t.memberNames].some((v) => v.toLowerCase().includes(q));
+  // Live refresh: re-read the rows already on screen (up to 100 — small
+  // rows, one request) and the counts, so verification by others shows up
+  // without reloading the page or losing the scroll position.
+  useVisiblePolling(() => {
+    if (teams.length === 0 || teams.length > 100) return;
+    void getVerificationTeamPage({ ...query, offset: 0, limit: teams.length }).then((result) => {
+      if (!result.success) return;
+      setCounts(result.counts);
+      const fresh = new Map(result.teams.map((t) => [t.teamId, t]));
+      setTeams((prev) => prev.map((t) => fresh.get(t.teamId) ?? t));
     });
-  }, [teams, search, verificationFilter, districtFilter]);
+  }, 30_000);
 
   const anyFilterActive = Boolean(verificationFilter || districtFilter);
   const goToTeam = (teamId: string) => router.push(`/dashboard/teams/${teamId}`);
@@ -145,12 +177,16 @@ export function VolunteerTeamsBrowser({ teams: initialTeams }: { teams: Verifica
       </div>
 
       <span className="-mt-2 font-ui text-[12px] text-ignite-muted">
-        {filtered.length} of {teams.length} teams shown
+        {teams.length} of {total} {anyFilterActive || debouncedSearch.trim() ? "matching " : ""}teams shown
       </span>
 
-      {filtered.length === 0 ? (
+      {teams.length === 0 ? (
         <Panel className="py-10 text-center text-[14px] text-ignite-muted">
-          {teams.length === 0 ? "No teams registered yet." : "No teams match your search or filters."}
+          {loading
+            ? "Loading…"
+            : counts.pending + counts.verified + counts.ineligible === 0
+              ? "No teams registered yet."
+              : "No teams match your search or filters."}
         </Panel>
       ) : viewMode === "list" ? (
         <Panel className="overflow-x-auto">
@@ -162,7 +198,7 @@ export function VolunteerTeamsBrowser({ teams: initialTeams }: { teams: Verifica
                 </span>
               ))}
             </div>
-            {filtered.map((team) => (
+            {teams.map((team) => (
               <div
                 key={team.teamId}
                 className={cn(GRID_COLS, "cursor-pointer border-b border-ignite-edge/[0.07] px-5 py-4 last:border-b-0 hover:bg-ignite-bg/30")}
@@ -187,7 +223,7 @@ export function VolunteerTeamsBrowser({ teams: initialTeams }: { teams: Verifica
         </Panel>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((team) => (
+          {teams.map((team) => (
             <Panel
               key={team.teamId}
               className="flex cursor-pointer flex-col gap-3 p-4 transition-colors hover:border-ignite-ink"
@@ -211,6 +247,24 @@ export function VolunteerTeamsBrowser({ teams: initialTeams }: { teams: Verifica
               </div>
             </Panel>
           ))}
+        </div>
+      )}
+
+      {teams.length > 0 && (
+        <div ref={sentinelRef} className="flex justify-center py-2">
+          {failed ? (
+            <SecondaryButton type="button" onClick={loadMore}>
+              Couldn&apos;t load more — try again
+            </SecondaryButton>
+          ) : loading ? (
+            <span className="font-ui text-[13px] text-ignite-muted">Loading more…</span>
+          ) : hasMore ? (
+            <SecondaryButton type="button" onClick={loadMore}>
+              Load more
+            </SecondaryButton>
+          ) : (
+            <span className="font-ui text-[12px] text-ignite-muted">All {total} shown</span>
+          )}
         </div>
       )}
     </div>

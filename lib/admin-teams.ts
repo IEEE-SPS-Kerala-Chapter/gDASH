@@ -130,6 +130,29 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
        )
      )`;
 
+/**
+ * The dashboard list's slimmer version of TEAM_SELECT — only what a list
+ * row shows (name, theme, members, status, verification, judges, score
+ * progress), not the idea text, deck, contact details or judge comments.
+ * The team page still loads everything with TEAM_SELECT.
+ * Rows go through mapListRow().
+ */
+export const TEAM_LIST_SELECT = `id, name, entry_code, ai_theme, district, status, created_at,
+     team_members ( id, member_no, member_code, full_name, college, is_leader ),
+     registrations (
+       id, status, created_at, ambassador_number,
+       verification_status, verification_note, verification_decided_at,
+       verification_decided_by:profiles!registrations_verification_decided_by_fkey ( full_name ),
+       version, status_changed_at,
+       status_changed_by:profiles!registrations_status_changed_by_fkey ( full_name ),
+       registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
+       judge_scores (
+         id, judge_id, status, problem_relevance, technical_implementation, innovation_creativity,
+         feasibility_scalability, completion_functionality,
+         profiles ( full_name )
+       )
+     )`;
+
 type RawJudgeScore = {
   id: string;
   judge_id: string;
@@ -287,3 +310,36 @@ export function allAssignedScoresIn(reg: AdminRegistration): boolean {
 }
 
 export const DECISION_STATUSES: ReadonlyArray<AdminRegistration["status"]> = ["shortlisted", "rejected"];
+
+/**
+ * Maps a TEAM_LIST_SELECT row to the same AdminTeam shape the list
+ * components already use, with the fields the list doesn't load left
+ * empty. Never pass these to the team page.
+ */
+export function mapListRow(raw: Record<string, unknown>): AdminTeam {
+  const members = ((raw.team_members as Record<string, unknown>[] | null) ?? []).map((m) => ({
+    email: "",
+    phone: "",
+    branch: null,
+    year: null,
+    role_in_team: null,
+    ...m,
+  }));
+  const regs = raw.registrations as Record<string, unknown> | Record<string, unknown>[] | null;
+  const fill = (r: Record<string, unknown>) => ({
+    problem_statement: "",
+    proposed_solution: "",
+    ai_approach: "",
+    expected_impact: "",
+    supporting_link: null,
+    deck_path: null,
+    declaration_eligibility: true,
+    declaration_originality: true,
+    declaration_rules: true,
+    declaration_media_consent: false,
+    ...r,
+    judge_scores: ((r.judge_scores as Record<string, unknown>[] | null) ?? []).map((sc) => ({ comments: null, ...sc })),
+  });
+  const registrations = Array.isArray(regs) ? regs.map(fill) : regs ? fill(regs) : null;
+  return mapTeamRow({ ...raw, team_members: members, registrations } as unknown as RawTeamRow);
+}

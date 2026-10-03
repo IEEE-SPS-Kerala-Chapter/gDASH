@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LayoutGrid, List } from "lucide-react";
-import type { AdminTeam, AdminJudge, AdminAssignment, RegistrationReviewState } from "@/app/actions/admin";
-import { exportRegistrationsCsv } from "@/app/actions/admin";
+import type { AdminTeam, AdminJudge, AdminAssignment, RegistrationReviewState, RegistrationStats } from "@/app/actions/admin";
+import { exportRegistrationsCsv, getRegistrationStats, listAdminTeams, refreshAdminTeams } from "@/app/actions/admin";
 import { applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
-import { useLiveRefresh } from "./use-live-refresh";
+import { useDebounced, usePagedList, useVisiblePolling } from "./use-paged-list";
 import { InlineJudgeAssign } from "./inline-judge-assign";
 import { InlineStatusSelect } from "./inline-status-select";
 import { RegistrationsAnalytics } from "./registrations-analytics";
@@ -34,14 +34,33 @@ function formatSubmitted(dateString: string) {
   });
 }
 
-export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam[]; judges: AdminJudge[] }) {
+/**
+ * The admin Registrations list. Loads 30 teams at a time and more as you
+ * scroll; search, filters and sorting run on the server (listAdminTeams),
+ * so the page never downloads every team. Every 30 seconds it refreshes
+ * only the rows on screen and the chart totals; new registrations show as
+ * a "show" pill instead of shifting the list while someone is reading.
+ */
+export function TeamsBrowser({
+  initialTeams,
+  initialTotal,
+  initialStats,
+  judges,
+  pageSize,
+}: {
+  initialTeams: AdminTeam[];
+  initialTotal: number;
+  initialStats: RegistrationStats;
+  judges: AdminJudge[];
+  pageSize: number;
+}) {
   const router = useRouter();
-  const [teams, setTeams] = useState(initialTeams);
-  // Other admins' changes arrive via useLiveRefresh (router.refresh) as new
-  // props — re-sync local state from them.
-  useEffect(() => setTeams(initialTeams), [initialTeams]);
-  useLiveRefresh();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounced(search, 300);
+  const [stats, setStats] = useState(initialStats);
+  // Registrations that existed when the list last started from the top —
+  // anything above that is "new" until the admin chooses to show it.
+  const [baselineTotal, setBaselineTotal] = useState(initialStats.total);
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
@@ -69,28 +88,64 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
     }
   }
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const rows = teams.filter((t) => {
-      if (
-        q &&
-        !t.name.toLowerCase().includes(q) &&
-        !t.ai_theme.toLowerCase().includes(q) &&
-        !t.entry_code.toLowerCase().includes(q) &&
-        !t.members.some((m) => m.member_code.toLowerCase().includes(q))
-      )
-        return false;
-      if (statusFilter && (t.registration?.status ?? "submitted") !== statusFilter) return false;
-      if (themeFilter && t.ai_theme !== themeFilter) return false;
-      if (districtFilter && t.district !== districtFilter) return false;
-      if (verificationFilter && t.registration?.verification_status !== verificationFilter) return false;
-      return true;
+  const query = useMemo(
+    () => ({
+      search: debouncedSearch,
+      status: statusFilter,
+      verification: verificationFilter,
+      theme: themeFilter,
+      district: districtFilter,
+      newestFirst: sortNewestFirst,
+    }),
+    [debouncedSearch, statusFilter, verificationFilter, themeFilter, districtFilter, sortNewestFirst],
+  );
+  const {
+    items: teams,
+    setItems: setTeams,
+    total,
+    loading,
+    failed,
+    hasMore,
+    loadMore,
+    reload,
+    sentinelRef,
+  } = usePagedList<AdminTeam>({
+    initialItems: initialTeams,
+    initialTotal,
+    queryKey: JSON.stringify(query),
+    pageSize,
+    load: async (offset, limit) => {
+      const result = await listAdminTeams({ ...query, offset, limit });
+      return result.success ? { items: result.teams, total: result.total } : null;
+    },
+  });
+
+  // Starting from the top again takes in any new registrations.
+  useEffect(() => {
+    setBaselineTotal(stats.total);
+    // Only when the query changes, not on every stats refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  // Live refresh: the rows on screen (status, verification, judges) and
+  // the totals — not the whole list.
+  useVisiblePolling(() => {
+    const ids = teams.map((t) => t.id);
+    void refreshAdminTeams(ids).then((result) => {
+      if (!result.success) return;
+      const fresh = new Map(result.teams.map((t) => [t.id, t]));
+      setTeams((prev) => prev.filter((t) => fresh.has(t.id)).map((t) => fresh.get(t.id) ?? t));
     });
-    return [...rows].sort((a, b) => {
-      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      return sortNewestFirst ? -diff : diff;
+    void getRegistrationStats().then((result) => {
+      if (result.success) setStats(result.stats);
     });
-  }, [teams, search, sortNewestFirst, statusFilter, themeFilter, districtFilter, verificationFilter]);
+  }, 30_000);
+
+  const newCount = Math.max(0, stats.total - baselineTotal);
+  function showNew() {
+    setBaselineTotal(stats.total);
+    void reload();
+  }
 
   const anyFilterActive = Boolean(statusFilter || themeFilter || districtFilter || verificationFilter);
   function clearFilters() {
@@ -180,7 +235,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
       </div>
 
       <RegistrationsAnalytics
-        teams={teams}
+        stats={stats}
         statusFilter={statusFilter}
         themeFilter={themeFilter}
         onStatusFilter={setStatusFilter}
@@ -260,13 +315,24 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         </div>
       </div>
 
-      <span className="-mt-2 font-ui text-[12px] text-ignite-muted">
-        {filtered.length} of {teams.length} teams shown
-      </span>
+      <div className="-mt-2 flex flex-wrap items-center gap-3">
+        <span className="font-ui text-[12px] text-ignite-muted">
+          {teams.length} of {total} {anyFilterActive || debouncedSearch.trim() ? "matching " : ""}teams shown
+        </span>
+        {newCount > 0 && (
+          <button
+            type="button"
+            onClick={showNew}
+            className="rounded-full bg-ignite-primary px-3 py-1 font-ui text-[12px] font-semibold text-ignite-on-primary hover:opacity-90"
+          >
+            {newCount} new registration{newCount === 1 ? "" : "s"} — show
+          </button>
+        )}
+      </div>
 
-      {filtered.length === 0 ? (
+      {teams.length === 0 ? (
         <Panel className="py-10 text-center text-[14px] text-ignite-muted">
-          {teams.length === 0 ? "No teams registered yet." : "No teams match your search or filters."}
+          {loading ? "Loading…" : stats.total === 0 ? "No teams registered yet." : "No teams match your search or filters."}
         </Panel>
       ) : viewMode === "list" ? (
         <Panel className="overflow-x-auto">
@@ -287,7 +353,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
                 Submitted {sortNewestFirst ? "↓" : "↑"}
               </button>
             </div>
-            {filtered.map((team) => {
+            {teams.map((team) => {
               const leader = team.members.find((m) => m.is_leader);
               const status = team.registration?.status ?? "submitted";
               return (
@@ -318,7 +384,7 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
         </Panel>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((team) => {
+          {teams.map((team) => {
             const leader = team.members.find((m) => m.is_leader);
             const status = team.registration?.status ?? "submitted";
             return (
@@ -358,6 +424,24 @@ export function TeamsBrowser({ teams: initialTeams, judges }: { teams: AdminTeam
               </Panel>
             );
           })}
+        </div>
+      )}
+
+      {teams.length > 0 && (
+        <div ref={sentinelRef} className="flex justify-center py-2">
+          {failed ? (
+            <SecondaryButton type="button" onClick={loadMore}>
+              Couldn&apos;t load more — try again
+            </SecondaryButton>
+          ) : loading ? (
+            <span className="font-ui text-[13px] text-ignite-muted">Loading more…</span>
+          ) : hasMore ? (
+            <SecondaryButton type="button" onClick={loadMore}>
+              Load more
+            </SecondaryButton>
+          ) : (
+            <span className="font-ui text-[12px] text-ignite-muted">All {total} shown</span>
+          )}
         </div>
       )}
     </div>

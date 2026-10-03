@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdminTeam } from "@/app/actions/admin";
+import type { RegistrationStats } from "@/app/actions/admin";
 import { Panel } from "@/components/admin/ui";
 import { REGISTRATION_STATUS_LABELS } from "@/lib/registration-status";
 import { AI_THEMES } from "@/lib/validations/team";
@@ -87,11 +87,9 @@ function DonutPanel({
   );
 }
 
-function kolkataDayKey(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-}
-
-function computeDailyCounts(teams: AdminTeam[]) {
+// Counts per day come from admin_registration_stats() (YYYY-MM-DD keys in
+// India time), so the chart no longer needs every team in the browser.
+function computeDailyCounts(dailyCounts: Record<string, number>) {
   const now = new Date();
   const days: { key: string; label: string }[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -101,19 +99,12 @@ function computeDailyCounts(teams: AdminTeam[]) {
       label: d.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" }),
     });
   }
-  const counts = new Map<string, number>();
-  teams.forEach((t) => {
-    const created = t.registration?.created_at;
-    if (!created) return;
-    const key = kolkataDayKey(created);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  });
   const todayKey = days[days.length - 1].key;
-  return days.map((d) => ({ ...d, count: counts.get(d.key) ?? 0, isToday: d.key === todayKey }));
+  return days.map((d) => ({ ...d, count: dailyCounts[d.key] ?? 0, isToday: d.key === todayKey }));
 }
 
-function DailyActivityPanel({ teams }: { teams: AdminTeam[] }) {
-  const daily = computeDailyCounts(teams);
+function DailyActivityPanel({ dailyCounts }: { dailyCounts: Record<string, number> }) {
+  const daily = computeDailyCounts(dailyCounts);
   const today = daily[daily.length - 1];
   const yesterday = daily[daily.length - 2];
   const delta = today.count - yesterday.count;
@@ -165,36 +156,33 @@ function DailyActivityPanel({ teams }: { teams: AdminTeam[] }) {
 }
 
 export function RegistrationsAnalytics({
-  teams,
+  stats,
   statusFilter,
   themeFilter,
   onStatusFilter,
   onThemeFilter,
 }: {
-  teams: AdminTeam[];
+  stats: RegistrationStats;
   statusFilter: string | null;
   themeFilter: string | null;
   onStatusFilter: (status: string | null) => void;
   onThemeFilter: (theme: string | null) => void;
 }) {
-  const themeCounts: [string, number][] = AI_THEMES.map((theme) => [
-    theme,
-    teams.filter((t) => t.ai_theme === theme).length,
-  ]);
+  const themeCounts: [string, number][] = AI_THEMES.map((theme) => [theme, stats.byTheme[theme] ?? 0]);
   const statusCounts: [string, number][] = Object.keys(REGISTRATION_STATUS_LABELS).map((status) => [
     status,
-    teams.filter((t) => (t.registration?.status ?? "submitted") === status).length,
+    stats.byStatus[status] ?? 0,
   ]);
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr_1fr]">
-      <DailyActivityPanel teams={teams} />
+      <DailyActivityPanel dailyCounts={stats.daily} />
       <DonutPanel
         title="By theme"
         counts={themeCounts}
         colors={THEME_COLORS}
         labelFor={(k) => k.replace("AI for ", "")}
-        total={teams.length}
+        total={stats.total}
         activeKey={themeFilter}
         onToggle={(k) => onThemeFilter(themeFilter === k ? null : k)}
       />
@@ -203,7 +191,7 @@ export function RegistrationsAnalytics({
         counts={statusCounts}
         colors={STATUS_COLORS}
         labelFor={(k) => REGISTRATION_STATUS_LABELS[k] ?? k}
-        total={teams.length}
+        total={stats.total}
         activeKey={statusFilter}
         onToggle={(k) => onStatusFilter(statusFilter === k ? null : k)}
       />

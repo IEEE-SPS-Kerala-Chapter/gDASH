@@ -90,18 +90,8 @@ function toState(raw: RawState): VerificationState {
   };
 }
 
-export async function getVerificationTeams(): Promise<
-  { success: true; teams: VerificationTeamSummary[] } | { success: false; error: string }
-> {
-  if (!(await callerCanVerify())) {
-    return { success: false, error: "Only volunteers and admins can verify teams." };
-  }
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("verification_list_teams");
-  if (error || !Array.isArray(data)) {
-    return { success: false, error: "Could not load teams." };
-  }
-  const teams = (data as Record<string, unknown>[]).map((t) => ({
+function toSummary(t: Record<string, unknown>): VerificationTeamSummary {
+  return {
     teamId: t.team_id as string,
     name: t.name as string,
     entryCode: t.entry_code as string,
@@ -113,8 +103,43 @@ export async function getVerificationTeams(): Promise<
     registrationId: t.registration_id as string,
     verificationStatus: t.verification_status as VerificationStatus,
     verificationDecidedAt: (t.verification_decided_at as string | null) ?? null,
-  }));
-  return { success: true, teams };
+  };
+}
+
+export type VerificationCounts = { pending: number; verified: number; ineligible: number };
+
+/**
+ * One page of the verification list, with search and filters run in the
+ * database (verification_team_page), plus the total matching and the
+ * pending / verified / ineligible counts across all teams. The volunteer
+ * screen loads more as it scrolls.
+ */
+export async function getVerificationTeamPage(query: {
+  search?: string;
+  verification?: string | null;
+  district?: string | null;
+  offset?: number;
+  limit?: number;
+}): Promise<
+  | { success: true; teams: VerificationTeamSummary[]; total: number; counts: VerificationCounts }
+  | { success: false; error: string }
+> {
+  if (!(await callerCanVerify())) {
+    return { success: false, error: "Only volunteers and admins can verify teams." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("verification_team_page", {
+    p_search: query.search?.trim() || null,
+    p_verification: query.verification || null,
+    p_district: query.district || null,
+    p_offset: Math.max(0, query.offset ?? 0),
+    p_limit: Math.min(100, Math.max(1, query.limit ?? 30)),
+  });
+  if (error || !data) {
+    return { success: false, error: "Could not load teams." };
+  }
+  const raw = data as { teams: Record<string, unknown>[]; total: number; counts: VerificationCounts };
+  return { success: true, teams: (raw.teams ?? []).map(toSummary), total: raw.total, counts: raw.counts };
 }
 
 export async function getVerificationTeam(
