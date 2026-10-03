@@ -11,13 +11,23 @@ export const AI_THEMES = [
   "Open Innovation Track",
 ] as const;
 
+// All 14 districts of Kerala, alphabetical. Mirrors the teams_district_check
+// constraint (supabase/migrations/20261004000000_all_kerala_districts.sql).
 export const KERALA_DISTRICTS = [
+  "Alappuzha",
   "Ernakulam",
-  "Thiruvananthapuram",
-  "Kozhikode",
-  "Thrissur",
+  "Idukki",
+  "Kannur",
+  "Kasaragod",
   "Kollam",
   "Kottayam",
+  "Kozhikode",
+  "Malappuram",
+  "Palakkad",
+  "Pathanamthitta",
+  "Thiruvananthapuram",
+  "Thrissur",
+  "Wayanad",
 ] as const;
 
 const phoneRegex = /^\+?[0-9]{10,13}$/;
