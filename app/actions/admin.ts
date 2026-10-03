@@ -213,16 +213,32 @@ export async function unassignJudge(assignmentId: string): Promise<UnassignResul
 type DeckUrlResult = { success: true; url: string } | { success: false; error: string };
 
 /**
- * Staff-only: a short-lived signed URL to view/download an uploaded deck.
- * The registration-decks bucket has no direct read policy for anyone —
- * this is the only path in, and it re-checks staff status itself rather
- * than trusting the caller, since it uses the service-role client
- * (bypasses RLS) to actually mint the URL.
+ * A short-lived signed URL to view/download an uploaded deck — for admins
+ * (any team) and judges (only teams assigned to them). The
+ * registration-decks bucket has no direct read policy for anyone, so this
+ * is the only path in. The URL is minted with the service-role client,
+ * which would sign any path it's given, so the path must first be the
+ * deck of a registration the caller can read under RLS (admins: all;
+ * judges: assigned only; volunteers and others: none).
  */
 export async function getDeckDownloadUrl(deckPath: string): Promise<DeckUrlResult> {
   const caller = await getCallerRole();
-  if (!caller || !["admin", "judge", "volunteer", "super_admin"].includes(caller.role)) {
-    return { success: false, error: "Please sign in as staff." };
+  if (!caller || !["admin", "judge", "super_admin"].includes(caller.role)) {
+    return { success: false, error: "Only admins and assigned judges can open decks." };
+  }
+  if (!deckPath) {
+    return { success: false, error: "No deck uploaded." };
+  }
+
+  const supabase = await createClient();
+  const { data: registration } = await supabase
+    .from("registrations")
+    .select("id")
+    .eq("deck_path", deckPath)
+    .limit(1)
+    .maybeSingle();
+  if (!registration) {
+    return { success: false, error: "You don't have access to this deck." };
   }
 
   const admin = createAdminClient();
