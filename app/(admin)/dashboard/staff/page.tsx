@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getStaffAccounts } from "@/app/actions/admin";
+import { getCallerRole, getStaffAccounts } from "@/app/actions/admin";
 import { getMyProfile } from "@/app/actions/profile";
 import { StaffManager } from "@/components/admin/staff-manager";
 import { PageHeading } from "@/components/admin/ui";
@@ -10,12 +10,12 @@ export default async function StaffPage() {
     redirect("/dashboard");
   }
 
-  const result = await getStaffAccounts();
+  const [result, caller] = await Promise.all([getStaffAccounts(), getCallerRole()]);
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeading title="Staff accounts" />
-      {result.success ? <StaffManager staff={result.staff} /> : <p className="text-ignite-danger">{result.error}</p>}
+      {result.success ? <StaffManager staff={result.staff} currentUserId={caller?.userId ?? null} /> : <p className="text-ignite-danger">{result.error}</p>}
     </div>
   );
 }

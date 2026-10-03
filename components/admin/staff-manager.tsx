@@ -14,7 +14,14 @@ function generatePassword(): string {
   return Array.from(bytes, (b) => PASSWORD_CHARS[b % PASSWORD_CHARS.length]).join("");
 }
 
-export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] }) {
+export function StaffManager({
+  staff: initialStaff,
+  currentUserId,
+}: {
+  staff: StaffAccount[];
+  /** The signed-in super-admin — their own row gets no Reset 2FA. */
+  currentUserId: string | null;
+}) {
   const [staff, setStaff] = useState(initialStaff);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -160,10 +167,11 @@ export function StaffManager({ staff: initialStaff }: { staff: StaffAccount[] })
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   <Badge variant={s.mfaEnabled ? "success" : "neutral"}>{s.mfaEnabled ? "2FA on" : "2FA not set up"}</Badge>
                   <Badge>{ROLE_LABELS[s.role] ?? s.role}</Badge>
-                  {/* Only for others — the super-admin's own reset is the
-                      SQL step in the 2FA migration (resetStaffMfa refuses
-                      your own account too). */}
-                  {s.role !== "super_admin" && s.mfaEnabled && (
+                  {/* Anyone but yourself — including another super-admin, so
+                      two super-admins can rescue each other. Your own reset
+                      is the SQL step in the 2FA migration (resetStaffMfa
+                      refuses your own account too). */}
+                  {s.id !== currentUserId && s.mfaEnabled && (
                     <button
                       type="button"
                       aria-label={`Reset two-factor sign-in for ${s.full_name}`}
