@@ -33,11 +33,13 @@ function ClosedScreen({ message }: { message?: string | null }) {
 
 // Every screen /register can show (form, sign-in, blocked, closed) gets the
 // Back-button guard: a tab that just submitted goes back to its status page.
-export default async function RegisterPage(props: { searchParams: { auth_error?: string } }) {
+// Next.js 15: searchParams arrives as a Promise.
+export default async function RegisterPage(props: { searchParams: Promise<{ auth_error?: string }> }) {
+  const searchParams = await props.searchParams;
   return (
     <>
       <RegisterBackGuard />
-      {await RegisterScreen(props)}
+      {await RegisterScreen({ searchParams })}
     </>
   );
 }

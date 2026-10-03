@@ -12,8 +12,8 @@ const LOCKED_MESSAGE = (minutes: number) =>
   `Too many failed sign-in attempts. For security, sign-in is locked — try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
 
 /** The visitor's IP as seen by Vercel's edge (first x-forwarded-for entry). */
-function clientIp(): string {
-  const h = headers();
+async function clientIp(): Promise<string> {
+  const h = await headers();
   return (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "").trim();
 }
 
@@ -37,7 +37,7 @@ export async function signIn(data: { email: string; password: string }): Promise
     return { success: false, error: "Enter a valid email and password." };
   }
   const { email } = parsed.data;
-  const ip = clientIp();
+  const ip = await clientIp();
   const admin = createAdminClient();
 
   const { data: status, error: statusError } = await admin.rpc("staff_login_status", { p_email: email, p_ip: ip });

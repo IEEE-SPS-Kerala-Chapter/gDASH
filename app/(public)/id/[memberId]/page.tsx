@@ -10,7 +10,8 @@ import { BrandLogo, GradientText } from "@/components/registration/ui";
 // get_member_result() enforces that in the database. Event-day check-in
 // phases build on this same URL later — see id-card-future-phases.md.
 // A garbage/malicious id 404s via member_exists() rather than rendering.
-export default async function MemberIdPage({ params }: { params: { memberId: string } }) {
+export default async function MemberIdPage(props: { params: Promise<{ memberId: string }> }) {
+  const params = await props.params;
   const exists = await checkMemberExists(params.memberId);
   if (!exists) {
     notFound();

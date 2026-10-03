@@ -24,7 +24,8 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: "Not shortlisted",
 };
 
-export default async function StatusPage({ params }: { params: { token: string } }) {
+export default async function StatusPage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const result = await getRegistrationStatus(params.token);
 
   if (!result.found && result.needsSignIn) {

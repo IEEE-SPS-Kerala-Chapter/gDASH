@@ -9,7 +9,8 @@ import { getVerificationTeam } from "@/app/actions/verification";
 import { VolunteerTeamDetail } from "@/components/volunteer/team-detail";
 import { getAmbassadorNames, getAmbassadorRange } from "@/app/actions/ambassadors";
 
-export default async function TeamDetailPage({ params }: { params: { teamId: string } }) {
+export default async function TeamDetailPage(props: { params: Promise<{ teamId: string }> }) {
+  const params = await props.params;
   const profile = await getMyProfile();
   if (!profile) {
     redirect("/login");
