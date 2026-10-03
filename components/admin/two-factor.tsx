@@ -15,14 +15,32 @@ type Mode = "setup" | "verify" | "backup";
  * codes), or the 6-digit code on every later sign-in, with a backup-code
  * route for a lost phone. Server side: app/actions/mfa.ts.
  */
-export function TwoFactor({ initialMode, email }: { initialMode: "setup" | "verify"; email: string }) {
+export function TwoFactor({ initialMode, email }: { initialMode: "setup" | "verify" | "done"; email: string }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>(initialMode);
+  // Fixed at first render. Passing 2FA re-renders the page with "done", but
+  // this component (and the backup codes it's showing) stays as it is —
+  // only someone who arrived already verified is sent straight on.
+  const [arrivedVerified] = useState(initialMode === "done");
+  const [mode, setMode] = useState<Mode>(initialMode === "done" ? "verify" : initialMode);
   const [signingOut, setSigningOut] = useState(false);
 
   function goToDashboard() {
     router.replace("/dashboard");
     router.refresh();
+  }
+
+  useEffect(() => {
+    if (arrivedVerified) goToDashboard();
+    // Only on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (arrivedVerified) {
+    return (
+      <div className="flex h-[120px] items-center justify-center text-ignite-muted">
+        <Spinner />
+      </div>
+    );
   }
 
   async function handleSignOut() {

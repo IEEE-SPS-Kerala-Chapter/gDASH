@@ -28,9 +28,11 @@ export default async function TwoFactorPage() {
   if (profile.must_reset_password) {
     redirect("/reset-password");
   }
-  if (await sessionIsAal2(supabase)) {
-    redirect("/dashboard");
-  }
+  // Not a redirect: the server actions that pass 2FA re-render this page
+  // with the upgraded session, and a redirect here would cut off the
+  // backup-codes screen shown right after setup. TwoFactor sends an
+  // already-verified visitor on to the dashboard itself.
+  const alreadyVerified = await sessionIsAal2(supabase);
 
   return (
     <>
@@ -44,7 +46,10 @@ export default async function TwoFactorPage() {
         }
         intro={<p className="m-0">Signed in as {user.email}</p>}
       >
-        <TwoFactor initialMode={hasVerifiedTotp(user) ? "verify" : "setup"} email={user.email ?? ""} />
+        <TwoFactor
+          initialMode={alreadyVerified ? "done" : hasVerifiedTotp(user) ? "verify" : "setup"}
+          email={user.email ?? ""}
+        />
       </HeroShell>
     </>
   );
