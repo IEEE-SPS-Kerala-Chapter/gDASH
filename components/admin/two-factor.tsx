@@ -58,7 +58,7 @@ export function TwoFactor({ initialMode, email }: { initialMode: "setup" | "veri
       {mode === "backup" && (
         <BackupStep
           onRedeemed={() => {
-            toast.success("Backup code accepted. Set up your authenticator app again.");
+            toast.success("Backup code accepted. Your old authenticator entry no longer works — delete it from your app and set up the new one.");
             setMode("setup");
           }}
           onBack={() => setMode("verify")}
@@ -263,6 +263,14 @@ function SetupStep({ email, onDone }: { email: string; onDone: () => void }) {
         <li>In the app, add an account and scan this QR code.</li>
         <li>Enter the 6-digit code the app shows.</li>
       </ol>
+      {/* We can't touch the phone app: after a backup code or a super-admin
+          reset, the old "gIGNITE Staff" entry is still listed there, but its
+          codes are rejected. Without this note people end up with two
+          identical entries and try the dead one. */}
+      <p className="m-0 rounded-xl bg-ignite-lavender px-4 py-3 text-[13px] leading-[1.5] text-ignite-ink">
+        <span className="font-semibold">Had gIGNITE Staff in your app before?</span> That old entry no longer works —
+        delete it from your authenticator app first, then scan this new code, so only one gIGNITE Staff entry is left.
+      </p>
 
       {loadError ? (
         <div className="flex flex-col gap-2 rounded-xl border border-ignite-danger/40 p-4 text-[14px] text-ignite-danger">
