@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FileUp, Lightbulb, Lock, UserPlus, Users } from "lucide-react";
 import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -37,11 +38,12 @@ import { useDraftAutosave, type SaveStatus } from "./use-draft-autosave";
 const STEPS = [
   {
     key: "team",
-    nav: "Team",
-    label: "Step 1 of 5 · Team",
-    title: "Team details",
-    subtitle: "You're registering as team leader. Members come next.",
-    cta: "Continue to members",
+    nav: "Squad Up",
+    icon: Users,
+    label: "Step 1 of 5 · Squad Up 🚀",
+    title: "👥 Squad Details",
+    subtitle: "First up, let's get your squad and leader locked in.",
+    cta: "Continue to your crew",
     fields: [
       "team.teamName",
       "team.aiTheme",
@@ -59,20 +61,22 @@ const STEPS = [
   },
   {
     key: "members",
-    nav: "Members",
-    label: "Step 2 of 5 · Members",
-    title: "Your team",
-    subtitle: "Between 2 and 5 members total, all from the same college.",
+    nav: "Lock In Your Crew",
+    icon: UserPlus,
+    label: "Step 2 of 5 · Lock In Your Crew",
+    title: "Lock In Your Crew",
+    subtitle: "Your crew is almost ready! Add your 2–5-member squad below. All squad members must be from the same college.",
     cta: "Continue to your idea",
     fields: ["members"] satisfies Path<RegistrationForm>[],
   },
   {
     key: "idea",
-    nav: "Idea",
-    label: "Step 3 of 5 · Idea",
-    title: "Your idea",
-    subtitle: "Answer four questions and upload your pitch deck. No prototype needed.",
-    cta: "Continue to review",
+    nav: "Drop Your Idea",
+    icon: Lightbulb,
+    label: "Step 3 of 5 · Drop Your Idea",
+    title: "💡 Drop Your Idea",
+    subtitle: "Tell us what you're building. Answer 4 quick questions and upload your pitch deck.",
+    cta: "Continue to final check",
     fields: [
       "idea.problemStatement",
       "idea.proposedSolution",
@@ -84,21 +88,28 @@ const STEPS = [
   },
   {
     key: "review",
-    nav: "Review",
-    label: "Step 4 of 5 · Review",
-    title: "Review everything",
-    subtitle: "Check every section before declarations — use Edit to jump back and fix anything.",
-    cta: "Continue to declarations",
+    nav: "Check. Confirm. Launch.",
+    icon: FileUp,
+    label: "Step 4 of 5 · Check. Confirm. Launch.",
+    title: "Check. Confirm. Launch.",
+    subtitle: "The final check before you're locked in. 🔒 Need a tweak? Hit Edit, fix it, and be ready to launch.",
+    cta: "Continue to lock it in",
     fields: [] satisfies Path<RegistrationForm>[],
   },
   {
     key: "declarations",
-    nav: "Declarations",
-    label: "Step 5 of 5 · Declarations",
-    title: "Before you submit",
-    subtitle: "The leader confirms these on behalf of the whole team.",
+    nav: "Lock It In",
+    icon: Lock,
+    label: "Step 5 of 5 · Lock It In",
+    title: "🔒 Lock It In",
+    subtitle: "Almost there! The Squad Leader confirms the following on behalf of the entire crew.",
     cta: "Submit registration",
-    fields: ["declarations.eligibility", "declarations.originality", "declarations.rules"] satisfies Path<RegistrationForm>[],
+    fields: [
+      "declarations.eligibility",
+      "declarations.originality",
+      "declarations.rules",
+      "declarations.mediaConsent",
+    ] satisfies Path<RegistrationForm>[],
   },
 ] as const;
 
@@ -188,7 +199,7 @@ export function RegistrationWizard({
 
   const current = STEPS[step];
   const decl = form.watch("declarations");
-  const readyToSubmit = Boolean(decl?.eligibility && decl?.originality && decl?.rules);
+  const readyToSubmit = Boolean(decl?.eligibility && decl?.originality && decl?.rules && decl?.mediaConsent);
   const isLastStep = step === STEPS.length - 1;
   const turnstileConfigured = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 

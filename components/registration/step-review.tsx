@@ -283,28 +283,28 @@ export function StepReview({
     <div className="flex flex-col gap-5">
       <FormCard>
         <div className="flex items-center justify-between">
-          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">Team</span>
+          <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">Squad</span>
           <EditLink onClick={() => onEdit("team")} />
         </div>
-        <ReviewRow label="Team name" value={team.teamName} />
-        <ReviewRow label="AI theme" value={team.aiTheme} />
-        <ReviewRow label="College" value={displayCollege ?? ""} />
+        <ReviewRow label="Squad Name" value={team.teamName} />
+        <ReviewRow label="Track" value={team.aiTheme} />
+        <ReviewRow label="College Name" value={displayCollege ?? ""} />
         <ReviewRow label="District" value={team.district} />
         {ambassadorLastNumber !== null && (
           <ReviewRow label="Referred by" value={ambassadorLabel(ambassadorFormValueToNumber(team.ambassador ?? ""))} />
         )}
         <Divider />
-        <ReviewRow label="Leader" value={team.leaderName} />
+        <ReviewRow label="Squad Leader" value={team.leaderName} />
         <ReviewRow label="Email" value={team.leaderEmail} />
-        <ReviewRow label="Phone" value={team.leaderPhone} />
-        <ReviewRow label="Branch / Year" value={[team.branch, team.year].filter(Boolean).join(" · ")} />
-        <IdCardThumb label={`${team.leaderName || "Leader"}'s ID card`} path={team.idCardPath} />
+        <ReviewRow label="Mobile Number" value={team.leaderPhone} />
+        <ReviewRow label="Branch / Year of Study" value={[team.branch, team.year].filter(Boolean).join(" · ")} />
+        <IdCardThumb label={`${team.leaderName || "Squad Leader"}'s ID card`} path={team.idCardPath} />
       </FormCard>
 
       <FormCard>
         <div className="flex items-center justify-between">
           <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
-            Other members ({members.length}) · team of {members.length + 1}
+            Crew ({members.length}) · squad of {members.length + 1}
           </span>
           <EditLink onClick={() => onEdit("members")} />
         </div>
@@ -312,12 +312,12 @@ export function StepReview({
           const role = m.roleInTeam === OTHER_ROLE ? m.roleInTeamOther : m.roleInTeam;
           return (
             <div key={i} className="flex flex-col gap-2.5 border-t border-ignite-edge/[0.07] pt-4 first:border-t-0 first:pt-0">
-              <span className="text-[13px] font-semibold text-ignite-ink">{m.fullName || `Member ${i + 2}`}</span>
+              <span className="text-[13px] font-semibold text-ignite-ink">{m.fullName || `Crew Member ${i + 2}`}</span>
               <ReviewRow label="Email" value={m.email} />
-              <ReviewRow label="Phone" value={m.phone} />
-              <ReviewRow label="Role" value={role ?? ""} />
-              <ReviewRow label="Branch / Year" value={[m.branch, m.year].filter(Boolean).join(" · ")} />
-              <IdCardThumb label={`${m.fullName || `Member ${i + 2}`}'s ID card`} path={m.idCardPath} />
+              <ReviewRow label="Mobile Number" value={m.phone} />
+              <ReviewRow label="Squad Role" value={role ?? ""} />
+              <ReviewRow label="Branch / Year of Study" value={[m.branch, m.year].filter(Boolean).join(" · ")} />
+              <IdCardThumb label={`${m.fullName || `Crew Member ${i + 2}`}'s ID card`} path={m.idCardPath} />
             </div>
           );
         })}
@@ -328,10 +328,10 @@ export function StepReview({
           <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">Idea</span>
           <EditLink onClick={() => onEdit("idea")} />
         </div>
-        <IdeaAnswer label="Problem statement" value={idea.problemStatement} />
-        <IdeaAnswer label="Proposed solution" value={idea.proposedSolution} />
-        <IdeaAnswer label="AI approach" value={idea.aiApproach} />
-        <IdeaAnswer label="Expected impact" value={idea.expectedImpact} />
+        <IdeaAnswer label="01 — The Problem" value={idea.problemStatement} />
+        <IdeaAnswer label="02 — Your Solution" value={idea.proposedSolution} />
+        <IdeaAnswer label="03 — AI + Tech" value={idea.aiApproach} />
+        <IdeaAnswer label="04 — The Impact" value={idea.expectedImpact} />
         {idea.supportingLink && <ReviewRow label="Supporting link" value={idea.supportingLink} />}
         <DeckThumb path={idea.deckPath} />
       </FormCard>

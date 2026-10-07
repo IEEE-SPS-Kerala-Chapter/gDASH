@@ -46,7 +46,7 @@ export function StepTeam({
 
   return (
     <FormCard>
-      <Field label="Team name" error={e?.teamName?.message}>
+      <Field label="Squad Name" hint="Give your squad a name." error={e?.teamName?.message}>
         <TextInput
           {...register("team.teamName", { onBlur: onTeamNameBlur })}
           maxLength={50}
@@ -55,13 +55,13 @@ export function StepTeam({
       </Field>
 
       <Field
-        label="AI theme"
-        hint="One theme per team."
+        label="Choose Your Track"
+        hint="Pick your challenge."
         error={e?.aiTheme?.message}
       >
         <Select {...register("team.aiTheme")} defaultValue="">
           <option value="" disabled>
-            Choose a theme
+            Choose a track
           </option>
           {AI_THEMES.map((theme) => (
             <option key={theme} value={theme}>
@@ -72,8 +72,8 @@ export function StepTeam({
       </Field>
 
       <Field
-        label="College / institution"
-        hint="One college for the whole team — every member should be from here."
+        label="College Name"
+        hint="Select your college. All squad members must be from the same college."
         error={e?.college?.message}
       >
         <Select {...register("team.college")} defaultValue="">
@@ -94,13 +94,34 @@ export function StepTeam({
         </Field>
       )}
 
+      {ambassadorLastNumber !== null && (
+        <Field
+          label="Referred by a gIGNITE ambassador?"
+          hint="Pick the ambassador who referred your squad, or “No ambassador referred”. Tip: type an ID like 07 to find it."
+          error={e?.ambassador?.message}
+        >
+          <AmbassadorSelect
+            value={ambassador ?? ""}
+            lastNumber={ambassadorLastNumber}
+            invalid={Boolean(e?.ambassador)}
+            onChange={(v) => setValue("team.ambassador", v, { shouldValidate: true, shouldDirty: true })}
+            onOpen={onRefreshAmbassadors}
+          />
+        </Field>
+      )}
+
       <Divider />
-      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
-        Team leader
-      </span>
+      <div className="flex flex-col gap-1">
+        <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
+          Squad Leader Details
+        </span>
+        <span className="font-ui text-[13px] text-ignite-muted">
+          You&apos;re leading the squad — let&apos;s get your details locked in.
+        </span>
+      </div>
 
       <div className="flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-[18px]">
-        <Field label="Full name" error={e?.leaderName?.message}>
+        <Field label="Full Name" error={e?.leaderName?.message}>
           <TextInput {...register("team.leaderName")} maxLength={80} placeholder="Your full name" />
         </Field>
 
@@ -126,7 +147,7 @@ export function StepTeam({
           )}
         </Field>
 
-        <Field label="Phone" error={e?.leaderPhone?.message}>
+        <Field label="Mobile Number" error={e?.leaderPhone?.message}>
           <TextInput
             type="tel"
             {...register("team.leaderPhone", { onBlur: onBlurCheck("team.leaderPhone", "phone") })}
@@ -142,7 +163,7 @@ export function StepTeam({
           </Field>
         </div>
         <div className="min-w-0 flex-1">
-          <Field label="Year" error={e?.year?.message}>
+          <Field label="Year of Study" error={e?.year?.message}>
             <Select {...register("team.year")} defaultValue="">
               <option value="" disabled>
                 Choose
@@ -170,23 +191,8 @@ export function StepTeam({
         </Select>
       </Field>
 
-      {ambassadorLastNumber !== null && (
-        <Field
-          label="Referred by a gIGNITE ambassador?"
-          hint="Pick the ambassador who referred your team, or “No ambassador referred”. Tip: type an ID like 07 to find it."
-          error={e?.ambassador?.message}
-        >
-          <AmbassadorSelect
-            value={ambassador ?? ""}
-            lastNumber={ambassadorLastNumber}
-            invalid={Boolean(e?.ambassador)}
-            onChange={(v) => setValue("team.ambassador", v, { shouldValidate: true, shouldDirty: true })}
-            onOpen={onRefreshAmbassadors}
-          />
-        </Field>
-      )}
-
       <IdCardUploadField
+        privacyNote="🔒 Your ID is private — visible only to the organisers."
         path={idCardPath}
         onUploaded={(path) => setValue("team.idCardPath", path, { shouldValidate: true })}
         error={e?.idCardPath?.message}

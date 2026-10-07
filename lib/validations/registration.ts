@@ -38,7 +38,11 @@ export const declarationsSchema = z.object({
   rules: z.literal(true, {
     message: "You must accept the rules & code of conduct to submit",
   }),
-  mediaConsent: z.boolean().default(false),
+  // Required since the 2026-10 copy update (gignite.docx): media consent is
+  // now one of the four declarations every squad must confirm.
+  mediaConsent: z.literal(true, {
+    message: "You must agree to media consent to submit",
+  }),
 });
 
 export type Idea = z.infer<typeof ideaSchema>;

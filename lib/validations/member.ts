@@ -18,7 +18,7 @@ export const memberSchema = z
     // (see teamDetailsSchema) — not collected per member anymore.
     branch: z.string().trim().min(2, "Enter a branch, e.g. CSE").max(60, "Branch can be at most 60 characters"),
     year: z.enum(MEMBER_YEARS, { message: "Choose a year" }),
-    roleInTeam: z.enum(TEAM_ROLES, { message: "Choose a role" }),
+    roleInTeam: z.enum(TEAM_ROLES, { message: "Choose your squad role" }),
     // nullish, not just optional: this field is only rendered when the role
     // is "Other", so a null restored from a draft would otherwise fail
     // validation with no visible error and silently block Continue.
@@ -42,5 +42,5 @@ export type Member = z.infer<typeof memberSchema>;
 // teamDetailsSchema) — 1..4 of these makes a 2..5 person team total.
 export const membersStepSchema = z
   .array(memberSchema)
-  .min(1, "A team needs at least 2 members total (you + 1 more)")
-  .max(4, "A team can have at most 5 members total");
+  .min(1, "A squad needs at least 2 members total (you + 1 more)")
+  .max(4, "A squad can have at most 5 members total");

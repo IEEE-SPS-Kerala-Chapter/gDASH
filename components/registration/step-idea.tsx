@@ -71,31 +71,35 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
   return (
     <FormCard>
-      <Field label="Problem statement" error={e?.problemStatement?.message}>
+      <Field label="01 — The Problem" error={e?.problemStatement?.message}>
         <TextArea rows={4} {...register("idea.problemStatement")} />
-        <CharCount guidance="Who has this problem today, and how do they cope?" value={values.problemStatement} min={50} />
+        <CharCount
+          guidance="What's the problem? Who faces it, and how are they dealing with it today?"
+          value={values.problemStatement}
+          min={50}
+        />
       </Field>
 
-      <Field label="Proposed solution" error={e?.proposedSolution?.message}>
+      <Field label="02 — Your Solution" error={e?.proposedSolution?.message}>
         <TextArea rows={4} {...register("idea.proposedSolution")} />
-        <CharCount guidance="What you'll build and how it solves the problem." value={values.proposedSolution} min={50} />
+        <CharCount guidance="What will your squad build, and how will it solve the problem?" value={values.proposedSolution} min={50} />
       </Field>
 
-      <Field label="AI approach / technology" error={e?.aiApproach?.message}>
+      <Field label="03 — AI + Tech" error={e?.aiApproach?.message}>
         <TextArea rows={3} {...register("idea.aiApproach")} />
-        <CharCount guidance="Models, data and why they fit." value={values.aiApproach} min={30} />
+        <CharCount guidance="What AI models, data, and tech will you use — and why do they fit?" value={values.aiApproach} min={30} />
       </Field>
 
-      <Field label="Expected impact" error={e?.expectedImpact?.message}>
+      <Field label="04 — The Impact" error={e?.expectedImpact?.message}>
         <TextArea rows={3} {...register("idea.expectedImpact")} />
-        <CharCount guidance="Who benefits, and how you'd measure it." value={values.expectedImpact} min={30} />
+        <CharCount guidance="Who benefits, and how will you measure the impact?" value={values.expectedImpact} min={30} />
       </Field>
 
       <Field
-        label="Supporting material"
+        label="📎 Drop Your Deck"
         hint={
           <>
-            Required — build your deck from{" "}
+            Build your deck using{" "}
             <a
               href={DECK_TEMPLATE_URL}
               target="_blank"
@@ -103,8 +107,8 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
               className="font-semibold text-ignite-ink underline hover:text-ignite-magenta"
             >
               the official pitch deck template
-            </a>
-            , then upload it as a PDF or PPTX.
+            </a>{" "}
+            and upload it as PDF or PPTX.
           </>
         }
         error={e?.deckPath?.message}
@@ -125,7 +129,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
                 ? `Uploading ${uploadState.name}…`
                 : uploadState.status === "done"
                   ? `Uploaded: ${uploadState.name}`
-                  : "Upload your deck"}
+                  : "Upload Deck"}
             </span>
             <span className="text-[12px] text-ignite-muted">
               {uploadState.status === "error" ? uploadState.message : "PDF or PPTX · 20 MB max"}

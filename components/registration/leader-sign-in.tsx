@@ -143,21 +143,21 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
     <>
       <LogoHeaderBar onHero />
       <HeroShell
-        label="Registrations Open"
+        label="Registrations Are Open!"
         title={
           <>
-            Sign in to <GradientText>register.</GradientText>
+            🔐 One Login. One Squad. <GradientText>24 Hours to Ignite AI.</GradientText>
           </>
         }
         intro={
           <>
             <p className="m-0">
-              The team leader verifies their email with Google or a code we email them, to confirm it&apos;s
-              really theirs. Everyone else on the team is added by the leader — no account needed for
-              them.
+              Build your 2–5-member squad and pick your Squad Leader. The Squad Leader registers the team
+              and submits the required details.
             </p>
             <p className="m-0 text-[14px]">
-              Already registered? Sign in with the same email to view your team&apos;s status.
+              <span className="font-semibold">Already In?</span> Sign in with the same email and jump back
+              in! 🚀
             </p>
           </>
         }

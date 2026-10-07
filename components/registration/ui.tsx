@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { forwardRef, type ComponentType, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import type { InputHTMLAttributes } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -233,7 +233,7 @@ export function WizardHeader({ onBack, canGoBack }: { onBack: () => void; canGoB
       >
         ←
       </button>
-      <span className="font-display text-[16px] font-bold text-ignite-ink">Team Registration</span>
+      <span className="font-display text-[16px] font-bold text-ignite-ink">Squad Registration</span>
       <div className="w-[34px]" />
     </div>
   );
@@ -245,7 +245,7 @@ export function DesktopSidebar({
   onHome,
   onStepClick,
 }: {
-  steps: readonly { key: string; nav: string }[];
+  steps: readonly { key: string; nav: string; icon?: ComponentType<{ className?: string }> }[];
   step: number;
   onHome: () => void;
   /** Jump to a step already reached (done or current) — not to one still upcoming, since it may depend on fields not filled yet. */
@@ -282,10 +282,18 @@ export function DesktopSidebar({
               >
                 {state === "done" ? "✓" : i + 1}
               </div>
+              {s.icon && (
+                <s.icon
+                  className={cn(
+                    "h-[22px] w-[22px] flex-none",
+                    state === "current" ? "text-ignite-orange" : state === "done" ? "text-ignite-ink" : "text-ignite-faint",
+                  )}
+                />
+              )}
               <span
                 className={cn(
-                  "font-ui text-[15px]",
-                  state === "current" ? "font-bold text-ignite-ink" : "font-medium text-ignite-muted",
+                  "font-ui text-[13px] uppercase tracking-[0.06em]",
+                  state === "current" ? "font-bold text-ignite-ink" : "font-semibold text-ignite-muted",
                 )}
               >
                 {s.nav}

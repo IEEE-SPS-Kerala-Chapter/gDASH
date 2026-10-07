@@ -43,9 +43,9 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-[15px] font-semibold text-ignite-ink">{leaderName || "Team leader"}</span>
+            <span className="text-[15px] font-semibold text-ignite-ink">{leaderName || "Squad Leader"}</span>
             <span className="inline-flex rounded-full bg-ignite-primary px-2 py-0.5 font-ui text-[9px] font-bold uppercase tracking-[0.1em] text-ignite-on-primary">
-              Leader
+              Squad Leader
             </span>
           </div>
           <span className="text-[12px] text-ignite-ink">{displayCollege}</span>
@@ -61,7 +61,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
           <FormCard key={field.id}>
             <div className="flex items-center justify-between">
               <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">
-                Member {index + 2}
+                Crew Member {index + 2}
               </span>
               <button
                 type="button"
@@ -73,7 +73,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
             </div>
 
             <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-4">
-              <Field label="Full name" error={e?.fullName?.message}>
+              <Field label="Full Name" error={e?.fullName?.message}>
                 <TextInput {...register(`members.${index}.fullName`)} maxLength={80} />
               </Field>
               <Field label="Email" error={e?.email?.message}>
@@ -82,13 +82,13 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
                   {...register(`members.${index}.email`, { onBlur: onBlurCheck(`members.${index}.email`, "email") })}
                 />
               </Field>
-              <Field label="Phone" error={e?.phone?.message}>
+              <Field label="Mobile Number" error={e?.phone?.message}>
                 <TextInput
                   type="tel"
                   {...register(`members.${index}.phone`, { onBlur: onBlurCheck(`members.${index}.phone`, "phone") })}
                 />
               </Field>
-              <Field label="College" hint="Same as the team's college">
+              <Field label="College Name" hint="All crew members must be from the same college">
                 <TextInput value={displayCollege ?? ""} readOnly className="cursor-not-allowed bg-ignite-bg text-ignite-muted" />
               </Field>
             </div>
@@ -99,7 +99,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
                 </Field>
               </div>
               <div className="min-w-0 flex-1">
-                <Field label="Year" error={e?.year?.message}>
+                <Field label="Year of Study" error={e?.year?.message}>
                   <Select {...register(`members.${index}.year`)} defaultValue="">
                     <option value="" disabled>
                       Choose
@@ -113,7 +113,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
                 </Field>
               </div>
             </div>
-            <Field label="Role in team" error={e?.roleInTeam?.message}>
+            <Field label="Choose Your Squad Role" error={e?.roleInTeam?.message}>
               <Select {...register(`members.${index}.roleInTeam`)} defaultValue="">
                 <option value="" disabled>
                   Choose a role
@@ -152,7 +152,7 @@ export function StepMembers({ form }: { form: UseFormReturn<RegistrationForm> })
           onClick={() => append(emptyMember)}
           className="w-full rounded-full border-[1.5px] border-dashed border-ignite-edge/[0.18] py-[13px] font-ui text-[15px] font-semibold text-ignite-ink transition-colors hover:border-ignite-ink hover:bg-ignite-surface"
         >
-          + Add member ({slotsLeft} slot{slotsLeft === 1 ? "" : "s"} left)
+          + Add crew member ({slotsLeft} slot{slotsLeft === 1 ? "" : "s"} left)
         </button>
       )}
     </div>

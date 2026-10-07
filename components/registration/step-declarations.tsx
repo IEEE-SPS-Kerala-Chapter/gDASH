@@ -8,27 +8,27 @@ import { cn } from "@/lib/utils";
 const DECLARATIONS = [
   {
     key: "eligibility" as const,
-    title: "Student eligibility",
-    body: "Every member is a current student at a professional college in Kerala, and none of us is an organizer, volunteer, judge or sponsor.",
+    title: "🎓 Student Check",
+    body: "Everyone on the squad is a student at the same professional college in Kerala. None of us is an organiser, volunteer, judge, or sponsor.",
     tag: "Required",
   },
   {
     key: "originality" as const,
-    title: "Originality & code ownership",
-    body: "Work shown at the finale will be built during the event. No pre-written code beyond open-source libraries, and prior work will be declared in the README.",
+    title: "💡 Originality & Ownership",
+    body: "The idea submitted by the squad is our own original concept or a legitimate adaptation/application of a publicly known problem or challenge. The proposed solution and approach demonstrate the squad's own originality and contribution.",
     tag: "Required",
   },
   {
     key: "rules" as const,
-    title: "Hackathon rules & code of conduct",
-    body: "We've read the rules and the code of conduct, and accept that the jury's decision is final.",
+    title: "📜 Rules & Code of Conduct",
+    body: "We've read and understood the hackathon rules and code of conduct and agree to follow them. We also accept that the jury's decision is final.",
     tag: "Required",
   },
   {
     key: "mediaConsent" as const,
-    title: "Photography & media consent",
-    body: "Photos, video and project details from the event may be used for gIGNITE promotion.",
-    tag: "Optional",
+    title: "📸 Media Consent",
+    body: "Our crew is good with the photos, videos, and project highlights from the event being used for g-IGNITE'26 promotions.",
+    tag: "Required",
   },
 ];
 
@@ -114,16 +114,16 @@ export function StepDeclarations({ form }: { form: UseFormReturn<RegistrationFor
           Entry summary
         </span>
         <div className="flex flex-col gap-[6px]">
-          <SummaryRow label="Team" value={`${teamName || "—"} · ${memberCount} member${memberCount === 1 ? "" : "s"}`} />
-          <SummaryRow label="Theme" value={aiTheme || "—"} />
+          <SummaryRow label="Squad" value={`${teamName || "—"} · ${memberCount} member${memberCount === 1 ? "" : "s"}`} />
+          <SummaryRow label="Track" value={aiTheme || "—"} />
           <SummaryRow label="College" value={displayCollege || "—"} />
         </div>
       </div>
 
       <p className="m-0 text-center text-[12px] leading-[1.5] text-ignite-muted">
-        {decl?.eligibility && decl?.originality && decl?.rules
-          ? "Submitted registrations can't be edited, so check the Review step before you submit."
-          : "Confirm the three required declarations to submit."}
+        {decl?.eligibility && decl?.originality && decl?.rules && decl?.mediaConsent
+          ? "Submitted registrations can't be edited, so check everything before you lock it in."
+          : "Confirm all four declarations to submit."}
       </p>
     </div>
   );

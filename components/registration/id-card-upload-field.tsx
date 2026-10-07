@@ -28,11 +28,14 @@ export function IdCardUploadField({
   path,
   onUploaded,
   error,
+  privacyNote = "🔒 Your ID stays private — visible only to the organisers.",
 }: {
   /** Current storage path, if already uploaded — used to seed the "done" label after a draft restore. */
   path?: string;
   onUploaded: (path: string) => void;
   error?: string;
+  /** The reassurance line under the upload box. */
+  privacyNote?: string;
 }) {
   const [state, setState] = useState<UploadState>(
     path ? { status: "done", name: displayFileName(path) } : { status: "idle" },
@@ -72,9 +75,10 @@ export function IdCardUploadField({
 
   return (
     <div className="flex flex-col gap-[7px]">
-      <label className="font-ui text-[13px] font-semibold text-ignite-ink-soft">
-        College ID card (for eligibility checks — visible only to organizers)
-      </label>
+      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-ink">🪪 ID Check</span>
+      <span className="font-ui text-[13px] leading-[1.45] text-ignite-ink-soft">
+        Upload a clear photo of your College ID for verification by the organisers.
+      </span>
       <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-ignite-bg px-[15px] py-[13px]">
         <input
           type="file"
@@ -91,14 +95,18 @@ export function IdCardUploadField({
               ? `Uploading ${state.name}…`
               : state.status === "done"
                 ? `Uploaded: ${state.name}`
-                : "Upload a clear photo of your college ID card"}
+                : "Upload your College ID photo"}
           </span>
           <span className="text-[12px] text-ignite-muted">
             {state.status === "error" ? state.message : "JPG, PNG, or WEBP · 8 MB max"}
           </span>
         </div>
       </label>
-      {error && <span data-field-error role="alert" className="text-[13px] leading-[1.45] text-ignite-danger">{error}</span>}
+      {error ? (
+        <span data-field-error role="alert" className="text-[13px] leading-[1.45] text-ignite-danger">{error}</span>
+      ) : (
+        <span className="font-ui text-[12px] text-ignite-muted">{privacyNote}</span>
+      )}
     </div>
   );
 }

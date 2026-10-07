@@ -44,12 +44,12 @@ export const teamDetailsSchema = z
     teamName: z
       .string()
       .trim()
-      .min(3, "Team name must be at least 3 characters")
-      .max(50, "Team name can be at most 50 characters")
+      .min(3, "Squad name must be at least 3 characters")
+      .max(50, "Squad name can be at most 50 characters")
       .regex(TEAM_NAME_CHARSET_RE, "Only letters, numbers, spaces, and ' & . - are allowed")
-      .refine((v) => TEAM_NAME_HAS_LETTER_RE.test(v), "Team name must include at least one letter"),
-    aiTheme: z.enum(AI_THEMES, { message: "Choose an AI theme" }),
-    leaderName: z.string().trim().min(2, "Enter the leader's full name").max(80, "Name can be at most 80 characters"),
+      .refine((v) => TEAM_NAME_HAS_LETTER_RE.test(v), "Squad name must include at least one letter"),
+    aiTheme: z.enum(AI_THEMES, { message: "Choose your track" }),
+    leaderName: z.string().trim().min(2, "Enter the Squad Leader's full name").max(80, "Name can be at most 80 characters"),
     leaderEmail: emailField("Enter your email address"),
     leaderPhone: z
       .string()
