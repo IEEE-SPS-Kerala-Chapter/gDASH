@@ -104,7 +104,10 @@ export function AlreadyRegisteredBlocked({ email, statusUrl }: { email: string; 
       message={
         <>
           <span className="font-semibold">{email}</span> already belongs to a submitted team.
-          {statusUrl ? " You can view your team's registration status and ID cards below." : ""} To
+          {statusUrl
+            ? " Click “View your registration status” to see your team's registration status and download your ID cards."
+            : ""}{" "}
+          To
           register a different team, sign out and use a different email or Google account.
         </>
       }
