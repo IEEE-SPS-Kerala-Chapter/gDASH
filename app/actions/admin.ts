@@ -1,6 +1,8 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+import { notifyIneligible } from "@/lib/email/deliver";
 import { csvField } from "@/lib/csv";
 
 import { createClient } from "@/lib/supabase/server";
@@ -582,6 +584,7 @@ export async function setVerificationStatus(
       metadata: { verificationStatus: status, ...(trimmedNote ? { note: trimmedNote } : {}) },
     });
     revalidateDashboard();
+    if (status === "ineligible") after(() => notifyIneligible(registrationId));
   }
   return result;
 }

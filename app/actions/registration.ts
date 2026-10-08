@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
@@ -10,6 +11,7 @@ import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { displayFileName } from "@/lib/upload-file-name";
 import { isLegacyUploadPath } from "@/lib/upload-path";
 import { ambassadorFormValueToNumber } from "@/lib/ambassador";
+import { queueAndDeliver } from "@/lib/email/deliver";
 import { getAmbassadorRange } from "./ambassadors";
 
 /** "Other" reveals a free-text field client-side; the server resolves it to
@@ -213,6 +215,12 @@ export async function submitRegistration(
     if (!accessToken) {
       return { success: false, error: "Registration didn't return a status link. Contact the organizers." };
     }
+
+    // Confirmation email with the ID cards, to the leader — sent after the
+    // response so the participant isn't kept waiting. Failures are recorded
+    // in the outbox (admins can resend from the team page), never shown here.
+    const teamId = (result as { team_id?: string }).team_id;
+    if (teamId) after(() => queueAndDeliver(teamId, "registration_received"));
 
     // A real submission exists now — clear the draft so there's nothing
     // left to resume, and so a later visit to /register never re-offers an

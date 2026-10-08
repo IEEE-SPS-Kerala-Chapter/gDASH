@@ -18,6 +18,7 @@ import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
 import { EditRegistration } from "./edit-registration";
 import { ambassadorDisplay, type AmbassadorDetails } from "@/lib/ambassador";
+import { TeamEmails } from "./team-emails";
 import { useLiveRefresh } from "./use-live-refresh";
 import { allAssignedScoresIn, applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
 import { JudgeScoresSummary } from "./judge-scores-summary";
@@ -353,6 +354,8 @@ export function TeamDetail({
                 />
               )}
             </Panel>
+
+            <TeamEmails teamId={team.id} />
 
             {isSuperAdmin && (
               <Panel className="flex flex-col gap-3 border-ignite-danger p-5">

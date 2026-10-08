@@ -1,6 +1,8 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
+import { notifyIneligible } from "@/lib/email/deliver";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCallerRole } from "./admin";
@@ -255,6 +257,7 @@ export async function setTeamVerification(
     metadata: { verificationStatus: status, ...(status === "ineligible" && note ? { note: note.trim() } : {}) },
   });
   revalidateDashboard();
+  if (status === "ineligible") after(() => notifyIneligible(registrationId));
   return { success: true, state };
 }
 

@@ -9,6 +9,7 @@ import {
   type ResultsPublication,
 } from "@/app/actions/results";
 import { Badge, Field, FormCard, PrimaryButton, SecondaryButton, TextArea } from "@/components/admin/ui";
+import { ResultEmails } from "./result-emails";
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -116,6 +117,7 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
               {switching ? "Hiding…" : "Un-publish results"}
             </SecondaryButton>
           </div>
+          <ResultEmails decidedTeams={counts.shortlisted + counts.notSelected} messagesUnsaved={messagesChanged} />
         </div>
       ) : confirming ? (
         <div className="flex flex-col gap-3 rounded-xl bg-ignite-lavender px-4 py-3">
