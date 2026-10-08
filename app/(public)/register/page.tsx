@@ -111,7 +111,7 @@ async function RegisterScreen({
           <GridBackground />
           <div className="relative z-10">
             <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
-              <BrandLogo className="h-14" />
+              <BrandLogo className="h-12" />
             </div>
             <RegistrationWizard leaderEmail={user.email} ambassadorLastNumber={await getAmbassadorRange()} />
           </div>
@@ -127,7 +127,7 @@ async function RegisterScreen({
         <GridBackground />
         <div className="relative z-10">
           <div className="mx-auto mb-6 flex max-w-[460px] justify-center lg:hidden">
-            <BrandLogo className="h-14" />
+            <BrandLogo className="h-12" />
           </div>
           <RegistrationWizard ambassadorLastNumber={await getAmbassadorRange()} />
         </div>

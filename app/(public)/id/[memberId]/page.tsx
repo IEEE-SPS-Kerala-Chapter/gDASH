@@ -84,7 +84,7 @@ export default async function MemberIdPage(props: { params: Promise<{ memberId: 
 function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ignite-bg p-8 text-center font-ui text-ignite-ink-soft">
-      <BrandLogo className="h-14" />
+      <BrandLogo className="h-12" />
       {children}
     </main>
   );

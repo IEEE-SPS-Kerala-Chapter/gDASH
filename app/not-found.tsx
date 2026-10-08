@@ -7,7 +7,7 @@ export default function NotFound() {
   const staff = getAppSurface() === "staff";
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-ignite-bg p-8 text-center font-ui text-ignite-ink-soft">
-      <BrandLogo className="h-14" />
+      <BrandLogo className="h-12" />
       <h1 className="font-display text-2xl font-bold text-ignite-ink">Page not found</h1>
       <p className="max-w-sm text-ignite-muted">
         That page doesn&apos;t exist. Check the link, or head back to {staff ? "staff sign-in" : "registration"}.

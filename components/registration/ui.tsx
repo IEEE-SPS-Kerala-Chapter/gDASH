@@ -4,18 +4,27 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
-export function BrandLogo({ className }: { className?: string }) {
+/**
+ * The gIGNITE wordmark: navy lettering in the light theme, white in the dark
+ * theme. `tone="blue"` pins the navy version for surfaces that stay light in
+ * both themes (the ID card).
+ */
+export function BrandLogo({ className, tone = "auto" }: { className?: string; tone?: "auto" | "blue" }) {
+  const sizing = cn("h-auto w-auto max-w-full", className);
+  const blue = <Image src="/gignite-logo.png" alt="gIGNITE" width={1200} height={310} priority className={sizing} />;
+  if (tone === "blue") return blue;
   return (
-    <Image
-      src="/gignite-logo.png"
-      alt="gIGNITE"
-      width={1100}
-      height={451}
-      priority
-      // The logo's navy lettering disappears on dark backgrounds, so in the
-      // dark theme it sits on a small white plate.
-      className={cn("h-auto w-auto dark:rounded-xl dark:bg-white dark:p-1.5", className)}
-    />
+    <>
+      <Image src="/gignite-logo.png" alt="gIGNITE" width={1200} height={310} priority className={cn(sizing, "dark:hidden")} />
+      <Image
+        src="/gignite-logo-white.png"
+        alt="gIGNITE"
+        width={1200}
+        height={310}
+        priority
+        className={cn(sizing, "hidden dark:block")}
+      />
+    </>
   );
 }
 
@@ -254,7 +263,7 @@ export function DesktopSidebar({
   return (
     <div className="sticky top-28 hidden w-[300px] flex-none flex-col gap-10 lg:flex">
       <button type="button" onClick={onHome} className="w-fit text-left" aria-label="Back to home">
-        <BrandLogo className="h-20" />
+        <BrandLogo className="h-16" />
       </button>
 
       <div className="flex flex-col gap-1">
@@ -403,10 +412,9 @@ export function HeroShell({
     <main className="hero-themed relative flex min-h-[calc(100vh-136px)] items-center px-4 py-12 font-ui text-ignite-ink lg:px-16 lg:py-20">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-10 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
         <div className="flex max-w-[560px] flex-col gap-5">
-          {/* Big event logo above the headline, on a white plate so its blue
-              lettering stays readable on the dark theme's navy. */}
-          <div className="mx-auto mb-3 w-fit rounded-[20px] bg-white px-5 py-3 shadow-[0_16px_40px_rgba(44,29,68,0.12)] ring-1 ring-ignite-edge/[0.06] dark:shadow-[0_16px_40px_rgba(0,0,0,0.35)] lg:mx-0">
-            <BrandLogo className="h-20 sm:h-24 lg:h-32" />
+          {/* Big event logo above the headline. */}
+          <div className="mx-auto mb-3 w-fit lg:mx-0">
+            <BrandLogo className="h-16 sm:h-20 lg:h-28" />
           </div>
           <span className="inline-flex items-center gap-2.5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ignite-ink">
             <span aria-hidden="true" className="h-2 w-2 bg-ignite-orange" />

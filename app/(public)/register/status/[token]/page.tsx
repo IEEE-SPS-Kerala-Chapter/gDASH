@@ -33,7 +33,7 @@ export default async function StatusPage(props: { params: Promise<{ token: strin
       <>
         <LogoHeaderBar />
         <main className="flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-4 bg-ignite-bg p-8 text-center font-ui text-ignite-ink-soft">
-          <BrandLogo className="h-14 lg:h-16" />
+          <BrandLogo className="h-12 lg:h-14" />
           <h1 className="font-display text-2xl font-bold text-ignite-ink">Sign in to view your team</h1>
           <p className="max-w-sm text-ignite-muted">
             For privacy, a team&apos;s details are only shown to its own members. Sign in with the email you
@@ -58,7 +58,7 @@ export default async function StatusPage(props: { params: Promise<{ token: strin
       <>
         <LogoHeaderBar />
         <main className="flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-4 bg-ignite-bg p-8 text-center font-ui text-ignite-ink-soft">
-          <BrandLogo className="h-14 lg:h-16" />
+          <BrandLogo className="h-12 lg:h-14" />
           <h1 className="font-display text-2xl font-bold text-ignite-ink">
             {result.systemError ? "Couldn't check your status" : "Registration not found"}
           </h1>

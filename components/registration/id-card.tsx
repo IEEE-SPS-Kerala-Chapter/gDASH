@@ -64,7 +64,7 @@ export function IdCard({ teamName, member }: { teamName: string; member: IdCardM
       >
         <div aria-hidden="true" className="-mx-5 h-1.5 bg-brand-gradient" />
         <div className="flex items-center justify-between gap-3">
-          <BrandLogo className="h-8" />
+          <BrandLogo className="h-8" tone="blue" />
           <span className="rounded-full bg-ignite-lavender px-3 py-1 text-[12px] font-bold tracking-[0.08em] text-ignite-ink">
             {member.member_code}
           </span>
