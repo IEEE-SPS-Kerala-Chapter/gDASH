@@ -7,7 +7,7 @@ import { OTHER_COLLEGE } from "@/lib/kerala-colleges";
 import { OTHER_ROLE } from "@/lib/validations/roles";
 import { cn } from "@/lib/utils";
 import { FormCard, Divider, Spinner } from "./ui";
-import { ambassadorFormValueToNumber, ambassadorLabel } from "@/lib/ambassador";
+import { ambassadorDisplay, ambassadorFormValueToNumber, type AmbassadorDetails } from "@/lib/ambassador";
 
 function EditLink({ onClick }: { onClick: () => void }) {
   return (
@@ -271,10 +271,12 @@ export function StepReview({
   form,
   onEdit,
   ambassadorLastNumber,
+  ambassadorDetails,
 }: {
   form: UseFormReturn<RegistrationForm>;
   onEdit: (stepKey: string) => void;
   ambassadorLastNumber: number | null;
+  ambassadorDetails?: AmbassadorDetails;
 }) {
   const { team, members, idea } = form.getValues();
   const displayCollege = team.college === OTHER_COLLEGE ? team.collegeOther : team.college;
@@ -291,7 +293,7 @@ export function StepReview({
         <ReviewRow label="College Name" value={displayCollege ?? ""} />
         <ReviewRow label="District" value={team.district} />
         {ambassadorLastNumber !== null && (
-          <ReviewRow label="Referred by" value={ambassadorLabel(ambassadorFormValueToNumber(team.ambassador ?? ""))} />
+          <ReviewRow label="Referred by" value={ambassadorDisplay(ambassadorFormValueToNumber(team.ambassador ?? ""), ambassadorDetails)} />
         )}
         <Divider />
         <ReviewRow label="Squad Leader" value={team.leaderName} />

@@ -5,35 +5,42 @@ import { cn } from "@/lib/utils";
 import {
   NO_AMBASSADOR,
   NO_AMBASSADOR_LABEL,
+  ambassadorDisplay,
   ambassadorNumbers,
   formatAmbassadorId,
   parseAmbassadorInput,
+  type AmbassadorDetails,
 } from "@/lib/ambassador";
 import { TextInput } from "./ui";
 
-type Option = { value: string; label: string };
+type Option = { value: string; label: string; name?: string | null; college?: string | null };
 
-function labelFor(value: string): string {
+function labelFor(value: string, details?: AmbassadorDetails): string {
   if (value === NO_AMBASSADOR) return NO_AMBASSADOR_LABEL;
   const n = Number(value);
-  return value !== "" && Number.isInteger(n) ? formatAmbassadorId(n) : "";
+  return value !== "" && Number.isInteger(n) ? ambassadorDisplay(n, details) : "";
 }
 
 /**
- * Searchable dropdown of ambassador IDs (AMGIG-00 … AMGIG-<lastNumber>)
- * plus "No ambassador referred". Typing "7", "07" or "AMGIG-07" narrows the
- * list to that ID; only a value from the list can be chosen. The value is
- * "none" or the number as text (see lib/ambassador.ts).
+ * Searchable dropdown of ambassador IDs (AMGIG-00 … AMGIG-<lastNumber>),
+ * each with the name and college the super-admin entered, plus "No
+ * ambassador referred". Typing "7", "07" or "AMGIG-07" narrows the list to
+ * that ID; typing letters matches names and colleges. Only a value from the
+ * list can be chosen. The value is "none" or the number as text (see
+ * lib/ambassador.ts).
  */
 export function AmbassadorSelect({
   value,
   lastNumber,
+  details,
   onChange,
   onOpen,
   invalid,
 }: {
   value: string;
   lastNumber: number;
+  /** Name and college per ID, when the super-admin has entered them. */
+  details?: AmbassadorDetails;
   onChange: (value: string) => void;
   /** Called each time the list opens — the form uses it to re-read the current range. */
   onOpen?: () => void;
@@ -46,7 +53,12 @@ export function AmbassadorSelect({
   const [active, setActive] = useState(0);
 
   const options = useMemo<Option[]>(() => {
-    const ids = ambassadorNumbers(lastNumber).map((n) => ({ value: String(n), label: formatAmbassadorId(n) }));
+    const ids = ambassadorNumbers(lastNumber).map((n) => ({
+      value: String(n),
+      label: formatAmbassadorId(n),
+      name: details?.[n]?.name,
+      college: details?.[n]?.college,
+    }));
     const q = query.trim().toLowerCase();
     if (!q) return [{ value: NO_AMBASSADOR, label: NO_AMBASSADOR_LABEL }, ...ids];
 
@@ -58,10 +70,10 @@ export function AmbassadorSelect({
           .sort((a, b) => (Number(a.value) === exact ? -1 : Number(b.value) === exact ? 1 : 0))
       : "amgig".startsWith(q) || q.startsWith("amgig")
         ? ids
-        : [];
+        : ids.filter((o) => `${o.name ?? ""} ${o.college ?? ""}`.toLowerCase().includes(q));
     const showNone = NO_AMBASSADOR_LABEL.toLowerCase().includes(q) || "none".startsWith(q);
     return [...(showNone ? [{ value: NO_AMBASSADOR, label: NO_AMBASSADOR_LABEL }] : []), ...matchingIds];
-  }, [lastNumber, query]);
+  }, [lastNumber, details, query]);
 
   function choose(option: Option) {
     onChange(option.value);
@@ -97,8 +109,8 @@ export function AmbassadorSelect({
         autoComplete="off"
         // Closed, it reads like the form's other dropdowns ("Choose a
         // district" in normal text); open, the placeholder invites typing.
-        placeholder={open ? "Type an ID like 07" : "Choose an ambassador"}
-        value={open ? query : labelFor(value)}
+        placeholder={open ? "Type an ID like 07, or a name or college" : "Choose an ambassador"}
+        value={open ? query : labelFor(value, details)}
         onFocus={openList}
         onClick={openList}
         onChange={(e) => {
@@ -133,7 +145,7 @@ export function AmbassadorSelect({
           className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-ignite-edge/[0.12] bg-ignite-surface py-1 shadow-xl"
         >
           {options.length === 0 ? (
-            <li className="px-[15px] py-2.5 font-ui text-[14px] text-ignite-muted">No matching ambassador ID</li>
+            <li className="px-[15px] py-2.5 font-ui text-[14px] text-ignite-muted">No matching ambassador</li>
           ) : (
             options.map((o, i) => (
               <li
@@ -154,7 +166,9 @@ export function AmbassadorSelect({
                   o.value === NO_AMBASSADOR && "text-ignite-ink-soft",
                 )}
               >
-                {o.label}
+                <span className="tracking-[0.02em]">{o.label}</span>
+                {o.name && <span> · {o.name}</span>}
+                {o.college && <span className="block text-[13px] font-normal text-ignite-muted">{o.college}</span>}
               </li>
             ))
           )}

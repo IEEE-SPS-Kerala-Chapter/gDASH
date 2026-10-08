@@ -5,7 +5,7 @@ import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { logAuditEvent } from "@/lib/audit-log";
-import { formatAmbassadorId } from "@/lib/ambassador";
+import { formatAmbassadorId, type AmbassadorDetails } from "@/lib/ambassador";
 
 /**
  * The last ambassador number (IDs run AMGIG-00 … AMGIG-<n>), or null when
@@ -25,9 +25,30 @@ export async function getAmbassadorRange(): Promise<number | null> {
   }
 }
 
+/**
+ * Name and college for each ID in the current range, for the registration
+ * form's dropdown. Public. Empty on a read error — the IDs still work.
+ */
+export async function getAmbassadorDirectory(): Promise<AmbassadorDetails> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("ambassador_directory");
+    if (error || !data) return {};
+    return toDetails(data as Array<{ number: number; name: string | null; college: string | null }>);
+  } catch (err) {
+    console.error("getAmbassadorDirectory threw unexpectedly:", err);
+    return {};
+  }
+}
+
+function toDetails(rows: Array<{ number: number; name: string | null; college: string | null }>): AmbassadorDetails {
+  return Object.fromEntries(rows.map((r) => [r.number, { name: r.name, college: r.college }]));
+}
+
 export type AmbassadorRankingRow = {
   number: number;
   name: string | null;
+  college: string | null;
   total: number;
   shortlisted: number;
   /** null while the ambassador has no referrals yet. */
@@ -101,41 +122,53 @@ export async function setAmbassadorRange(lastNumber: number): Promise<Result> {
   return { success: true };
 }
 
-/** Super-admin only: set or clear (empty name) the staff-only name for one ambassador ID. */
-export async function setAmbassadorName(number: number, name: string): Promise<Result> {
+/**
+ * Super-admin only: set the name and college shown for one ambassador ID
+ * (on the registration form too). Both empty clears them.
+ */
+export async function setAmbassadorDetails(number: number, details: { name: string; college: string }): Promise<Result> {
   const caller = await getCallerRole();
   if (caller?.role !== "super_admin") {
-    return { success: false, error: "Only the super-admin can name ambassadors." };
+    return { success: false, error: "Only the super-admin can edit ambassadors." };
   }
-  const trimmed = name.trim();
+  const name = details.name.trim();
+  const college = details.college.trim();
   if (!Number.isInteger(number) || number < 0 || number > 999) {
     return { success: false, error: "Unknown ambassador ID." };
   }
-  if (trimmed.length > 80) {
+  if (name.length > 80) {
     return { success: false, error: "Names can be at most 80 characters." };
+  }
+  if (college && (college.length < 2 || college.length > 120)) {
+    return { success: false, error: "College names must be 2 to 120 characters." };
   }
 
   const supabase = await createClient();
-  const { error } = trimmed
-    ? await supabase.from("ambassador_names").upsert({ number, name: trimmed, updated_at: new Date().toISOString() })
-    : await supabase.from("ambassador_names").delete().eq("number", number);
+  const { error } =
+    name || college
+      ? await supabase
+          .from("ambassador_names")
+          .upsert({ number, name: name || null, college: college || null, updated_at: new Date().toISOString() })
+      : await supabase.from("ambassador_names").delete().eq("number", number);
   if (error) {
-    return { success: false, error: "Could not save the name." };
+    return { success: false, error: "Could not save the details." };
   }
 
-  await logAuditEvent(supabase, "ambassadors.name_updated", {
+  await logAuditEvent(supabase, "ambassadors.details_updated", {
     targetLabel: formatAmbassadorId(number),
-    metadata: { name: trimmed || null },
+    metadata: { name: name || null, college: college || null },
   });
   revalidateDashboard();
+  // The registration form lists them too.
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
-/** Super-admin only: every staff-only name, by number — for the team page. */
-export async function getAmbassadorNames(): Promise<Record<number, string>> {
+/** Super-admin only: every ambassador's name and college, by number — for the team page. */
+export async function getAmbassadorDetails(): Promise<AmbassadorDetails> {
   const caller = await getCallerRole();
   if (caller?.role !== "super_admin") return {};
   const supabase = await createClient();
-  const { data } = await supabase.from("ambassador_names").select("number, name");
-  return Object.fromEntries((data ?? []).map((r) => [r.number, r.name]));
+  const { data } = await supabase.from("ambassador_names").select("number, name, college");
+  return toDetails(data ?? []);
 }

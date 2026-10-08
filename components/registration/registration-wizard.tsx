@@ -26,8 +26,8 @@ import {
   Eyebrow,
 } from "./ui";
 import { StepTeam } from "./step-team";
-import { NO_AMBASSADOR } from "@/lib/ambassador";
-import { getAmbassadorRange } from "@/app/actions/ambassadors";
+import { NO_AMBASSADOR, type AmbassadorDetails } from "@/lib/ambassador";
+import { getAmbassadorDirectory, getAmbassadorRange } from "@/app/actions/ambassadors";
 import { StepMembers } from "./step-members";
 import { StepIdea } from "./step-idea";
 import { StepReview } from "./step-review";
@@ -150,10 +150,13 @@ function buildDefaults(leaderEmail: string) {
 export function RegistrationWizard({
   leaderEmail = "",
   ambassadorLastNumber: initialAmbassadorLastNumber = null,
+  ambassadorDetails: initialAmbassadorDetails = {},
 }: {
   leaderEmail?: string;
   /** Ambassador IDs run AMGIG-00 … this; null = none set up (field hidden). */
   ambassadorLastNumber?: number | null;
+  /** Name and college per ambassador ID, shown in the dropdown. */
+  ambassadorDetails?: AmbassadorDetails;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -165,6 +168,7 @@ export function RegistrationWizard({
   // raises it), so it's re-read on the Team step and after a rejected ID —
   // the dropdown must never offer IDs that are no longer valid.
   const [ambassadorLastNumber, setAmbassadorLastNumber] = useState(initialAmbassadorLastNumber);
+  const [ambassadorDetails, setAmbassadorDetails] = useState(initialAmbassadorDetails);
   // Continue is waiting for the "already registered with another team" checks.
   const [checking, setChecking] = useState(false);
   const [openingStatus, setOpeningStatus] = useState(false);
@@ -269,6 +273,9 @@ export function RegistrationWizard({
   function refreshAmbassadorRange() {
     getAmbassadorRange()
       .then(setAmbassadorLastNumber)
+      .catch(() => {});
+    getAmbassadorDirectory()
+      .then(setAmbassadorDetails)
       .catch(() => {});
   }
 
@@ -536,10 +543,24 @@ export function RegistrationWizard({
             )}
 
             <div className="lg:max-w-[760px]">
-              {current.key === "team" && <StepTeam form={form} ambassadorLastNumber={ambassadorLastNumber} onRefreshAmbassadors={refreshAmbassadorRange} />}
+              {current.key === "team" && (
+                <StepTeam
+                  form={form}
+                  ambassadorLastNumber={ambassadorLastNumber}
+                  ambassadorDetails={ambassadorDetails}
+                  onRefreshAmbassadors={refreshAmbassadorRange}
+                />
+              )}
               {current.key === "members" && <StepMembers form={form} />}
               {current.key === "idea" && <StepIdea form={form} />}
-              {current.key === "review" && <StepReview form={form} onEdit={jumpToStep} ambassadorLastNumber={ambassadorLastNumber} />}
+              {current.key === "review" && (
+                <StepReview
+                  form={form}
+                  onEdit={jumpToStep}
+                  ambassadorLastNumber={ambassadorLastNumber}
+                  ambassadorDetails={ambassadorDetails}
+                />
+              )}
               {current.key === "declarations" && <StepDeclarations form={form} />}
             </div>
 

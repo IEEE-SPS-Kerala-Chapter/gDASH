@@ -7,7 +7,7 @@ import { isAdminLevelRole } from "@/lib/roles";
 import { TeamDetail } from "@/components/admin/team-detail";
 import { getVerificationTeam } from "@/app/actions/verification";
 import { VolunteerTeamDetail } from "@/components/volunteer/team-detail";
-import { getAmbassadorNames, getAmbassadorRange } from "@/app/actions/ambassadors";
+import { getAmbassadorDetails, getAmbassadorRange } from "@/app/actions/ambassadors";
 
 export default async function TeamDetailPage(props: { params: Promise<{ teamId: string }> }) {
   const params = await props.params;
@@ -26,15 +26,15 @@ export default async function TeamDetailPage(props: { params: Promise<{ teamId: 
   }
 
   const isSuperAdmin = profile.role === "super_admin";
-  const [teamResult, judgesResult, queueResult, ambassadorLastNumber, ambassadorNames] = await Promise.all([
+  const [teamResult, judgesResult, queueResult, ambassadorLastNumber, ambassadorDetails] = await Promise.all([
     getTeamDetail(params.teamId),
     isAdminLevelRole(profile.role) ? getJudges() : Promise.resolve({ success: true as const, judges: [] }),
     // Only judges get prev/next queue navigation — same ordering as the
     // submission queue on their dashboard, so "next" there matches "next" here.
     profile.role === "judge" ? getMyAssignedTeams() : Promise.resolve({ success: true as const, teams: [] }),
-    // Super-admin only: the edit form's ambassador list, and names (staff-only).
+    // Super-admin only: the edit form's ambassador list, with names and colleges.
     isSuperAdmin ? getAmbassadorRange() : Promise.resolve(null),
-    isSuperAdmin ? getAmbassadorNames() : Promise.resolve({} as Record<number, string>),
+    isSuperAdmin ? getAmbassadorDetails() : Promise.resolve({}),
   ]);
 
   if (!teamResult.success) {
@@ -65,7 +65,7 @@ export default async function TeamDetailPage(props: { params: Promise<{ teamId: 
       viewerRole={profile.role}
       queueNav={queueNav}
       ambassadorLastNumber={ambassadorLastNumber}
-      ambassadorNames={ambassadorNames}
+      ambassadorDetails={ambassadorDetails}
     />
   );
 }

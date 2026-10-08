@@ -9,14 +9,17 @@ import { useDuplicateContactCheck, useTeamNameCheck } from "@/lib/registration-d
 import { Field, TextInput, Select, Divider, FormCard } from "./ui";
 import { IdCardUploadField } from "./id-card-upload-field";
 import { AmbassadorSelect } from "./ambassador-select";
+import type { AmbassadorDetails } from "@/lib/ambassador";
 
 export function StepTeam({
   form,
   ambassadorLastNumber,
+  ambassadorDetails,
   onRefreshAmbassadors,
 }: {
   form: UseFormReturn<RegistrationForm>;
   ambassadorLastNumber: number | null;
+  ambassadorDetails?: AmbassadorDetails;
   /** Re-reads the ambassador range (the super-admin may have changed it). */
   onRefreshAmbassadors?: () => void;
 }) {
@@ -97,12 +100,13 @@ export function StepTeam({
       {ambassadorLastNumber !== null && (
         <Field
           label="Referred by a gIGNITE ambassador?"
-          hint="Pick the ambassador who referred your squad, or “No ambassador referred”. Tip: type an ID like 07 to find it."
+          hint="Pick the ambassador who referred your squad, or “No ambassador referred”. Tip: type an ID like 07, or the ambassador's name or college, to find them."
           error={e?.ambassador?.message}
         >
           <AmbassadorSelect
             value={ambassador ?? ""}
             lastNumber={ambassadorLastNumber}
+            details={ambassadorDetails}
             invalid={Boolean(e?.ambassador)}
             onChange={(v) => setValue("team.ambassador", v, { shouldValidate: true, shouldDirty: true })}
             onOpen={onRefreshAmbassadors}

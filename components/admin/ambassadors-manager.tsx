@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  setAmbassadorName,
+  setAmbassadorDetails,
   setAmbassadorRange,
   type AmbassadorRanking,
   type AmbassadorRankingRow,
@@ -15,8 +15,9 @@ import { useLiveRefresh } from "./use-live-refresh";
 import { cn } from "@/lib/utils";
 
 /**
- * Super-admin: set how many ambassador IDs exist (AMGIG-00 … AMGIG-NN) and
- * see the ranking by registrations referred, refreshed live.
+ * Super-admin: set how many ambassador IDs exist (AMGIG-00 … AMGIG-NN),
+ * enter each one's name and college (shown in the registration form's
+ * dropdown), and see the ranking by registrations referred, refreshed live.
  */
 export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) {
   useLiveRefresh({ intervalMs: 15_000 });
@@ -75,6 +76,12 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
             ? "No ambassador IDs yet — the registration form doesn't show the ambassador question until you set this."
             : `${count} ambassador ID${count === 1 ? "" : "s"}. The registration form lists these plus “No ambassador referred”. You can raise the range any time; it can't be lowered below an ID a team has already picked.`}
         </span>
+        {ranking.lastNumber !== null && (
+          <span className="text-[13px] leading-[1.5] text-ignite-muted">
+            The name and college you enter below appear next to each ID in the registration form&apos;s dropdown, so
+            participants can find their ambassador.
+          </span>
+        )}
       </Panel>
 
       {ranking.lastNumber !== null && (
@@ -87,12 +94,13 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
             </span>
           </div>
           <Panel className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse text-[14px]">
+            <table className="w-full min-w-[760px] border-collapse text-[14px]">
               <thead>
                 <tr className="border-b border-ignite-edge/[0.12] text-left font-ui text-[12px] font-bold uppercase tracking-[0.12em] text-ignite-muted">
                   <th className="px-4 py-3">Rank</th>
                   <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">Name (staff only)</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">College</th>
                   <th className="px-4 py-3 text-right">Registrations</th>
                   <th className="px-4 py-3 text-right">Shortlisted</th>
                 </tr>
@@ -112,26 +120,41 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
 
 function RankingRow({ row }: { row: AmbassadorRankingRow }) {
   const [name, setName] = useState(row.name ?? "");
+  const [college, setCollege] = useState(row.college ?? "");
   const [saving, setSaving] = useState(false);
-  // A live refresh brings the latest name unless this one is being edited.
+  // A live refresh brings the latest details unless this row is being edited.
   const [focused, setFocused] = useState(false);
   useEffect(() => {
-    if (!focused) setName(row.name ?? "");
-  }, [row.name, focused]);
+    if (focused) return;
+    setName(row.name ?? "");
+    setCollege(row.college ?? "");
+  }, [row.name, row.college, focused]);
 
-  async function saveName() {
+  async function saveDetails() {
     setFocused(false);
-    if (name.trim() === (row.name ?? "")) return;
+    if (name.trim() === (row.name ?? "") && college.trim() === (row.college ?? "")) return;
     setSaving(true);
-    const result = await setAmbassadorName(row.number, name).catch(() => ({ success: false as const, error: "No connection — the name wasn't saved." }));
+    const result = await setAmbassadorDetails(row.number, { name, college }).catch(() => ({
+      success: false as const,
+      error: "No connection — the details weren't saved.",
+    }));
     setSaving(false);
     if (!result.success) {
       toast.error(result.error);
       setName(row.name ?? "");
+      setCollege(row.college ?? "");
       return;
     }
-    toast.success(`Saved the name for ${formatAmbassadorId(row.number)}.`);
+    toast.success(`Saved the details for ${formatAmbassadorId(row.number)}.`);
   }
+
+  const inputProps = {
+    disabled: saving,
+    onFocus: () => setFocused(true),
+    onBlur: saveDetails,
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && e.currentTarget.blur(),
+    className: "py-1.5 text-[14px]",
+  };
 
   return (
     <tr className="border-b border-ignite-edge/[0.06]">
@@ -152,16 +175,22 @@ function RankingRow({ row }: { row: AmbassadorRankingRow }) {
       <td className="px-4 py-2.5 font-semibold tracking-[0.04em] text-ignite-ink">{formatAmbassadorId(row.number)}</td>
       <td className="px-4 py-1.5">
         <TextInput
+          {...inputProps}
           value={name}
           maxLength={80}
-          disabled={saving}
           placeholder="Add a name"
-          onFocus={() => setFocused(true)}
           onChange={(e) => setName(e.target.value)}
-          onBlur={saveName}
-          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          className="py-1.5 text-[14px]"
           aria-label={`Name for ${formatAmbassadorId(row.number)}`}
+        />
+      </td>
+      <td className="px-4 py-1.5">
+        <TextInput
+          {...inputProps}
+          value={college}
+          maxLength={120}
+          placeholder="Add a college"
+          onChange={(e) => setCollege(e.target.value)}
+          aria-label={`College for ${formatAmbassadorId(row.number)}`}
         />
       </td>
       <td className="px-4 py-2.5 text-right font-display text-[16px] font-bold text-ignite-ink">{row.total}</td>

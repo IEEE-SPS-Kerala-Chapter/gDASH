@@ -82,6 +82,8 @@ export default async function StatusPage(props: { params: Promise<{ token: strin
 
   const { team, members, registration } = result;
   const outcome = result.result ?? null;
+  // The whole team registers under one college (the leader's).
+  const teamCollege = (members.find((m) => m.is_leader) ?? members[0])?.college;
 
   // A participant session left over on this device (see StatusSignOutBar).
   // Staff sessions are left alone — an organizer opening a team's status
@@ -112,7 +114,7 @@ export default async function StatusPage(props: { params: Promise<{ token: strin
                   {team.name}
                 </h1>
                 <p className="m-0 text-[15px] text-ignite-ink-soft">
-                  {team.ai_theme} · {team.district}
+                  {[team.ai_theme, teamCollege].filter(Boolean).join(" · ")}
                 </p>
                 <span
                   className="border-brand-gradient mt-1 inline-block w-fit rounded-full px-3.5 py-1 text-[13px] font-bold tracking-[0.06em] text-ignite-ink"

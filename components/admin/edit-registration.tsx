@@ -10,7 +10,7 @@ import { MEMBER_YEARS } from "@/lib/validations/member";
 import { TEAM_ROLES } from "@/lib/validations/roles";
 import { KERALA_BTECH_COLLEGES } from "@/lib/kerala-colleges";
 import type { RegistrationEdit } from "@/lib/validations/registration-edit";
-import { NO_AMBASSADOR } from "@/lib/ambassador";
+import { NO_AMBASSADOR, type AmbassadorDetails } from "@/lib/ambassador";
 import { AmbassadorSelect } from "@/components/registration/ambassador-select";
 import { Field, Panel, PrimaryButton, SecondaryButton, SectionLabel, Select, Spinner, TextArea, TextInput } from "@/components/admin/ui";
 
@@ -78,12 +78,14 @@ function initialForm(team: AdminTeam): RegistrationEdit {
 export function EditRegistration({
   team,
   ambassadorLastNumber,
+  ambassadorDetails,
   onDone,
   onStale,
 }: {
   team: AdminTeam;
   /** Ambassador IDs run AMGIG-00 … this; null = none set up. */
   ambassadorLastNumber: number | null;
+  ambassadorDetails?: AmbassadorDetails;
   onDone: () => void;
   /** Someone else changed the team meanwhile — reload the latest. */
   onStale: () => void;
@@ -157,6 +159,7 @@ export function EditRegistration({
               <AmbassadorSelect
                 value={form.ambassador}
                 lastNumber={ambassadorLastNumber}
+                details={ambassadorDetails}
                 onChange={(v) => setForm((f) => ({ ...f, ambassador: v }))}
               />
             </Field>

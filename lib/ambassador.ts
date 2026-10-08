@@ -35,3 +35,15 @@ export function ambassadorFormValueToNumber(value: string): number | null {
 export function ambassadorLabel(n: number | null): string {
   return n === null ? NO_AMBASSADOR_LABEL : formatAmbassadorId(n);
 }
+
+/** Name and college the super-admin entered for an ID (either may be missing). */
+export type AmbassadorDetail = { name: string | null; college: string | null };
+/** Details by ambassador number; IDs without any are simply absent. */
+export type AmbassadorDetails = Record<number, AmbassadorDetail>;
+
+/** "AMGIG-07 · Anu Joseph · FISAT" — the ID plus whatever details are set. */
+export function ambassadorDisplay(n: number | null, details?: AmbassadorDetails): string {
+  if (n === null) return NO_AMBASSADOR_LABEL;
+  const d = details?.[n];
+  return [formatAmbassadorId(n), d?.name, d?.college].filter(Boolean).join(" · ");
+}
