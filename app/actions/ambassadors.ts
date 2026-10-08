@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { logAuditEvent } from "@/lib/audit-log";
 import { formatAmbassadorId, type AmbassadorDetails } from "@/lib/ambassador";
+import { MAX_SHEET_ROWS } from "@/lib/ambassador-sheet";
 
 /**
  * The last ambassador number (IDs run AMGIG-00 … AMGIG-<n>), or null when
@@ -171,4 +172,43 @@ export async function getAmbassadorDetails(): Promise<AmbassadorDetails> {
   const supabase = await createClient();
   const { data } = await supabase.from("ambassador_names").select("number, name, college");
   return toDetails(data ?? []);
+}
+
+/**
+ * Super-admin only: save an uploaded ambassador sheet. Row order sets the
+ * IDs (first row = AMGIG-00); IDs after the last row are left as they are,
+ * and the range is raised to cover the sheet. All or nothing.
+ */
+export async function importAmbassadorSheet(
+  rows: Array<{ name: string; college: string }>,
+): Promise<{ success: true; imported: number; lastNumber: number } | { success: false; error: string }> {
+  const caller = await getCallerRole();
+  if (caller?.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can import ambassadors." };
+  }
+  if (rows.length === 0 || rows.length > MAX_SHEET_ROWS) {
+    return { success: false, error: `The sheet must have 1 to ${MAX_SHEET_ROWS} ambassadors.` };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("super_admin_import_ambassadors", {
+    p_rows: rows.map((r) => ({ name: r.name.trim(), college: r.college.trim() })),
+  });
+  if (error || !data) {
+    return {
+      success: false,
+      error:
+        error?.hint === "bad_row"
+          ? "Some rows have a missing or too-long name or college — fix them and upload again."
+          : "Could not import the sheet. Nothing was changed.",
+    };
+  }
+  const result = data as { imported: number; last_number: number };
+
+  await logAuditEvent(supabase, "ambassadors.sheet_imported", {
+    metadata: { imported: result.imported, range: `AMGIG-00 to ${formatAmbassadorId(result.last_number)}` },
+  });
+  revalidateDashboard();
+  revalidatePath("/", "layout");
+  return { success: true, imported: result.imported, lastNumber: result.last_number };
 }

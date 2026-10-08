@@ -12,6 +12,7 @@ import {
 import { formatAmbassadorId } from "@/lib/ambassador";
 import { Panel, PrimaryButton, SectionLabel, TextInput } from "@/components/admin/ui";
 import { useLiveRefresh } from "./use-live-refresh";
+import { AmbassadorSheetImport } from "./ambassador-sheet-import";
 import { cn } from "@/lib/utils";
 
 /**
@@ -83,6 +84,8 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
           </span>
         )}
       </Panel>
+
+      <AmbassadorSheetImport rows={ranking.rows} />
 
       {ranking.lastNumber !== null && (
         <div className="flex flex-col gap-3">
