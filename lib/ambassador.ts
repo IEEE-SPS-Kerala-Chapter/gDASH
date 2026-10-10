@@ -36,8 +36,11 @@ export function ambassadorLabel(n: number | null): string {
   return n === null ? NO_AMBASSADOR_LABEL : formatAmbassadorId(n);
 }
 
-/** Name and college the super-admin entered for an ID (either may be missing). */
-export type AmbassadorDetail = { name: string | null; college: string | null };
+/**
+ * Name and college the super-admin entered for an ID (either may be
+ * missing). A deleted ID can't be picked on the registration form.
+ */
+export type AmbassadorDetail = { name: string | null; college: string | null; deleted?: boolean };
 /** Details by ambassador number; IDs without any are simply absent. */
 export type AmbassadorDetails = Record<number, AmbassadorDetail>;
 
@@ -46,4 +49,17 @@ export function ambassadorDisplay(n: number | null, details?: AmbassadorDetails)
   if (n === null) return NO_AMBASSADOR_LABEL;
   const d = details?.[n];
   return [formatAmbassadorId(n), d?.name, d?.college].filter(Boolean).join(" · ");
+}
+
+/** The IDs participants can still pick: the range minus deleted ones. */
+export function selectableAmbassadorNumbers(lastNumber: number | null, details?: AmbassadorDetails): number[] {
+  return ambassadorNumbers(lastNumber).filter((n) => !details?.[n]?.deleted);
+}
+
+/**
+ * The range to offer on the registration form: null (question hidden) when
+ * there is no range, or every ID in it has been deleted.
+ */
+export function effectiveAmbassadorRange(lastNumber: number | null, details?: AmbassadorDetails): number | null {
+  return selectableAmbassadorNumbers(lastNumber, details).length > 0 ? lastNumber : null;
 }

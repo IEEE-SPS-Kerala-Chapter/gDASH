@@ -35,21 +35,24 @@ export async function getAmbassadorDirectory(): Promise<AmbassadorDetails> {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("ambassador_directory");
     if (error || !data) return {};
-    return toDetails(data as Array<{ number: number; name: string | null; college: string | null }>);
+    return toDetails(data as AmbassadorRow[]);
   } catch (err) {
     console.error("getAmbassadorDirectory threw unexpectedly:", err);
     return {};
   }
 }
 
-function toDetails(rows: Array<{ number: number; name: string | null; college: string | null }>): AmbassadorDetails {
-  return Object.fromEntries(rows.map((r) => [r.number, { name: r.name, college: r.college }]));
+type AmbassadorRow = { number: number; name: string | null; college: string | null; deleted?: boolean };
+
+function toDetails(rows: AmbassadorRow[]): AmbassadorDetails {
+  return Object.fromEntries(rows.map((r) => [r.number, { name: r.name, college: r.college, deleted: Boolean(r.deleted) }]));
 }
 
 export type AmbassadorRankingRow = {
   number: number;
   name: string | null;
   college: string | null;
+  deleted: boolean;
   total: number;
   shortlisted: number;
   /** null while the ambassador has no referrals yet. */
@@ -145,6 +148,10 @@ export async function setAmbassadorDetails(number: number, details: { name: stri
   }
 
   const supabase = await createClient();
+  const { data: current } = await supabase.from("ambassador_names").select("deleted_at").eq("number", number).maybeSingle();
+  if (current?.deleted_at) {
+    return { success: false, error: "This ambassador was deleted, so its details can't be changed." };
+  }
   const { error } =
     name || college
       ? await supabase
@@ -170,8 +177,8 @@ export async function getAmbassadorDetails(): Promise<AmbassadorDetails> {
   const caller = await getCallerRole();
   if (caller?.role !== "super_admin") return {};
   const supabase = await createClient();
-  const { data } = await supabase.from("ambassador_names").select("number, name, college");
-  return toDetails(data ?? []);
+  const { data } = await supabase.from("ambassador_names").select("number, name, college, deleted_at");
+  return toDetails((data ?? []).map((r) => ({ ...r, deleted: r.deleted_at !== null })));
 }
 
 /**
@@ -211,4 +218,47 @@ export async function importAmbassadorSheet(
   revalidateDashboard();
   revalidatePath("/", "layout");
   return { success: true, imported: result.imported, lastNumber: result.last_number };
+}
+
+/**
+ * Super-admin only: delete one ambassador ID, or every ID in the range
+ * (number = "all"). Deleted IDs leave the registration dropdown and can't be
+ * picked again; teams that already picked one keep that referral. There is
+ * no undo (importing a sheet that covers the ID brings it back as new).
+ */
+export async function deleteAmbassadors(target: number | "all"): Promise<Result> {
+  const caller = await getCallerRole();
+  if (caller?.role !== "super_admin") {
+    return { success: false, error: "Only the super-admin can delete ambassadors." };
+  }
+  const supabase = await createClient();
+  const { data: program } = await supabase.from("ambassador_program").select("last_number").eq("id", true).single();
+  const lastNumber = program?.last_number ?? null;
+  if (lastNumber === null) return { success: false, error: "There are no ambassadors to delete." };
+
+  let numbers: number[];
+  if (target === "all") {
+    numbers = Array.from({ length: lastNumber + 1 }, (_, i) => i);
+  } else {
+    if (!Number.isInteger(target) || target < 0 || target > lastNumber) {
+      return { success: false, error: "Unknown ambassador ID." };
+    }
+    numbers = [target];
+  }
+
+  // Only deleted_at is sent, so an existing name and college are kept for the record.
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("ambassador_names")
+    .upsert(numbers.map((number) => ({ number, deleted_at: now, updated_at: now })), { onConflict: "number" });
+  if (error) {
+    return { success: false, error: "Could not delete. Nothing was changed." };
+  }
+
+  await logAuditEvent(supabase, target === "all" ? "ambassadors.all_deleted" : "ambassadors.deleted", {
+    targetLabel: target === "all" ? `AMGIG-00 to ${formatAmbassadorId(lastNumber)}` : formatAmbassadorId(target),
+  });
+  revalidateDashboard();
+  revalidatePath("/", "layout");
+  return { success: true };
 }

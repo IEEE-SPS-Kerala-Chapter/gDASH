@@ -26,7 +26,7 @@ import {
   Eyebrow,
 } from "./ui";
 import { StepTeam } from "./step-team";
-import { NO_AMBASSADOR, type AmbassadorDetails } from "@/lib/ambassador";
+import { NO_AMBASSADOR, effectiveAmbassadorRange, type AmbassadorDetails } from "@/lib/ambassador";
 import { getAmbassadorDirectory, getAmbassadorRange } from "@/app/actions/ambassadors";
 import { StepMembers } from "./step-members";
 import { StepIdea } from "./step-idea";
@@ -169,6 +169,8 @@ export function RegistrationWizard({
   // the dropdown must never offer IDs that are no longer valid.
   const [ambassadorLastNumber, setAmbassadorLastNumber] = useState(initialAmbassadorLastNumber);
   const [ambassadorDetails, setAmbassadorDetails] = useState(initialAmbassadorDetails);
+  // Hidden (null) when every ID in the range has been deleted.
+  const offeredAmbassadorRange = effectiveAmbassadorRange(ambassadorLastNumber, ambassadorDetails);
   // Continue is waiting for the "already registered with another team" checks.
   const [checking, setChecking] = useState(false);
   const [openingStatus, setOpeningStatus] = useState(false);
@@ -261,12 +263,16 @@ export function RegistrationWizard({
   useEffect(() => {
     if (loadState !== "ready") return;
     const current = form.getValues("team.ambassador");
-    if (ambassadorLastNumber === null) {
+    if (offeredAmbassadorRange === null) {
       if (current !== NO_AMBASSADOR) form.setValue("team.ambassador", NO_AMBASSADOR);
-    } else if (current && current !== NO_AMBASSADOR && Number(current) > ambassadorLastNumber) {
+    } else if (
+      current &&
+      current !== NO_AMBASSADOR &&
+      (Number(current) > offeredAmbassadorRange || ambassadorDetails[Number(current)]?.deleted)
+    ) {
       form.setValue("team.ambassador", "");
     }
-  }, [loadState, ambassadorLastNumber, form]);
+  }, [loadState, offeredAmbassadorRange, ambassadorDetails, form]);
 
   // Re-read on reaching the Team step and each time the ambassador list is
   // opened. A failed read keeps the list as it was.
@@ -364,6 +370,7 @@ export function RegistrationWizard({
         // The ID was refused because the range changed: show the current
         // list and clear the stale choice so they pick again.
         setAmbassadorLastNumber(result.ambassadorLastNumber);
+        refreshAmbassadorRange();
         form.setValue("team.ambassador", "");
       }
       // Put the message under the field it's about, on that field's step.
@@ -546,7 +553,7 @@ export function RegistrationWizard({
               {current.key === "team" && (
                 <StepTeam
                   form={form}
-                  ambassadorLastNumber={ambassadorLastNumber}
+                  ambassadorLastNumber={offeredAmbassadorRange}
                   ambassadorDetails={ambassadorDetails}
                   onRefreshAmbassadors={refreshAmbassadorRange}
                 />
@@ -557,7 +564,7 @@ export function RegistrationWizard({
                 <StepReview
                   form={form}
                   onEdit={jumpToStep}
-                  ambassadorLastNumber={ambassadorLastNumber}
+                  ambassadorLastNumber={offeredAmbassadorRange}
                   ambassadorDetails={ambassadorDetails}
                 />
               )}

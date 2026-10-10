@@ -3,12 +3,13 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { importAmbassadorSheet, type AmbassadorRankingRow } from "@/app/actions/ambassadors";
+import { deleteAmbassadors, importAmbassadorSheet, type AmbassadorRankingRow } from "@/app/actions/ambassadors";
 import { formatAmbassadorId } from "@/lib/ambassador";
 import { AMBASSADOR_SHEET_TEMPLATE, parseAmbassadorSheet, type ParsedSheet } from "@/lib/ambassador-sheet";
 import { downloadCsv } from "@/lib/csv-download";
 import { Panel, PrimaryButton, SecondaryButton, SectionLabel } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "./confirm-dialog";
 
 type PreviewRow = {
   number: number;
@@ -33,6 +34,26 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
   const [fileName, setFileName] = useState<string | null>(null);
   const [sheet, setSheet] = useState<ParsedSheet | null>(null);
   const [importing, setImporting] = useState(false);
+  const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const activeCount = current.filter((r) => !r.deleted).length;
+  const referredTotal = current.reduce((sum, r) => sum + r.total, 0);
+
+  async function deleteAll() {
+    setDeletingAll(true);
+    const result = await deleteAmbassadors("all").catch(() => ({
+      success: false as const,
+      error: "No connection — nothing was deleted.",
+    }));
+    setDeletingAll(false);
+    setConfirmingDeleteAll(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("All ambassadors deleted.");
+    router.refresh();
+  }
 
   const byNumber = new Map(current.map((r) => [r.number, r]));
   const preview: PreviewRow[] = (sheet?.rows ?? []).map((row, i) => {
@@ -40,7 +61,7 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
     const prevName = existing?.name ?? null;
     const prevCollege = existing?.college ?? null;
     const kind =
-      !prevName && !prevCollege
+      existing?.deleted || (!prevName && !prevCollege)
         ? "new"
         : prevName === row.name && (prevCollege ?? "") === row.college
           ? "same"
@@ -125,8 +146,38 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
         >
           Download template
         </SecondaryButton>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setConfirmingDeleteAll(true)}
+            disabled={importing}
+            className="rounded-full border border-ignite-danger/60 px-5 py-2.5 font-ui text-[14px] font-semibold text-ignite-danger transition-colors hover:bg-ignite-danger hover:text-white disabled:opacity-60"
+          >
+            Delete all ambassadors
+          </button>
+        )}
         {fileName && <span className="font-ui text-[13px] text-ignite-muted">{fileName}</span>}
       </div>
+      {confirmingDeleteAll && (
+        <ConfirmDialog
+          title="Delete all ambassadors?"
+          confirmLabel={`Yes, delete all ${activeCount}`}
+          busy={deletingAll}
+          onConfirm={deleteAll}
+          onCancel={() => setConfirmingDeleteAll(false)}
+        >
+          <p className="m-0">
+            All {activeCount} ambassador{activeCount === 1 ? "" : "s"} will be removed from the registration form, and
+            the &ldquo;Referred by an ambassador?&rdquo; question will be hidden until you import a new sheet.
+          </p>
+          {referredTotal > 0 && (
+            <p className="m-0">
+              {referredTotal} team{referredTotal === 1 ? " has" : "s have"} already picked an ambassador — those
+              referrals are kept.
+            </p>
+          )}
+        </ConfirmDialog>
+      )}
 
       {sheet?.error && <p className="m-0 text-[14px] font-semibold text-ignite-danger">{sheet.error}</p>}
 

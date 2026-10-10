@@ -6,9 +6,9 @@ import {
   NO_AMBASSADOR,
   NO_AMBASSADOR_LABEL,
   ambassadorDisplay,
-  ambassadorNumbers,
   formatAmbassadorId,
   parseAmbassadorInput,
+  selectableAmbassadorNumbers,
   type AmbassadorDetails,
 } from "@/lib/ambassador";
 import { TextInput } from "./ui";
@@ -53,7 +53,7 @@ export function AmbassadorSelect({
   const [active, setActive] = useState(0);
 
   const options = useMemo<Option[]>(() => {
-    const ids = ambassadorNumbers(lastNumber).map((n) => ({
+    const ids = selectableAmbassadorNumbers(lastNumber, details).map((n) => ({
       value: String(n),
       label: formatAmbassadorId(n),
       name: details?.[n]?.name,
@@ -94,7 +94,7 @@ export function AmbassadorSelect({
         if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
         // Typed an exact ID and tabbed away: take it.
         const typed = parseAmbassadorInput(query);
-        if (typed !== null && typed <= lastNumber) onChange(String(typed));
+        if (typed !== null && typed <= lastNumber && !details?.[typed]?.deleted) onChange(String(typed));
         setQuery("");
         setOpen(false);
       }}

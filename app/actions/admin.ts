@@ -728,7 +728,7 @@ const EDIT_GUARD_MESSAGES: Record<string, string> = {
   name_similar: "This name is too close to another team's name.",
   bad_member: "Member list is out of date — reload the page.",
   not_found: "Registration not found.",
-  invalid_ambassador: "That ambassador ID is outside the current range.",
+  invalid_ambassador: "That ambassador ID is outside the current range or was deleted.",
 };
 
 /**

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  deleteAmbassadors,
   setAmbassadorDetails,
   setAmbassadorRange,
   type AmbassadorRanking,
@@ -13,6 +14,7 @@ import { formatAmbassadorId } from "@/lib/ambassador";
 import { Panel, PrimaryButton, SectionLabel, TextInput } from "@/components/admin/ui";
 import { useLiveRefresh } from "./use-live-refresh";
 import { AmbassadorSheetImport } from "./ambassador-sheet-import";
+import { ConfirmDialog } from "./confirm-dialog";
 import { cn } from "@/lib/utils";
 
 /**
@@ -106,6 +108,9 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
                   <th className="px-4 py-3">College</th>
                   <th className="px-4 py-3 text-right">Registrations</th>
                   <th className="px-4 py-3 text-right">Shortlisted</th>
+                  <th className="px-4 py-3">
+                    <span className="sr-only">Delete</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -122,6 +127,9 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
 }
 
 function RankingRow({ row }: { row: AmbassadorRankingRow }) {
+  const router = useRouter();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [name, setName] = useState(row.name ?? "");
   const [college, setCollege] = useState(row.college ?? "");
   const [saving, setSaving] = useState(false);
@@ -151,8 +159,25 @@ function RankingRow({ row }: { row: AmbassadorRankingRow }) {
     toast.success(`Saved the details for ${formatAmbassadorId(row.number)}.`);
   }
 
+  async function confirmDelete() {
+    setDeleting(true);
+    const result = await deleteAmbassadors(row.number).catch(() => ({
+      success: false as const,
+      error: "No connection — nothing was deleted.",
+    }));
+    setDeleting(false);
+    setConfirmingDelete(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`Deleted ${formatAmbassadorId(row.number)}.`);
+    router.refresh();
+  }
+
+  const label = [row.name, row.college].filter(Boolean).join(" · ");
   const inputProps = {
-    disabled: saving,
+    disabled: saving || row.deleted,
     onFocus: () => setFocused(true),
     onBlur: saveDetails,
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && e.currentTarget.blur(),
@@ -160,7 +185,7 @@ function RankingRow({ row }: { row: AmbassadorRankingRow }) {
   };
 
   return (
-    <tr className="border-b border-ignite-edge/[0.06]">
+    <tr className={cn("border-b border-ignite-edge/[0.06]", row.deleted && "opacity-60")}>
       <td className="px-4 py-2.5">
         {row.rank === null ? (
           <span className="text-ignite-faint">—</span>
@@ -198,6 +223,43 @@ function RankingRow({ row }: { row: AmbassadorRankingRow }) {
       </td>
       <td className="px-4 py-2.5 text-right font-display text-[16px] font-bold text-ignite-ink">{row.total}</td>
       <td className="px-4 py-2.5 text-right text-ignite-ink-soft">{row.shortlisted}</td>
+      <td className="px-4 py-2.5 text-right">
+        {row.deleted ? (
+          <span className="rounded-full bg-ignite-danger-pale px-2.5 py-1 font-ui text-[12px] font-bold text-ignite-danger">
+            Deleted
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            className="rounded-full border border-ignite-danger/60 px-3 py-1 font-ui text-[13px] font-semibold text-ignite-danger transition-colors hover:bg-ignite-danger hover:text-white"
+            aria-label={`Delete ${formatAmbassadorId(row.number)}`}
+          >
+            Delete
+          </button>
+        )}
+        {confirmingDelete && (
+          <ConfirmDialog
+            title={`Delete ${formatAmbassadorId(row.number)}?`}
+            confirmLabel="Yes, delete"
+            busy={deleting}
+            onConfirm={confirmDelete}
+            onCancel={() => setConfirmingDelete(false)}
+          >
+            <p className="m-0 text-left">
+              <b>{formatAmbassadorId(row.number)}</b>
+              {label ? ` (${label})` : ""} will be removed from the registration form&apos;s ambassador list, and
+              participants won&apos;t be able to pick it any more. Other IDs keep their numbers.
+            </p>
+            {row.total > 0 && (
+              <p className="m-0 text-left">
+                {row.total} team{row.total === 1 ? " has" : "s have"} already picked this ambassador — those referrals
+                are kept.
+              </p>
+            )}
+          </ConfirmDialog>
+        )}
+      </td>
     </tr>
   );
 }
