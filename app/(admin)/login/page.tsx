@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { Field, GradientText, HeroShell, TextInput, PrimaryButton, LogoHeaderBar } from "@/components/admin/ui";
 import { signIn } from "@/app/actions/auth";
 
@@ -10,6 +11,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [opening, setOpening] = useState(false);
 
@@ -56,14 +58,26 @@ export default function AdminLoginPage() {
                 />
               </Field>
               <Field label="Password">
-                <TextInput
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
+                <div className="relative">
+                  <TextInput
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    className="pr-12"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-ignite-faint transition-colors hover:text-ignite-ink focus-visible:text-ignite-ink focus-visible:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </Field>
               <PrimaryButton type="submit" disabled={loading} loading={loading}>
                 {opening ? "Opening dashboard…" : loading ? "Signing in…" : "Sign in"}
