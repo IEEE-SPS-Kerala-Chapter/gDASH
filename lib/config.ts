@@ -11,4 +11,4 @@ export const LEADER_VERIFICATION_ENABLED = true;
 // Shared across step-declarations.tsx (inline next to the rules checkbox)
 // and registration-wizard.tsx (a persistent link on every other step) —
 // one place to update if this ever moves.
-export const RULES_URL = "https://docs.google.com/document/d/1KF-yekcP4ZKF40_f_7cH_JkEJniD6KtcvNObSt2_pSc/edit?usp=sharing";
+export const RULES_URL = "/gignite-rules.pdf";
