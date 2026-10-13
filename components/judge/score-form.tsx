@@ -171,9 +171,6 @@ export function ScoreForm({ registrationId, existingScore }: { registrationId: s
           rows={5}
           placeholder="What worked, and what you'd push on if they had another day."
         />
-        <span className="text-[13px] text-ignite-muted">
-          Shared with the team after results are announced. Scores stay private to the panel.
-        </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
