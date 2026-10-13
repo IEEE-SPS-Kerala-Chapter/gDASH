@@ -7,6 +7,7 @@ import { getCallerRole } from "./admin";
 import { logAuditEvent } from "@/lib/audit-log";
 import { formatAmbassadorId, type AmbassadorDetails } from "@/lib/ambassador";
 import { MAX_SHEET_ROWS } from "@/lib/ambassador-sheet";
+import { csvField } from "@/lib/csv";
 
 /**
  * The last ambassador number (IDs run AMGIG-00 … AMGIG-<n>), or null when
@@ -82,6 +83,37 @@ export async function getAmbassadorRanking(): Promise<{ success: true; ranking: 
     success: true,
     ranking: { lastNumber: raw.last_number, rows: raw.rows, referred: raw.referred, noAmbassador: raw.no_ambassador },
   };
+}
+
+/**
+ * Super-admin only: every ambassador ID with its details and referral counts,
+ * as CSV in ID order. The Name and College headers match the sheet import,
+ * so the file can be edited and uploaded back (other columns are ignored).
+ */
+export async function exportAmbassadorsCsv(): Promise<
+  { success: true; csv: string; filename: string } | { success: false; error: string }
+> {
+  const result = await getAmbassadorRanking();
+  if (!result.success) return result;
+  const rows = [...result.ranking.rows].sort((a, b) => a.number - b.number);
+
+  const header = ["Ambassador ID", "Name", "College", "Registrations", "Shortlisted", "Rank", "Status"].map(csvField);
+  const lines = rows.map((r) =>
+    [
+      formatAmbassadorId(r.number),
+      r.name ?? "",
+      r.college ?? "",
+      String(r.total),
+      String(r.shortlisted),
+      r.rank === null ? "" : String(r.rank),
+      r.deleted ? "Deleted" : "Active",
+    ].map(csvField),
+  );
+  const csv = [header.join(","), ...lines.map((l) => l.join(","))].join("\n");
+  const today = new Date().toISOString().slice(0, 10);
+  const supabase = await createClient();
+  await logAuditEvent(supabase, "ambassadors.exported", { metadata: { rows: lines.length } });
+  return { success: true, csv, filename: `gignite-ambassadors-${today}.csv` };
 }
 
 type Result = { success: true } | { success: false; error: string };

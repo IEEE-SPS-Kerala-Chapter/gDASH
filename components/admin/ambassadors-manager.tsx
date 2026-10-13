@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   deleteAmbassadors,
+  exportAmbassadorsCsv,
   setAmbassadorDetails,
   setAmbassadorRange,
   type AmbassadorRanking,
   type AmbassadorRankingRow,
 } from "@/app/actions/ambassadors";
 import { formatAmbassadorId } from "@/lib/ambassador";
-import { Panel, PrimaryButton, SectionLabel, TextInput } from "@/components/admin/ui";
+import { downloadCsv } from "@/lib/csv-download";
+import { Panel, PrimaryButton, SecondaryButton, SectionLabel, TextInput } from "@/components/admin/ui";
 import { useLiveRefresh } from "./use-live-refresh";
 import { AmbassadorSheetImport } from "./ambassador-sheet-import";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -27,6 +29,18 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
   const router = useRouter();
   const [lastInput, setLastInput] = useState(ranking.lastNumber === null ? "" : String(ranking.lastNumber));
   const [savingRange, setSavingRange] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    const result = await exportAmbassadorsCsv().catch(() => ({ success: false as const, error: "No connection — try again." }));
+    setExporting(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    downloadCsv(result.csv, result.filename);
+  }
 
   async function saveRange() {
     const n = Number(lastInput);
@@ -93,10 +107,15 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <SectionLabel>Ranking</SectionLabel>
-            <span className="font-ui text-[13px] text-ignite-muted">
-              {ranking.referred} registration{ranking.referred === 1 ? "" : "s"} referred · {ranking.noAmbassador} with no ambassador ·
-              updates every 15 seconds
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-ui text-[13px] text-ignite-muted">
+                {ranking.referred} registration{ranking.referred === 1 ? "" : "s"} referred · {ranking.noAmbassador} with no ambassador ·
+                updates every 15 seconds
+              </span>
+              <SecondaryButton type="button" onClick={handleExport} disabled={exporting}>
+                {exporting ? "Exporting…" : "Export CSV"}
+              </SecondaryButton>
+            </div>
           </div>
           <Panel className="overflow-x-auto">
             <table className="w-full min-w-[760px] border-collapse text-[14px]">

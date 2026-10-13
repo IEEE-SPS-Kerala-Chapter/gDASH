@@ -124,7 +124,8 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
     <Panel className="flex flex-col gap-3 p-5">
       <SectionLabel>Import from a sheet</SectionLabel>
       <span className="text-[13px] leading-[1.5] text-ignite-muted">
-        Upload a CSV with <b>Name</b> and <b>College</b> columns (in Google Sheets: File → Download → CSV). The first
+        Upload a CSV whose first row is the headers <b>Name</b> and <b>College</b>, with every row filling both (in
+        Google Sheets: File → Download → CSV). The first
         ambassador becomes AMGIG-00, the next AMGIG-01, and so on in sheet order. IDs after the last row keep their
         current details, and the ID range is raised if the sheet needs more IDs. You&apos;ll see a preview before
         anything is saved.
