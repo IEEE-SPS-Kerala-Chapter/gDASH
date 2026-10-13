@@ -6,7 +6,7 @@ import { FileUp, Lightbulb, Lock, UserPlus, Users } from "lucide-react";
 import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
+import { findDuplicateContacts, registrationFormSchema, type RegistrationForm } from "@/lib/validations/registration";
 import { submitRegistration, loadRegistrationDraft, checkStepConflicts, type StepConflict } from "@/app/actions/registration";
 import { purgeLegacyLocalDraft } from "@/lib/registration-draft";
 import { clearSubmitted, markSubmitted } from "@/lib/submitted-registration";
@@ -319,6 +319,26 @@ export function RegistrationWizard({
       return;
     }
 
+    // The same name, email or phone twice in this form (a member given the
+    // leader's email, …). The resolver can't catch this here: the schema
+    // only runs that check once every step is valid. Checked again before
+    // Submit, in case the leader's details were changed after this step.
+    if (current.key === "members" || isLastStep) {
+      const duplicates = findDuplicateContacts(form.getValues("team"), form.getValues("members"));
+      if (duplicates.length > 0) {
+        for (const d of duplicates) {
+          form.setError(d.path.join(".") as Path<RegistrationForm>, { type: "duplicate", message: d.message });
+        }
+        const first = duplicates[0];
+        toast.error(`Member ${Number(first.path[1]) + 2}: ${first.message}`);
+        if (current.key !== "members") jumpToStep("members");
+        setTimeout(() => {
+          document.querySelector("[data-field-error]")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 150);
+        return;
+      }
+    }
+
     // Format is fine — now ask the database whether another team already
     // has this team name / any of these emails or phones, so the message
     // shows under the field here instead of only at the final Submit.
@@ -377,7 +397,7 @@ export function RegistrationWizard({
       if (result.field) {
         const field = result.field as Path<RegistrationForm>;
         form.setError(field, { type: "duplicate", message: result.error });
-        jumpToStep(field.startsWith("members.") ? "members" : "team");
+        jumpToStep(field.split(".")[0]);
         setTimeout(() => {
           document.querySelector("[data-field-error]")?.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 150);

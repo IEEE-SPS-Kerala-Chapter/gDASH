@@ -1,6 +1,6 @@
 import { useCallback, useRef, type FocusEvent } from "react";
 import type { FieldPath, UseFormReturn } from "react-hook-form";
-import type { RegistrationForm } from "@/lib/validations/registration";
+import { findDuplicateContacts, type RegistrationForm } from "@/lib/validations/registration";
 import { checkContactAvailability, checkTeamNameAvailability } from "@/app/actions/registration";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -9,10 +9,10 @@ const PHONE_RE = /^\+?[0-9]{10,13}$/;
 /**
  * Wires a field to a live "already registered with another team" check
  * against past submissions (see checkContactAvailability). Complements the
- * in-form duplicate check already built into registrationFormSchema, which
- * only catches a collision *within* the current submission — this one only
- * ever asks the database, about one field at a time, once it's already
- * valid-looking (no point round-tripping an obviously malformed value).
+ * in-form duplicate check (findDuplicateContacts), which only catches a
+ * collision *within* the current submission and is also shown here on a
+ * member's field. The database is asked about one field at a time, once
+ * it's valid-looking (no point round-tripping an obviously malformed value).
  */
 export function useDuplicateContactCheck(form: UseFormReturn<RegistrationForm>) {
   // Guards against a slow, stale response overwriting a newer one for the
@@ -35,6 +35,12 @@ export function useDuplicateContactCheck(form: UseFormReturn<RegistrationForm>) 
       if (latestValue.current.get(path) !== value) return;
 
       const taken = kind === "email" ? result.emailTaken : result.phoneTaken;
+      // Also used earlier in this same form (a member given the leader's
+      // email, …). Checked after the await on purpose: on-blur validation
+      // runs alongside this handler and would otherwise clear the message.
+      const inForm = path.startsWith("members.")
+        ? findDuplicateContacts(form.getValues("team"), form.getValues("members")).find((d) => d.path.join(".") === path)
+        : undefined;
       if (taken) {
         form.setError(path, {
           type: "duplicate",
@@ -43,6 +49,8 @@ export function useDuplicateContactCheck(form: UseFormReturn<RegistrationForm>) 
               ? "This email is already registered with another team."
               : "This phone number is already registered with another team.",
         });
+      } else if (inForm) {
+        form.setError(path, { type: "duplicate", message: inForm.message });
       } else if (form.getFieldState(path).error?.type === "duplicate") {
         form.clearErrors(path);
       }

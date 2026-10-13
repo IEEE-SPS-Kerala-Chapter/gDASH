@@ -27,6 +27,11 @@ function resolveCollege(college: string, other?: string): string {
   return college === OTHER_COLLEGE ? (other ?? "").trim() : college;
 }
 
+/** "Member 2: " for an error on a member card (their messages don't say whose field it is), else nothing. */
+function fieldLabel(path: PropertyKey[]): string {
+  return path[0] === "members" && typeof path[1] === "number" ? `Member ${path[1] + 2}: ` : "";
+}
+
 type SubmitResult =
   | { success: true; accessToken: string }
   /** `field`, when set, is the form field the error belongs to — the wizard shows it there. */
@@ -68,7 +73,15 @@ export async function submitRegistration(
 
   const parsed = registrationFormSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: "Some fields are invalid. Please review the form." };
+    // Name the first problem and its field, so the wizard can show it under
+    // that field on its step rather than a message that says nothing.
+    const issue = parsed.error.issues[0];
+    const field = issue?.path.join(".");
+    return {
+      success: false,
+      error: issue?.message ? `${fieldLabel(issue.path)}${issue.message}` : "Some fields are invalid. Please review the form.",
+      field: field || undefined,
+    };
   }
   const { team, members, idea, declarations } = parsed.data;
 

@@ -48,6 +48,81 @@ export const declarationsSchema = z.object({
 export type Idea = z.infer<typeof ideaSchema>;
 export type Declarations = z.infer<typeof declarationsSchema>;
 
+/** Name as compared for duplicates: case, dots and extra spaces ignored ("Anu  K." = "anu k"). */
+function normalizeName(name: string): string {
+  return name.toLowerCase().replace(/\./g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * A duplicate name, email or phone *within this one submission* (leader
+ * re-typed as a member, or a member card copied and not changed) — the
+ * DB's unique indexes only catch an email or phone already being on a
+ * *different* team. Phone is compared via normalizePhone() so
+ * "+919876543210" and "9876543210" are caught as the same number.
+ *
+ * Exported so the wizard can run it on the Members step's Continue: as a
+ * refinement on the whole form it only runs once every other field is
+ * valid, i.e. never before the final Submit.
+ */
+export function findDuplicateContacts(
+  team: { leaderName?: string; leaderEmail?: string; leaderPhone?: string },
+  members: { fullName?: string; email?: string; phone?: string }[],
+): { path: (string | number)[]; message: string }[] {
+  const issues: { path: (string | number)[]; message: string }[] = [];
+  const nameSeenBy = new Map<string, string>(); // normalized name -> who had it first
+  const emailSeenBy = new Map<string, string>(); // normalized email -> who had it first
+  const phoneSeenBy = new Map<string, string>(); // normalized phone -> who had it first
+
+  const leaderName = team.leaderName ? normalizeName(team.leaderName) : "";
+  if (leaderName) nameSeenBy.set(leaderName, "the Squad Leader");
+  const leaderEmail = team.leaderEmail?.trim().toLowerCase();
+  if (leaderEmail) emailSeenBy.set(leaderEmail, "the Squad Leader");
+  const leaderPhone = team.leaderPhone ? normalizePhone(team.leaderPhone) : "";
+  if (leaderPhone) phoneSeenBy.set(leaderPhone, "the Squad Leader");
+
+  members.forEach((member, index) => {
+    const name = member.fullName ? normalizeName(member.fullName) : "";
+    if (name) {
+      const existing = nameSeenBy.get(name);
+      if (existing) {
+        issues.push({
+          path: ["members", index, "fullName"],
+          message: `This name is already used by ${existing}. Enter each member's own full name.`,
+        });
+      } else {
+        nameSeenBy.set(name, `Member ${index + 2}`);
+      }
+    }
+
+    const email = member.email?.trim().toLowerCase();
+    if (email) {
+      const existing = emailSeenBy.get(email);
+      if (existing) {
+        issues.push({
+          path: ["members", index, "email"],
+          message: `This email is already used by ${existing}. Each member needs their own email.`,
+        });
+      } else {
+        emailSeenBy.set(email, `Member ${index + 2}`);
+      }
+    }
+
+    const phone = member.phone ? normalizePhone(member.phone) : "";
+    if (phone) {
+      const existing = phoneSeenBy.get(phone);
+      if (existing) {
+        issues.push({
+          path: ["members", index, "phone"],
+          message: `This phone number is already used by ${existing}. Each member needs their own number.`,
+        });
+      } else {
+        phoneSeenBy.set(phone, `Member ${index + 2}`);
+      }
+    }
+  });
+  return issues;
+}
+
 // Full multi-step form, validated again server-side on final submit.
 export const registrationFormSchema = z
   .object({
@@ -56,50 +131,10 @@ export const registrationFormSchema = z
     idea: ideaSchema,
     declarations: declarationsSchema,
   })
-  // Catches a duplicate email or phone *within this one submission* (leader
-  // re-typed as a member, or two members given the same contact info by
-  // mistake) before it ever reaches the database — the DB's unique indexes
-  // only catch this person already being on a *different* team. Phone is
-  // compared via normalizePhone() so "+919876543210" and "9876543210"
-  // within the same form are also caught as the same number.
   .superRefine((data, ctx) => {
-    const emailSeenBy = new Map<string, string>(); // normalized email -> who had it first
-    const phoneSeenBy = new Map<string, string>(); // normalized phone -> who had it first
-
-    const leaderEmail = data.team.leaderEmail?.trim().toLowerCase();
-    if (leaderEmail) emailSeenBy.set(leaderEmail, "the team leader");
-    const leaderPhone = data.team.leaderPhone ? normalizePhone(data.team.leaderPhone) : "";
-    if (leaderPhone) phoneSeenBy.set(leaderPhone, "the team leader");
-
-    data.members.forEach((member, index) => {
-      const email = member.email?.trim().toLowerCase();
-      if (email) {
-        const existing = emailSeenBy.get(email);
-        if (existing) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["members", index, "email"],
-            message: `This email is already used by ${existing} above.`,
-          });
-        } else {
-          emailSeenBy.set(email, `member ${index + 2}`);
-        }
-      }
-
-      const phone = member.phone ? normalizePhone(member.phone) : "";
-      if (phone) {
-        const existing = phoneSeenBy.get(phone);
-        if (existing) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["members", index, "phone"],
-            message: `This phone number is already used by ${existing} above.`,
-          });
-        } else {
-          phoneSeenBy.set(phone, `member ${index + 2}`);
-        }
-      }
-    });
+    for (const issue of findDuplicateContacts(data.team, data.members)) {
+      ctx.addIssue({ code: "custom", ...issue });
+    }
   });
 
 export type RegistrationForm = z.infer<typeof registrationFormSchema>;
