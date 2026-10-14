@@ -47,7 +47,7 @@ export function TeamDetail({
   team: AdminTeam;
   judges: AdminJudge[];
   viewerRole: string;
-  /** Super-admin only (edit form): ambassador IDs run AMGIG-00 … this. */
+  /** Super-admin only (edit form): ambassador IDs run AMGIG-01 … this. */
   ambassadorLastNumber?: number | null;
   /** Super-admin only: ambassador names and colleges by number. */
   ambassadorDetails?: AmbassadorDetails;

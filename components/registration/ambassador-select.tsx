@@ -22,7 +22,7 @@ function labelFor(value: string, details?: AmbassadorDetails): string {
 }
 
 /**
- * Searchable dropdown of ambassador IDs (AMGIG-00 … AMGIG-<lastNumber>),
+ * Searchable dropdown of ambassador IDs (AMGIG-01 … AMGIG-<lastNumber>),
  * each with the name and college the super-admin entered, plus "No
  * ambassador referred". Typing "7", "07" or "AMGIG-07" narrows the list to
  * that ID; typing letters matches names and colleges. Only a value from the

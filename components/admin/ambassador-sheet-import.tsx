@@ -25,7 +25,7 @@ type PreviewRow = {
 
 /**
  * Super-admin: upload a CSV of ambassadors (Name, College). Row order sets
- * the IDs — first row AMGIG-00, then AMGIG-01, … — and nothing is saved
+ * the IDs — first row AMGIG-01, then AMGIG-02, … — and nothing is saved
  * until the preview is confirmed.
  */
 export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRankingRow[] }) {
@@ -56,8 +56,9 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
   }
 
   const byNumber = new Map(current.map((r) => [r.number, r]));
+  // Row i (0-based) becomes ID i + 1.
   const preview: PreviewRow[] = (sheet?.rows ?? []).map((row, i) => {
-    const existing = byNumber.get(i);
+    const existing = byNumber.get(i + 1);
     const prevName = existing?.name ?? null;
     const prevCollege = existing?.college ?? null;
     const kind =
@@ -67,7 +68,7 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
           ? "same"
           : "changed";
     return {
-      number: i,
+      number: i + 1,
       line: row.line,
       name: row.name,
       college: row.college,
@@ -114,7 +115,7 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
       return;
     }
     toast.success(
-      `Imported ${result.imported} ambassador${result.imported === 1 ? "" : "s"} as AMGIG-00 to ${formatAmbassadorId(result.imported - 1)}.`,
+      `Imported ${result.imported} ambassador${result.imported === 1 ? "" : "s"} as AMGIG-01 to ${formatAmbassadorId(result.imported)}.`,
     );
     reset();
     router.refresh();
@@ -126,7 +127,7 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
       <span className="text-[13px] leading-[1.5] text-ignite-muted">
         Upload a CSV whose first row is the headers <b>Name</b> and <b>College</b>, with every row filling both (in
         Google Sheets: File → Download → CSV). The first
-        ambassador becomes AMGIG-00, the next AMGIG-01, and so on in sheet order. IDs after the last row keep their
+        ambassador becomes AMGIG-01, the next AMGIG-02, and so on in sheet order. IDs after the last row keep their
         current details, and the ID range is raised if the sheet needs more IDs. You&apos;ll see a preview before
         anything is saved.
       </span>
@@ -185,8 +186,8 @@ export function AmbassadorSheetImport({ rows: current }: { rows: AmbassadorRanki
       {sheet && !sheet.error && (
         <div className="flex flex-col gap-3">
           <span className="font-ui text-[14px] text-ignite-ink">
-            {preview.length} ambassador{preview.length === 1 ? "" : "s"} → AMGIG-00 to{" "}
-            {formatAmbassadorId(preview.length - 1)} · {counts.new} new · {counts.changed} changed · {counts.same}{" "}
+            {preview.length} ambassador{preview.length === 1 ? "" : "s"} → AMGIG-01 to{" "}
+            {formatAmbassadorId(preview.length)} · {counts.new} new · {counts.changed} changed · {counts.same}{" "}
             unchanged
           </span>
           {errors.length > 0 && (

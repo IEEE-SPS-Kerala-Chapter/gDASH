@@ -153,7 +153,7 @@ export function RegistrationWizard({
   ambassadorDetails: initialAmbassadorDetails = {},
 }: {
   leaderEmail?: string;
-  /** Ambassador IDs run AMGIG-00 … this; null = none set up (field hidden). */
+  /** Ambassador IDs run AMGIG-01 … this; null = none set up (field hidden). */
   ambassadorLastNumber?: number | null;
   /** Name and college per ambassador ID, shown in the dropdown. */
   ambassadorDetails?: AmbassadorDetails;

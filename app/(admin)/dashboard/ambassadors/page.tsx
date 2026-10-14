@@ -14,7 +14,7 @@ export default async function AmbassadorsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeading title="Ambassadors" subtitle="Referral IDs AMGIG-00 onwards, ranked by the registrations each ambassador referred." />
+      <PageHeading title="Ambassadors" subtitle="Referral IDs AMGIG-01 onwards, ranked by the registrations each ambassador referred." />
       {result.success ? <AmbassadorsManager ranking={result.ranking} /> : <p className="text-ignite-danger">{result.error}</p>}
     </div>
   );

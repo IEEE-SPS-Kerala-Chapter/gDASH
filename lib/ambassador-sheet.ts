@@ -1,8 +1,9 @@
 /**
  * Ambassador sheet import: a CSV with Name and College columns, one
  * ambassador per row. Row order sets the IDs — the first ambassador is
- * AMGIG-00, the next AMGIG-01, and so on (see
- * supabase/migrations/20261009000000_ambassador_sheet_import.sql).
+ * AMGIG-01, the next AMGIG-02, and so on (see
+ * supabase/migrations/20261009000000_ambassador_sheet_import.sql and
+ * 20261014000000_ambassador_ids_start_at_01.sql).
  */
 
 export const AMBASSADOR_SHEET_TEMPLATE = "Name,College\n";

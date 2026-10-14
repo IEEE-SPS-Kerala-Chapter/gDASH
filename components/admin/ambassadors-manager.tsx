@@ -20,7 +20,7 @@ import { ConfirmDialog } from "./confirm-dialog";
 import { cn } from "@/lib/utils";
 
 /**
- * Super-admin: set how many ambassador IDs exist (AMGIG-00 … AMGIG-NN),
+ * Super-admin: set how many ambassador IDs exist (AMGIG-01 … AMGIG-NN),
  * enter each one's name and college (shown in the registration form's
  * dropdown), and see the ranking by registrations referred, refreshed live.
  */
@@ -44,8 +44,8 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
 
   async function saveRange() {
     const n = Number(lastInput);
-    if (lastInput.trim() === "" || !Number.isInteger(n) || n < 0 || n > 999) {
-      toast.error("Enter the last ambassador number, from 0 to 999.");
+    if (lastInput.trim() === "" || !Number.isInteger(n) || n < 1 || n > 999) {
+      toast.error("Enter the last ambassador number, from 1 to 999.");
       return;
     }
     setSavingRange(true);
@@ -55,11 +55,11 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
       toast.error(result.error);
       return;
     }
-    toast.success(`Ambassador IDs now run AMGIG-00 to ${formatAmbassadorId(n)}.`);
+    toast.success(`Ambassador IDs now run AMGIG-01 to ${formatAmbassadorId(n)}.`);
     router.refresh();
   }
 
-  const count = ranking.lastNumber === null ? 0 : ranking.lastNumber + 1;
+  const count = ranking.lastNumber ?? 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -67,13 +67,13 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
         <SectionLabel>Ambassador IDs</SectionLabel>
         <div className="flex flex-wrap items-center gap-2 font-ui text-[15px] text-ignite-ink">
           <span>IDs run from</span>
-          <span className="font-bold tracking-[0.04em]">AMGIG-00</span>
+          <span className="font-bold tracking-[0.04em]">AMGIG-01</span>
           <span>to</span>
           <span className="font-bold tracking-[0.04em]">AMGIG-</span>
           <TextInput
             type="number"
             inputMode="numeric"
-            min={0}
+            min={1}
             max={999}
             value={lastInput}
             onChange={(e) => setLastInput(e.target.value)}

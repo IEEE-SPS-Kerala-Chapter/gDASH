@@ -1,8 +1,9 @@
 /**
- * Ambassador referral IDs: AMGIG-00 … AMGIG-<last number>. The database
+ * Ambassador referral IDs: AMGIG-01 … AMGIG-<last number>. The database
  * stores only the number (registrations.ambassador_number, null = no
  * ambassador referred); this is the one place that formats and parses it.
- * See supabase/migrations/20261003000000_ambassador_referrals.sql.
+ * See supabase/migrations/20261003000000_ambassador_referrals.sql (the range
+ * has started at 1 since 20261014000000_ambassador_ids_start_at_01.sql).
  */
 
 /** Form value for "No ambassador referred". */
@@ -19,17 +20,17 @@ export function parseAmbassadorInput(input: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
-/** Every number in the range, 0 … lastNumber (empty when no range is set). */
+/** Every number in the range, 1 … lastNumber (empty when no range is set). */
 export function ambassadorNumbers(lastNumber: number | null): number[] {
-  if (lastNumber === null || lastNumber < 0) return [];
-  return Array.from({ length: lastNumber + 1 }, (_, i) => i);
+  if (lastNumber === null || lastNumber < 1) return [];
+  return Array.from({ length: lastNumber }, (_, i) => i + 1);
 }
 
 /** Form value ("none" or a number as text) → what the database stores. */
 export function ambassadorFormValueToNumber(value: string): number | null {
   if (!value || value === NO_AMBASSADOR) return null;
   const n = Number(value);
-  return Number.isInteger(n) && n >= 0 ? n : null;
+  return Number.isInteger(n) && n >= 1 ? n : null;
 }
 
 export function ambassadorLabel(n: number | null): string {

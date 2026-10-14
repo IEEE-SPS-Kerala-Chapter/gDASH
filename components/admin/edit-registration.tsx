@@ -83,7 +83,7 @@ export function EditRegistration({
   onStale,
 }: {
   team: AdminTeam;
-  /** Ambassador IDs run AMGIG-00 … this; null = none set up. */
+  /** Ambassador IDs run AMGIG-01 … this; null = none set up. */
   ambassadorLastNumber: number | null;
   ambassadorDetails?: AmbassadorDetails;
   onDone: () => void;

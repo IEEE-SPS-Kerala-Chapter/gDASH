@@ -5,12 +5,12 @@ import { revalidateDashboard } from "@/lib/revalidate-dashboard";
 import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { logAuditEvent } from "@/lib/audit-log";
-import { formatAmbassadorId, type AmbassadorDetails } from "@/lib/ambassador";
+import { ambassadorNumbers, formatAmbassadorId, type AmbassadorDetails } from "@/lib/ambassador";
 import { MAX_SHEET_ROWS } from "@/lib/ambassador-sheet";
 import { csvField } from "@/lib/csv";
 
 /**
- * The last ambassador number (IDs run AMGIG-00 … AMGIG-<n>), or null when
+ * The last ambassador number (IDs run AMGIG-01 … AMGIG-<n>), or null when
  * no IDs have been set up yet. Public — the registration form needs it.
  * Returns null on a read error, which hides the field rather than blocking
  * registration.
@@ -118,14 +118,14 @@ export async function exportAmbassadorsCsv(): Promise<
 
 type Result = { success: true } | { success: false; error: string };
 
-/** Super-admin only: set the last ambassador ID (the range always starts at AMGIG-00). */
+/** Super-admin only: set the last ambassador ID (the range always starts at AMGIG-01). */
 export async function setAmbassadorRange(lastNumber: number): Promise<Result> {
   const caller = await getCallerRole();
   if (caller?.role !== "super_admin") {
     return { success: false, error: "Only the super-admin can change the ambassador IDs." };
   }
-  if (!Number.isInteger(lastNumber) || lastNumber < 0 || lastNumber > 999) {
-    return { success: false, error: "Enter a number from 0 to 999." };
+  if (!Number.isInteger(lastNumber) || lastNumber < 1 || lastNumber > 999) {
+    return { success: false, error: "Enter a number from 1 to 999." };
   }
 
   const supabase = await createClient();
@@ -150,7 +150,7 @@ export async function setAmbassadorRange(lastNumber: number): Promise<Result> {
   }
 
   await logAuditEvent(supabase, "ambassadors.range_updated", {
-    metadata: { range: `AMGIG-00 to ${formatAmbassadorId(lastNumber)}` },
+    metadata: { range: `AMGIG-01 to ${formatAmbassadorId(lastNumber)}` },
   });
   revalidateDashboard();
   // The registration form reads the range too.
@@ -169,7 +169,7 @@ export async function setAmbassadorDetails(number: number, details: { name: stri
   }
   const name = details.name.trim();
   const college = details.college.trim();
-  if (!Number.isInteger(number) || number < 0 || number > 999) {
+  if (!Number.isInteger(number) || number < 1 || number > 999) {
     return { success: false, error: "Unknown ambassador ID." };
   }
   if (name.length > 80) {
@@ -215,7 +215,7 @@ export async function getAmbassadorDetails(): Promise<AmbassadorDetails> {
 
 /**
  * Super-admin only: save an uploaded ambassador sheet. Row order sets the
- * IDs (first row = AMGIG-00); IDs after the last row are left as they are,
+ * IDs (first row = AMGIG-01); IDs after the last row are left as they are,
  * and the range is raised to cover the sheet. All or nothing.
  */
 export async function importAmbassadorSheet(
@@ -245,7 +245,7 @@ export async function importAmbassadorSheet(
   const result = data as { imported: number; last_number: number };
 
   await logAuditEvent(supabase, "ambassadors.sheet_imported", {
-    metadata: { imported: result.imported, range: `AMGIG-00 to ${formatAmbassadorId(result.last_number)}` },
+    metadata: { imported: result.imported, range: `AMGIG-01 to ${formatAmbassadorId(result.last_number)}` },
   });
   revalidateDashboard();
   revalidatePath("/", "layout");
@@ -270,9 +270,9 @@ export async function deleteAmbassadors(target: number | "all"): Promise<Result>
 
   let numbers: number[];
   if (target === "all") {
-    numbers = Array.from({ length: lastNumber + 1 }, (_, i) => i);
+    numbers = ambassadorNumbers(lastNumber);
   } else {
-    if (!Number.isInteger(target) || target < 0 || target > lastNumber) {
+    if (!Number.isInteger(target) || target < 1 || target > lastNumber) {
       return { success: false, error: "Unknown ambassador ID." };
     }
     numbers = [target];
@@ -288,7 +288,7 @@ export async function deleteAmbassadors(target: number | "all"): Promise<Result>
   }
 
   await logAuditEvent(supabase, target === "all" ? "ambassadors.all_deleted" : "ambassadors.deleted", {
-    targetLabel: target === "all" ? `AMGIG-00 to ${formatAmbassadorId(lastNumber)}` : formatAmbassadorId(target),
+    targetLabel: target === "all" ? `AMGIG-01 to ${formatAmbassadorId(lastNumber)}` : formatAmbassadorId(target),
   });
   revalidateDashboard();
   revalidatePath("/", "layout");
