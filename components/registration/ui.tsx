@@ -406,7 +406,8 @@ export function HeroShell({
   intro?: ReactNode;
   /** Render `children` without the card around them (they bring their own, e.g. a FlipCard). */
   bare?: boolean;
-  children: ReactNode;
+  /** The right-hand card; omit it for a headline-only screen. */
+  children?: ReactNode;
 }) {
   return (
     <main className="hero-themed relative flex min-h-[calc(100vh-136px)] items-center px-4 py-12 font-ui text-ignite-ink lg:px-16 lg:py-20">
@@ -425,7 +426,7 @@ export function HeroShell({
           </h1>
           {intro && <div className="flex flex-col gap-3 text-[16px] leading-[1.7] text-ignite-ink-soft">{intro}</div>}
         </div>
-        {bare ? (
+        {children == null ? null : bare ? (
           <div className="w-full max-w-[420px] self-center">{children}</div>
         ) : (
           <div className={cn("w-full max-w-[420px] self-center", HERO_CARD_CLASS)}>{children}</div>

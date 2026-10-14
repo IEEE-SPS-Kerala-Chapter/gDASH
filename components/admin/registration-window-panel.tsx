@@ -66,7 +66,7 @@ export function RegistrationWindowPanel({ initial }: { initial: RegistrationWind
 
       <Field
         label="Closed message (optional)"
-        hint="Shown to participants at /register once closed. A sensible default is used if left blank."
+        hint="Shown as the headline at /register once closed. A sensible default is used if left blank."
       >
         <TextArea
           rows={2}

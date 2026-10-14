@@ -11,22 +11,28 @@ import { RegisterBackGuard } from "@/components/registration/submission-back-gua
 
 export const dynamic = "force-dynamic";
 
+// A custom closed message (set by admins on the dashboard) becomes the
+// headline itself; without one, the generic title and blurb are shown.
 function ClosedScreen({ message }: { message?: string | null }) {
   return (
     <>
       <LogoHeaderBar onHero />
-      <HeroShell
-        label="g-IGNITE 2026"
-        title={
-          <>
-            Registration is <GradientText>closed.</GradientText>
-          </>
-        }
-      >
-        <p className="m-0 text-center text-[15px] leading-[1.6] text-ignite-muted">
-          {message || "Registration for gIGNITE 2026 is no longer open. Contact the organizers if you think this is a mistake."}
-        </p>
-      </HeroShell>
+      {message ? (
+        <HeroShell label="g-IGNITE 2026" title={message} />
+      ) : (
+        <HeroShell
+          label="g-IGNITE 2026"
+          title={
+            <>
+              Registration is <GradientText>closed.</GradientText>
+            </>
+          }
+        >
+          <p className="m-0 text-center text-[15px] leading-[1.6] text-ignite-muted">
+            Registration for gIGNITE 2026 is no longer open. Contact the organizers if you think this is a mistake.
+          </p>
+        </HeroShell>
+      )}
     </>
   );
 }
