@@ -14,7 +14,7 @@ const ALLOWED_DECK_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ];
-const DECK_TEMPLATE_URL = "https://canva.link/77trykluwr2sb8w";
+const DECK_TEMPLATE_URL = "https://docs.google.com/presentation/d/131gSVctKwqtEYeG9JiWsmXSEDMM98I4F/edit?slide=id.p1#slide=id.p1";
 
 export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const {
