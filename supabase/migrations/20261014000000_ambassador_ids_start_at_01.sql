@@ -20,7 +20,11 @@ alter table registrations drop constraint if exists registrations_ambassador_num
 update ambassador_names set number = -(number + 1);
 update ambassador_names set number = -number;
 
+-- Teams keep a referral to an ambassador deleted later (20261011000000);
+-- renumbering it isn't a new pick, so the deleted-ID guard is paused.
+alter table registrations disable trigger registrations_ambassador_not_deleted;
 update registrations set ambassador_number = ambassador_number + 1 where ambassador_number is not null;
+alter table registrations enable trigger registrations_ambassador_not_deleted;
 
 update ambassador_program set last_number = last_number + 1 where id = true and last_number is not null;
 
