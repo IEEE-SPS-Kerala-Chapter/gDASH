@@ -987,6 +987,56 @@ const STAFF_EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 type CreateStaffResult = { success: true; account: StaffAccount } | { success: false; error: string };
 
 /**
+ * For createStaffAccount: an email that already has a Supabase login (and
+ * no staff profile — those are listed on the Staff page). Refuses if the
+ * email belongs to a registered team member, since a participant can't also
+ * be staff. Otherwise confirms the email (needed for Google linking) and,
+ * for a password account, sets the temporary password.
+ */
+async function adoptExistingLogin(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string,
+  fullName: string,
+  password: string | null,
+): Promise<{ success: true; user: { id: string; created_at: string } } | { success: false; error: string }> {
+  let existing: { id: string; created_at: string } | null = null;
+  for (let page = 1; page <= 100 && !existing; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) return { success: false, error: "Could not create the account." };
+    const match = data.users.find((u) => (u.email ?? "").toLowerCase() === email);
+    if (match) existing = { id: match.id, created_at: match.created_at };
+    if (data.users.length < 200) break;
+  }
+  if (!existing) return { success: false, error: "An account with that email already exists." };
+
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", existing.id).maybeSingle();
+  if (profile) return { success: false, error: "That email is already a staff account." };
+
+  const { data: member } = await admin
+    .from("team_members")
+    .select("teams(name)")
+    // Case-insensitive exact match: escape LIKE's wildcards (emails can contain "_").
+    .ilike("email", email.replace(/[\\%_]/g, (c) => `\\${c}`))
+    .limit(1)
+    .maybeSingle();
+  if (member) {
+    const team = (member as { teams?: { name?: string } | null }).teams?.name;
+    return {
+      success: false,
+      error: `That email is registered as a participant${team ? ` in team "${team}"` : ""} — a participant can't also be staff. Use a different email.`,
+    };
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(existing.id, {
+    email_confirm: true,
+    ...(password ? { password } : {}),
+    user_metadata: { full_name: fullName },
+  });
+  if (error) return { success: false, error: "Could not create the account." };
+  return { success: true, user: existing };
+}
+
+/**
  * Super-admin only: create a staff account (judge, volunteer, or admin)
  * directly from the dashboard, instead of the terminal-only
  * scripts/seed-staff.mjs. Uses the service-role client for both steps —
@@ -1042,12 +1092,24 @@ export async function createStaffAccount(input: {
     user_metadata: { full_name: fullName },
   });
 
-  if (error || !data.user) {
-    if (error?.code === "email_exists") {
-      return { success: false, error: "An account with that email already exists." };
+  let user: { id: string; created_at: string } | null = data?.user ?? null;
+  // Whether this call created the login (and so may delete it on failure).
+  let createdLogin = Boolean(user);
+  if (error || !user) {
+    if (error?.code !== "email_exists") {
+      return { success: false, error: "Could not create the account." };
     }
-    return { success: false, error: "Could not create the account." };
+    // The email already has a sign-in account with no staff profile —
+    // typically someone who once opened the registration page (email code
+    // or Google) without registering a team, or tried Google on the staff
+    // site. Supabase allows one account per email, so that account becomes
+    // the staff account. Never for a registered participant.
+    const existing = await adoptExistingLogin(admin, email, fullName, googleOnly ? null : (input.password ?? null));
+    if (!existing.success) return existing;
+    user = existing.user;
+    createdLogin = false;
   }
+  const createdUser: { id: string; created_at: string } = user;
 
   // The staff profile is what grants dashboard access, and only ever gets
   // created here (or by scripts/seed-*.mjs) — signing up through Supabase
@@ -1057,13 +1119,14 @@ export async function createStaffAccount(input: {
   const { error: roleError } = await admin
     .from("profiles")
     .upsert(
-      { id: data.user.id, email, role: input.role, full_name: fullName, must_reset_password: !googleOnly },
+      { id: createdUser.id, email, role: input.role, full_name: fullName, must_reset_password: !googleOnly },
       { onConflict: "id" },
     );
 
   if (roleError) {
-    // Don't leave a login with no staff access behind.
-    await admin.auth.admin.deleteUser(data.user.id);
+    // Don't leave a login with no staff access behind — but never delete a
+    // login that existed before this call.
+    if (createdLogin) await admin.auth.admin.deleteUser(createdUser.id);
     return { success: false, error: "Could not create the account." };
   }
 
@@ -1073,9 +1136,13 @@ export async function createStaffAccount(input: {
   const supabase = await createClient();
   await logAuditEvent(supabase, "staff.created", {
     targetType: "profile",
-    targetId: data.user.id,
+    targetId: createdUser.id,
     targetLabel: email,
-    metadata: { role: input.role, signInMethod: googleOnly ? "google" : "password" },
+    metadata: {
+      role: input.role,
+      signInMethod: googleOnly ? "google" : "password",
+      ...(createdLogin ? {} : { existingLogin: true }),
+    },
   });
 
   // Return the real account (not something the client makes up) so the
@@ -1083,7 +1150,7 @@ export async function createStaffAccount(input: {
   revalidateDashboard();
   return {
     success: true,
-    account: { id: data.user.id, full_name: fullName, email, role: input.role, created_at: data.user.created_at },
+    account: { id: createdUser.id, full_name: fullName, email, role: input.role, created_at: createdUser.created_at },
   };
 }
 
