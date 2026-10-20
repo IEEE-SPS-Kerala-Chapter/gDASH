@@ -8,6 +8,7 @@ import { Field, TextArea, FormCard, Spinner } from "./ui";
 import { cn } from "@/lib/utils";
 import { displayFileName } from "@/lib/upload-file-name";
 import { createUploadUrl } from "@/app/actions/uploads";
+import { ExternalLink, Presentation } from "lucide-react";
 
 const MAX_DECK_BYTES = 20 * 1024 * 1024;
 const ALLOWED_DECK_TYPES = [
@@ -71,6 +72,8 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
   return (
     <FormCard>
+      <DeckTemplateCallout />
+
       <Field label="01 — The Problem" error={e?.problemStatement?.message}>
         <TextArea rows={4} {...register("idea.problemStatement")} />
         <CharCount
@@ -96,19 +99,19 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
       </Field>
 
       <Field
-        label="📎 Drop Your Deck"
+        label="📎 Drop Your Deck — built on the official gIGNITE template"
         hint={
           <>
-            Build your deck using{" "}
+            Decks that don&apos;t use{" "}
             <a
               href={DECK_TEMPLATE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-ignite-ink underline hover:text-ignite-magenta"
             >
-              the official pitch deck template
+              the official template
             </a>{" "}
-            and upload it as PDF or PPTX.
+            may not be evaluated. Fill in the template, then upload it here.
           </>
         }
         error={e?.deckPath?.message}
@@ -132,12 +135,50 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
                   : "Upload Deck"}
             </span>
             <span className="text-[12px] text-ignite-muted">
-              {uploadState.status === "error" ? uploadState.message : "PDF or PPTX · 20 MB max"}
+              {uploadState.status === "error"
+                ? uploadState.message
+                : "Official gIGNITE template only · PDF or PPTX · 20 MB max"}
             </span>
           </div>
         </label>
       </Field>
     </FormCard>
+  );
+}
+
+/**
+ * Up-front notice that the deck has to be built on our template: shown at the
+ * top of the step, before the questions, so teams see it before they start
+ * designing slides of their own.
+ */
+function DeckTemplateCallout() {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border-2 border-ignite-magenta/60 bg-ignite-magenta/[0.07] p-4 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex h-11 w-11 flex-none items-center justify-center rounded-lg bg-ignite-magenta text-white">
+        <Presentation className="h-5 w-5" aria-hidden="true" />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="font-ui text-[11px] font-bold uppercase tracking-[0.08em] text-ignite-magenta">
+          Mandatory · Official template
+        </span>
+        <span className="text-[15px] font-semibold leading-[1.35] text-ignite-ink">
+          Your pitch deck must be built on the official gIGNITE template.
+        </span>
+        <span className="text-[13px] leading-[1.45] text-ignite-muted">
+          Make a copy (File → Make a copy, or File → Download as PPTX), fill in each slide, and upload it at the end
+          of this step. Decks made from any other template may not be evaluated.
+        </span>
+      </div>
+      <a
+        href={DECK_TEMPLATE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex flex-none items-center justify-center gap-2 rounded-full bg-ignite-primary px-5 py-2.5 font-ui text-[14px] font-bold text-ignite-on-primary transition-colors hover:bg-ignite-primary-hover"
+      >
+        Get the template
+        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+      </a>
+    </div>
   );
 }
 

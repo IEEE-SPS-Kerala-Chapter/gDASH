@@ -75,7 +75,7 @@ const STEPS = [
     icon: Lightbulb,
     label: "Step 3 of 5 · Drop Your Idea",
     title: "💡 Drop Your Idea",
-    subtitle: "Tell us what you're building. Answer 4 quick questions and upload your pitch deck.",
+    subtitle: "Tell us what you're building. Answer 4 quick questions and upload your pitch deck, built on the official gIGNITE template.",
     cta: "Continue to final check",
     fields: [
       "idea.problemStatement",
