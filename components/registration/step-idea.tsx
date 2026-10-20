@@ -11,7 +11,9 @@ import { createUploadUrl } from "@/app/actions/uploads";
 import { DECK_TEMPLATE_URL } from "@/lib/config";
 import { ExternalLink, Presentation } from "lucide-react";
 
-const MAX_DECK_BYTES = 20 * 1024 * 1024;
+// 10 MB: the largest deck the staff deck viewer can preview (Office Online's
+// PowerPoint limit). Also set on the storage bucket, which enforces it.
+const MAX_DECK_BYTES = 10 * 1024 * 1024;
 const ALLOWED_DECK_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -38,7 +40,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
       return;
     }
     if (file.size > MAX_DECK_BYTES) {
-      setUploadState({ status: "error", message: "File is larger than 20 MB." });
+      setUploadState({ status: "error", message: "File is larger than 10 MB." });
       return;
     }
 
@@ -137,7 +139,7 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
             <span className="text-[12px] text-ignite-muted">
               {uploadState.status === "error"
                 ? uploadState.message
-                : "Official gIGNITE template only · PDF or PPTX · 20 MB max"}
+                : "Official gIGNITE template only · PDF or PPTX · 10 MB max"}
             </span>
           </div>
         </label>

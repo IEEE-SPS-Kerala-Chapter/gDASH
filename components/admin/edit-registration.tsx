@@ -26,8 +26,8 @@ const FILE_RULES: Record<UploadKind, { bucket: string; types: string[]; accept: 
     bucket: "registration-decks",
     types: ["application/pdf", "application/vnd.openxmlformats-officedocument.presentationml.presentation"],
     accept: ".pdf,.pptx",
-    maxBytes: 20 * 1024 * 1024,
-    label: "PDF or PPTX · 20 MB max",
+    maxBytes: 10 * 1024 * 1024,
+    label: "PDF or PPTX · 10 MB max",
   },
 };
 
