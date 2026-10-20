@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportRegistrationsCsv } from "@/app/actions/admin";
@@ -132,6 +132,10 @@ export function DashboardShell({
                 <span>{exporting ? "Exporting…" : "Export"}</span>
               </button>
             )}
+            <Link href="/dashboard/profile" className={navItemClass(pathname === "/dashboard/profile")}>
+              <CircleUser className="h-[17px] w-[17px]" />
+              <span>Profile</span>
+            </Link>
           </nav>
         </div>
         <div className="flex flex-col gap-3.5">
@@ -144,7 +148,10 @@ export function DashboardShell({
             {signingOut ? <Spinner className="h-[17px] w-[17px]" /> : <LogOut className="h-[17px] w-[17px]" />}
             <span>{signingOut ? "Signing out…" : "Sign out"}</span>
           </button>
-          <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.06] p-3 ring-1 ring-white/[0.06]">
+          <Link
+            href="/dashboard/profile"
+            className="flex items-center gap-2.5 rounded-xl bg-white/[0.06] p-3 ring-1 ring-white/[0.06] transition-colors hover:bg-white/[0.10]"
+          >
             <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full bg-brand-gradient font-display text-[12px] font-bold text-white">
               {initials || "?"}
             </div>
@@ -152,7 +159,7 @@ export function DashboardShell({
               <span className="truncate text-[13px] font-semibold text-white">{name}</span>
               <span className="font-ui text-[11px] uppercase tracking-[0.08em] text-ignite-on-dark/70">{roleLabel(role)}</span>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
 
@@ -184,6 +191,7 @@ export function DashboardShell({
             { href: "/dashboard/staff", label: "Staff", show: role === "super_admin", active: pathname === "/dashboard/staff" },
             { href: "/dashboard/ambassadors", label: "Ambassadors", show: role === "super_admin", active: pathname === "/dashboard/ambassadors" },
             { href: "/dashboard/audit-logs", label: "Audit logs", show: role === "super_admin", active: pathname === "/dashboard/audit-logs" },
+            { href: "/dashboard/profile", label: "Profile", show: true, active: pathname === "/dashboard/profile" },
           ]
             .filter((item) => item.show)
             .map((item) => (

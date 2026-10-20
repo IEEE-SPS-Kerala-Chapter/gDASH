@@ -80,7 +80,7 @@ export function StaffManager({
     }
     setStaff((prev) => prev.map((s) => (s.id === target.id ? { ...s, mfaEnabled: false } : s)));
     setConfirmingReset(null);
-    toast.success(`Two-factor sign-in reset — ${target.full_name} sets it up again at their next sign-in.`);
+    toast.success(`Two-factor sign-in reset — ${target.full_name} is asked whether to set it up again at their next sign-in.`);
   }
 
   async function copyCredentials() {

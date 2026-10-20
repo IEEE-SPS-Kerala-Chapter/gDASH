@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { sessionIsAal2 } from "@/lib/staff-mfa";
+import { getMfaState, mfaSatisfied } from "@/lib/staff-mfa";
 
 export type MyProfile = {
   role: "super_admin" | "admin" | "judge" | "volunteer" | string;
@@ -11,7 +11,8 @@ export type MyProfile = {
 
 /**
  * The signed-in staff member's own role + name, for branching dashboard UI
- * by role. Null until the session has passed the 2FA code (aal2).
+ * by role. Null while the session still owes the 2FA code (see
+ * lib/staff-mfa.ts).
  */
 export async function getMyProfile(): Promise<MyProfile | null> {
   const supabase = await createClient();
@@ -19,7 +20,6 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  if (!(await sessionIsAal2(supabase))) return null;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -27,6 +27,7 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     .eq("id", user.id)
     .single();
   if (!profile) return null;
+  if (!mfaSatisfied(await getMfaState(supabase), profile.role)) return null;
 
   return { role: profile.role, fullName: profile.full_name, mustResetPassword: profile.must_reset_password };
 }

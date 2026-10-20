@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
-import { sessionIsAal2 } from "@/lib/staff-mfa";
+import { getMfaState, mfaSatisfied } from "@/lib/staff-mfa";
 import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
 import { ambassadorFormValueToNumber, ambassadorLabel, formatAmbassadorId } from "@/lib/ambassador";
 import {
@@ -39,9 +39,10 @@ export type {
 
 /**
  * Returns the caller's profile role, or null if not signed in, no profile,
- * or the session hasn't passed the 2FA code yet (staff powers need aal2 —
- * some actions use the service-role client after this check, so it must
- * hold the same line as the database does).
+ * or the session still owes the 2FA code (it has an authenticator app, or
+ * is the super-admin — see lib/staff-mfa.ts). Some actions use the
+ * service-role client after this check, so it must hold the same line as
+ * the database does.
  */
 export async function getCallerRole(): Promise<{ userId: string; role: string } | null> {
   const supabase = await createClient();
@@ -49,10 +50,10 @@ export async function getCallerRole(): Promise<{ userId: string; role: string } 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  if (!(await sessionIsAal2(supabase))) return null;
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (!profile) return null;
+  if (!mfaSatisfied(await getMfaState(supabase), profile.role)) return null;
 
   return { userId: user.id, role: profile.role };
 }
@@ -961,6 +962,9 @@ export async function resetStaffMfa(userId: string): Promise<{ success: true } |
     }
   }
   await admin.from("staff_mfa_backup_codes").delete().eq("user_id", userId);
+  // Ask again at their next sign-in whether to set it up (2FA is optional
+  // except for the super-admin).
+  await admin.from("profiles").update({ mfa_skipped_at: null }).eq("id", userId);
   // A session that already passed 2FA shouldn't outlive the reset.
   const { error: revokeError } = await admin.rpc("revoke_user_sessions", { p_user_id: userId });
   if (revokeError) {

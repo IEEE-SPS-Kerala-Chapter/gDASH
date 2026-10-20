@@ -3,19 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { confirmTotpSetup, redeemBackupCode, startTotpSetup, verifyTotp } from "@/app/actions/mfa";
+import { confirmTotpSetup, redeemBackupCode, skipMfaSetup, startTotpSetup, verifyTotp } from "@/app/actions/mfa";
 import { signOut } from "@/app/actions/auth";
 import { Field, PrimaryButton, SecondaryButton, Spinner, TextInput } from "@/components/admin/ui";
 
-type Mode = "setup" | "verify" | "backup";
+type Mode = "choose" | "setup" | "verify" | "backup";
 
 /**
- * Staff 2FA step after the password (app/(admin)/login/2fa/page.tsx):
- * first-time setup of an authenticator app (QR → first code → backup
- * codes), or the 6-digit code on every later sign-in, with a backup-code
- * route for a lost phone. Server side: app/actions/mfa.ts.
+ * Staff 2FA step after the password (app/(admin)/login/2fa/page.tsx): with
+ * no authenticator app yet, a choice to set one up or skip (the super-admin
+ * goes straight to setup); setup itself (QR → first code → backup codes);
+ * or the 6-digit code on every later sign-in, with a backup-code route for
+ * a lost phone. Server side: app/actions/mfa.ts.
  */
-export function TwoFactor({ initialMode, email }: { initialMode: "setup" | "verify" | "done"; email: string }) {
+export function TwoFactor({ initialMode, email }: { initialMode: "choose" | "setup" | "verify" | "done"; email: string }) {
   const router = useRouter();
   // Fixed at first render. Passing 2FA re-renders the page with "done", but
   // this component (and the backup codes it's showing) stays as it is —
@@ -53,6 +54,7 @@ export function TwoFactor({ initialMode, email }: { initialMode: "setup" | "veri
 
   return (
     <div className="flex flex-col gap-5">
+      {mode === "choose" && <ChooseStep onSetUp={() => setMode("setup")} onSkipped={goToDashboard} />}
       {mode === "setup" && <SetupStep email={email} onDone={goToDashboard} />}
       {mode === "verify" && <VerifyStep onDone={goToDashboard} onUseBackup={() => setMode("backup")} />}
       {mode === "backup" && (
@@ -85,8 +87,43 @@ function Heading({ title, text }: { title: string; text: React.ReactNode }) {
   );
 }
 
+/** First sign-in without an authenticator app: set one up now, or skip (Profile can turn it on later). */
+function ChooseStep({ onSetUp, onSkipped }: { onSetUp: () => void; onSkipped: () => void }) {
+  const [skipping, setSkipping] = useState(false);
+
+  async function skip() {
+    setSkipping(true);
+    const result = await skipMfaSetup().catch(() => ({ success: false as const, error: "No connection — try again." }));
+    if (!result.success) {
+      setSkipping(false);
+      toast.error(result.error);
+      return;
+    }
+    // Stays disabled until the dashboard replaces this page.
+    onSkipped();
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <Heading
+        title="Protect your account with two-factor sign-in?"
+        text="With two-factor sign-in, you enter a 6-digit code from an authenticator app on your phone each time you sign in — so someone who learns your password still can't get in. It takes about a minute to set up."
+      />
+      <PrimaryButton type="button" onClick={onSetUp} disabled={skipping}>
+        Set up two-factor sign-in (recommended)
+      </PrimaryButton>
+      <SecondaryButton type="button" onClick={skip} disabled={skipping}>
+        {skipping ? "Opening dashboard…" : "Skip for now"}
+      </SecondaryButton>
+      <p className="m-0 text-center text-[13px] leading-[1.5] text-ignite-muted">
+        You can turn it on any time from <span className="font-semibold text-ignite-ink-soft">Profile</span> in the dashboard.
+      </p>
+    </div>
+  );
+}
+
 /** Six-digit code input; submits on its own once all six digits are in. */
-function CodeInput({ value, onChange, onComplete, disabled }: { value: string; onChange: (v: string) => void; onComplete: (v: string) => void; disabled?: boolean }) {
+export function CodeInput({ value, onChange, onComplete, disabled }: { value: string; onChange: (v: string) => void; onComplete: (v: string) => void; disabled?: boolean }) {
   return (
     <TextInput
       autoFocus
@@ -204,7 +241,8 @@ function BackupStep({ onRedeemed, onBack }: { onRedeemed: () => void; onBack: ()
   );
 }
 
-function SetupStep({ email, onDone }: { email: string; onDone: () => void }) {
+/** Authenticator-app setup — also used from the Profile page (`doneLabel` names where "done" goes). */
+export function SetupStep({ email, onDone, doneLabel }: { email: string; onDone: () => void; doneLabel?: string }) {
   const [enrolment, setEnrolment] = useState<{ factorId: string; qrCode: string; secret: string } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [code, setCode] = useState("");
@@ -250,13 +288,13 @@ function SetupStep({ email, onDone }: { email: string; onDone: () => void }) {
     setError(result.error);
   }
 
-  if (backupCodes) return <BackupCodes codes={backupCodes} email={email} onDone={onDone} />;
+  if (backupCodes) return <BackupCodes codes={backupCodes} email={email} onDone={onDone} doneLabel={doneLabel} />;
 
   return (
     <div className="flex flex-col gap-4">
       <Heading
         title="Set up two-factor sign-in"
-        text="Staff accounts need a code from an authenticator app at every sign-in — so a password alone can't open the dashboard."
+        text="You'll enter a code from an authenticator app at every sign-in — so a password alone can't open the dashboard."
       />
       <ol className="m-0 flex list-decimal flex-col gap-1.5 pl-5 text-[14px] leading-[1.55] text-ignite-ink-soft">
         <li>Install an authenticator app on your phone — Google Authenticator, Microsoft Authenticator or Authy.</li>
@@ -324,7 +362,7 @@ function SetupStep({ email, onDone }: { email: string; onDone: () => void }) {
   );
 }
 
-function BackupCodes({ codes, email, onDone }: { codes: string[]; email: string; onDone: () => void }) {
+function BackupCodes({ codes, email, onDone, doneLabel = "Continue to dashboard" }: { codes: string[]; email: string; onDone: () => void; doneLabel?: string }) {
   const [saved, setSaved] = useState(false);
   const [opening, setOpening] = useState(false);
   const text = `gIGNITE Staff — backup codes for ${email}\nEach code works once. Use one if you lose your phone.\n\n${codes.join("\n")}\n`;
@@ -381,7 +419,7 @@ function BackupCodes({ codes, email, onDone }: { codes: string[]; email: string;
           onDone();
         }}
       >
-        {opening ? "Opening dashboard…" : "Continue to dashboard"}
+        {opening ? "One moment…" : doneLabel}
       </PrimaryButton>
     </div>
   );

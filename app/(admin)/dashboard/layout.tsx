@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/admin/dashboard-shell";
-import { sessionIsAal2 } from "@/lib/staff-mfa";
+import { getMfaState, mfaSatisfied } from "@/lib/staff-mfa";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, full_name, must_reset_password")
+    .select("role, full_name, must_reset_password, mfa_skipped_at")
     .eq("id", user.id)
     .single();
 
@@ -34,10 +34,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/reset-password");
   }
 
-  // Then 2FA: set up an authenticator app (first time) or enter its code.
-  // Every staff power needs this — the database refuses a password-only
-  // session regardless (supabase/migrations/20261006000000_staff_mfa.sql).
-  if (!(await sessionIsAal2(supabase))) {
+  // Then 2FA (lib/staff-mfa.ts): enter the code if there's an authenticator
+  // app; the super-admin must set one up; anyone else who hasn't chosen yet
+  // is asked once whether to set it up or skip. The database applies the
+  // same rule regardless (20261022000000_optional_staff_mfa.sql).
+  const mfa = await getMfaState(supabase);
+  const owesCode = !mfaSatisfied(mfa, profile.role);
+  const notChosenYet = !mfa?.enrolled && !profile.mfa_skipped_at;
+  if (owesCode || notChosenYet) {
     redirect("/login/2fa");
   }
 
