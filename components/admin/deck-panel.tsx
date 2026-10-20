@@ -25,8 +25,10 @@ export function DeckPanel({ deckPath, uploadedAt }: { deckPath: string; uploaded
 /**
  * Shared deck viewer. `load` mints the short-lived signed URL (admins/judges
  * by deck path, volunteers by registration id); it's re-run when `loadKey`
- * changes. PDFs render inline; browsers can't preview PPTX, so those get a
- * download prompt instead of a blank frame.
+ * changes. PDFs render inline. Browsers can't display PPTX, so those go
+ * through Microsoft's Office Online viewer, which fetches the deck from the
+ * short-lived signed URL (so the file stays private apart from that link)
+ * and renders the slides; Download stays available above it.
  */
 export function DeckViewer({
   loadKey,
@@ -107,21 +109,27 @@ export function DeckViewer({
         )}
         {state.status === "ready" &&
           (isPptx ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-[14px] text-ignite-muted">
-              <span>PowerPoint files can&apos;t be previewed in the browser.</span>
-              <a
-                href={state.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full bg-ignite-primary px-5 py-2.5 font-ui text-[14px] font-bold text-ignite-on-primary transition-colors hover:bg-ignite-primary-hover"
-              >
-                Download PPTX to view
-              </a>
-            </div>
+            <iframe
+              src={officeViewerUrl(state.url)}
+              title="Uploaded deck"
+              className="h-full w-full border-0 bg-white"
+              allowFullScreen
+            />
           ) : (
             <iframe src={state.url} title="Uploaded deck" className="h-full w-full border-0" />
           ))}
       </div>
+      {state.status === "ready" && isPptx && (
+        <span className="text-[12px] leading-[1.5] text-ignite-muted">
+          PowerPoint preview by Microsoft Office Online. If the slides don&apos;t appear (very large decks can&apos;t be
+          previewed), use Download.
+        </span>
+      )}
     </div>
   );
+}
+
+/** Microsoft's embeddable viewer for Office files at a URL it can fetch. */
+function officeViewerUrl(fileUrl: string): string {
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
 }
