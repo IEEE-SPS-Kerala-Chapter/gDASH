@@ -1,11 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 import { Field, GradientText, HeroShell, TextInput, PrimaryButton, LogoHeaderBar } from "@/components/admin/ui";
-import { signIn } from "@/app/actions/auth";
+import { signIn, startStaffGoogleSignIn } from "@/app/actions/auth";
+import { GoogleIcon } from "@/components/registration/leader-sign-in";
+
+// Set by the Google callback (app/(admin)/login/google/callback/route.ts).
+const GOOGLE_ERRORS: Record<string, string> = {
+  not_staff:
+    "That Google account isn't a staff account. Use the Google account with the email the super-admin added for you, or sign in with your password.",
+  failed: "Google sign-in didn't go through. Please try again.",
+};
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -14,6 +22,28 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [opening, setOpening] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+
+  // Read once on arrival, without useSearchParams (which would need a
+  // Suspense boundary around this whole page).
+  useEffect(() => {
+    const reason = new URLSearchParams(window.location.search).get("google");
+    if (reason) setGoogleError(GOOGLE_ERRORS[reason] ?? GOOGLE_ERRORS.failed);
+  }, []);
+
+  async function handleGoogle() {
+    setGoogleLoading(true);
+    setGoogleError(null);
+    const result = await startStaffGoogleSignIn().catch(() => ({ success: false as const }));
+    if (!result.success) {
+      setGoogleLoading(false);
+      setGoogleError(GOOGLE_ERRORS.failed);
+      return;
+    }
+    // Stays in the loading state until Google's page replaces this one.
+    window.location.assign(result.url);
+  }
 
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
@@ -46,6 +76,27 @@ export default function AdminLoginPage() {
         intro={<p className="m-0">For organizers, judges, and volunteers only.</p>}
       >
         <div className="flex flex-col gap-5">
+            {googleError && (
+              <p role="alert" className="m-0 rounded-xl bg-ignite-danger-pale px-4 py-2.5 text-sm text-ignite-danger">
+                {googleError}
+              </p>
+            )}
+            <PrimaryButton
+              type="button"
+              onClick={handleGoogle}
+              disabled={googleLoading || loading}
+              loading={googleLoading}
+              // White in dark mode (Google's own sign-in button style).
+              className="dark:bg-white dark:text-[#1f1f1f] dark:hover:bg-neutral-200"
+            >
+              {!googleLoading && <GoogleIcon />}
+              {googleLoading ? "Redirecting…" : "Sign in with Google"}
+            </PrimaryButton>
+            <div className="flex items-center gap-3 font-ui text-[12px] font-semibold uppercase tracking-[0.14em] text-ignite-faint">
+              <span className="h-px flex-1 bg-ignite-edge/[0.07]" />
+              or with your password
+              <span className="h-px flex-1 bg-ignite-edge/[0.07]" />
+            </div>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <Field label="Email">
                 <TextInput

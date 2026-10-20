@@ -26,9 +26,10 @@ export function StaffManager({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("judge");
+  const [signInMethod, setSignInMethod] = useState<"google" | "password">("google");
   const [password, setPassword] = useState(() => generatePassword());
   const [submitting, setSubmitting] = useState(false);
-  const [justCreated, setJustCreated] = useState<{ email: string; password: string } | null>(null);
+  const [justCreated, setJustCreated] = useState<{ email: string; password: string | null } | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<StaffAccount | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState<StaffAccount | null>(null);
@@ -37,14 +38,20 @@ export function StaffManager({
   async function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
     setSubmitting(true);
-    const result = await createStaffAccount({ email, fullName, role, password });
+    const result = await createStaffAccount({
+      email,
+      fullName,
+      role,
+      signInMethod,
+      password: signInMethod === "password" ? password : undefined,
+    });
     setSubmitting(false);
     if (!result.success) {
       toast.error(result.error);
       return;
     }
 
-    setJustCreated({ email, password });
+    setJustCreated({ email, password: signInMethod === "password" ? password : null });
     setStaff((prev) => [result.account, ...prev]);
     setFullName("");
     setEmail("");
@@ -86,7 +93,11 @@ export function StaffManager({
   async function copyCredentials() {
     if (!justCreated) return;
     try {
-      await navigator.clipboard.writeText(`Email: ${justCreated.email}\nPassword: ${justCreated.password}`);
+      await navigator.clipboard.writeText(
+        justCreated.password
+          ? `Email: ${justCreated.email}\nPassword: ${justCreated.password}`
+          : `Sign in with Google using ${justCreated.email}`,
+      );
       toast.success("Copied to clipboard.");
     } catch {
       toast.error("Couldn't copy — select and copy manually.");
@@ -99,10 +110,21 @@ export function StaffManager({
         <Panel className="border-ignite-ink/40">
           <div className="flex flex-wrap items-center justify-between gap-3 p-4 text-[14px]">
             <div>
-              <p className="m-0 font-semibold text-ignite-ink">Account created — share these with them yourself:</p>
-              <p className="m-0 text-ignite-muted">
-                {justCreated.email} / {justCreated.password}
-              </p>
+              {justCreated.password ? (
+                <>
+                  <p className="m-0 font-semibold text-ignite-ink">Account created — share these with them yourself:</p>
+                  <p className="m-0 text-ignite-muted">
+                    {justCreated.email} / {justCreated.password}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="m-0 font-semibold text-ignite-ink">Account created — no password needed.</p>
+                  <p className="m-0 text-ignite-muted">
+                    Tell them to open the staff site and use Sign in with Google with {justCreated.email}.
+                  </p>
+                </>
+              )}
             </div>
             <div className="flex gap-2">
               <SecondaryButton type="button" onClick={copyCredentials}>
@@ -133,18 +155,27 @@ export function StaffManager({
                 <option value="admin">Admin</option>
               </Select>
             </Field>
-            <Field label="Temporary password">
-              <div className="flex gap-2">
-                <TextInput required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-                <SecondaryButton type="button" onClick={() => setPassword(generatePassword())}>
-                  Generate
-                </SecondaryButton>
-              </div>
+            <Field label="How they sign in">
+              <Select value={signInMethod} onChange={(e) => setSignInMethod(e.target.value as "google" | "password")}>
+                <option value="google">Google only (no password)</option>
+                <option value="password">Google or password</option>
+              </Select>
             </Field>
+            {signInMethod === "password" && (
+              <Field label="Temporary password">
+                <div className="flex gap-2">
+                  <TextInput required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <SecondaryButton type="button" onClick={() => setPassword(generatePassword())}>
+                    Generate
+                  </SecondaryButton>
+                </div>
+              </Field>
+            )}
           </div>
           <p className="m-0 text-[13px] text-ignite-muted">
-            There&apos;s no invite email yet — after creating the account, you&apos;ll need to send this email and
-            password to them yourself.
+            {signInMethod === "google"
+              ? "Use the exact email of their Google account (a Gmail address, or a college/work address that has a Google account). They sign in with Google — there's no password to share."
+              : "There's no invite email yet — after creating the account, send this email and password to them yourself. They change the password at first sign-in, and can also use Sign in with Google with this email."}
           </p>
           <div className="w-fit">
             <PrimaryButton type="submit" disabled={submitting} loading={submitting}>

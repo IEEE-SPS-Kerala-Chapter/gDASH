@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { staffLoginSchema, resetPasswordSchema } from "@/lib/validations/auth";
@@ -59,6 +60,37 @@ export async function signIn(data: { email: string; password: string }): Promise
   }
   await logAuditEvent(supabase, "auth.signed_in");
   return { success: true };
+}
+
+/**
+ * Staff "Sign in with Google". Google proves the email; Supabase connects
+ * it to the staff account the super-admin created for that same email
+ * (accounts are created with a confirmed email, which is what lets the
+ * Google identity link to them). Staff access still comes only from the
+ * profile row: the callback (app/(admin)/login/google/callback/route.ts)
+ * signs out anyone without one. The callback lives under /login because
+ * the staff site serves nothing else at the root. The return address is
+ * built from this request's own host, never from client input.
+ */
+export async function startStaffGoogleSignIn(): Promise<{ success: true; url: string } | { success: false }> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  if (!host) return { success: false };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${proto}://${host}/login/google/callback`,
+      skipBrowserRedirect: true,
+      // Always show the account picker, so someone signed in to a personal
+      // Google account can choose their staff one.
+      queryParams: { prompt: "select_account" },
+    },
+  });
+  if (error || !data.url) return { success: false };
+  return { success: true, url: data.url };
 }
 
 export async function signOut(): Promise<void> {

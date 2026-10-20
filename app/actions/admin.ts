@@ -1002,7 +1002,13 @@ export async function createStaffAccount(input: {
   email: string;
   fullName: string;
   role: string;
-  password: string;
+  /**
+   * "google": no password at all — they can only use "Sign in with Google"
+   * with this exact email. "password": a temporary password they must
+   * change at first sign-in (Google sign-in works for them too).
+   */
+  signInMethod: "password" | "google";
+  password?: string;
 }): Promise<CreateStaffResult> {
   const caller = await getCallerRole();
   if (!caller || caller.role !== "super_admin") {
@@ -1021,14 +1027,17 @@ export async function createStaffAccount(input: {
   if (!STAFF_ROLES.includes(input.role as (typeof STAFF_ROLES)[number])) {
     return { success: false, error: "Invalid role." };
   }
-  if (input.password.length < 8) {
+  const googleOnly = input.signInMethod === "google";
+  if (!googleOnly && (input.password ?? "").length < 8) {
     return { success: false, error: "Password must be at least 8 characters." };
   }
 
   const admin = createAdminClient();
+  // email_confirm matters for Google: Supabase only links a Google sign-in
+  // to an existing account whose email is confirmed.
   const { data, error } = await admin.auth.admin.createUser({
     email,
-    password: input.password,
+    ...(googleOnly ? {} : { password: input.password }),
     email_confirm: true,
     user_metadata: { full_name: fullName },
   });
@@ -1044,9 +1053,13 @@ export async function createStaffAccount(input: {
   // created here (or by scripts/seed-*.mjs) — signing up through Supabase
   // Auth never creates one (see 20260926000000_lock_down_staff_profiles.sql).
   // Upsert, not insert: harmless if an older trigger already added a row.
+  // No temporary password to replace for a Google-only account.
   const { error: roleError } = await admin
     .from("profiles")
-    .upsert({ id: data.user.id, email, role: input.role, full_name: fullName }, { onConflict: "id" });
+    .upsert(
+      { id: data.user.id, email, role: input.role, full_name: fullName, must_reset_password: !googleOnly },
+      { onConflict: "id" },
+    );
 
   if (roleError) {
     // Don't leave a login with no staff access behind.
@@ -1062,7 +1075,7 @@ export async function createStaffAccount(input: {
     targetType: "profile",
     targetId: data.user.id,
     targetLabel: email,
-    metadata: { role: input.role },
+    metadata: { role: input.role, signInMethod: googleOnly ? "google" : "password" },
   });
 
   // Return the real account (not something the client makes up) so the

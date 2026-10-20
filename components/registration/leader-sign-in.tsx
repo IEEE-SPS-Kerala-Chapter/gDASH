@@ -245,7 +245,7 @@ export function LeaderSignIn({ authError }: { authError?: boolean }) {
  * for the G on white, and the circle keeps it legible on both the aubergine
  * (light theme) and lime (dark theme) button.
  */
-function GoogleIcon() {
+export function GoogleIcon() {
   return (
     <span aria-hidden="true" className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-white">
       <svg viewBox="0 0 48 48" className="h-4 w-4">
