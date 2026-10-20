@@ -12,6 +12,9 @@ export function ConfirmDialog({
   title,
   children,
   confirmLabel,
+  busyLabel = "Deleting…",
+  warning = "This can't be undone. Once deleted, it can't be changed or restored.",
+  wide = false,
   busy = false,
   onConfirm,
   onCancel,
@@ -19,6 +22,10 @@ export function ConfirmDialog({
   title: string;
   children: ReactNode;
   confirmLabel: string;
+  busyLabel?: string;
+  /** The red line above the buttons. */
+  warning?: ReactNode;
+  wide?: boolean;
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -41,7 +48,7 @@ export function ConfirmDialog({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-[440px] flex-col gap-4 rounded-[20px] border-t-4 border-ignite-danger bg-ignite-surface p-6 font-ui shadow-2xl"
+        className={`flex max-h-full w-full ${wide ? "max-w-[560px]" : "max-w-[440px]"} flex-col gap-4 overflow-y-auto rounded-[20px] border-t-4 border-ignite-danger bg-ignite-surface p-6 font-ui shadow-2xl`}
       >
         <div className="flex items-center gap-2.5">
           <span
@@ -56,7 +63,7 @@ export function ConfirmDialog({
         </div>
         <div className="flex flex-col gap-2 text-[14px] leading-[1.55] text-ignite-ink-soft">{children}</div>
         <p className="m-0 rounded-xl bg-ignite-danger-pale px-3 py-2 text-[14px] font-semibold text-ignite-danger">
-          This can&apos;t be undone. Once deleted, it can&apos;t be changed or restored.
+          {warning}
         </p>
         <div className="flex flex-wrap justify-end gap-2">
           <button
@@ -75,7 +82,7 @@ export function ConfirmDialog({
             className="flex items-center gap-2 rounded-full bg-ignite-danger px-5 py-2.5 text-[14px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {busy && <Spinner />}
-            {busy ? "Deleting…" : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>

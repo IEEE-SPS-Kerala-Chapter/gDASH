@@ -44,17 +44,21 @@ export const REGISTRATION_STATUS_PILL: Record<string, { bg: string; fg: string; 
 export const VERIFICATION_STATUS_LABELS: Record<string, string> = {
   pending: "Pending verification",
   verified: "Verified",
+  needs_correction: "Correction requested",
   ineligible: "Ineligible",
 };
 
 export const VERIFICATION_STATUS_BADGE_VARIANT: Record<string, BadgeVariant> = {
   pending: "warn",
   verified: "success",
+  needs_correction: "neutral",
   ineligible: "danger",
 };
 
 export const VERIFICATION_STATUS_HINTS: Record<string, string> = {
-  pending: "Check every member's college ID card and details before this entry can be assigned to judges.",
+  pending: "Check every member's college ID card, details and pitch deck before this entry can be assigned to judges.",
   verified: "Participants checked and eligible. This entry can be assigned to judges.",
-  ineligible: "Found fake, invalid, or not eligible. This entry can't be assigned to judges.",
+  needs_correction:
+    "The team leader was emailed what to fix and asked to send corrected details. Mark verified once they're fixed; if the deadline passes with no reply, an admin can mark the team ineligible.",
+  ineligible: "Final: the team can't move forward and the leader was told why. This entry can't be assigned to judges.",
 };

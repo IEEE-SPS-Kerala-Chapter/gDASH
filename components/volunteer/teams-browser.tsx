@@ -19,9 +19,9 @@ function formatDate(value: string) {
 
 /**
  * Volunteer view of every registered team for eligibility verification —
- * team, college and member names only (see app/actions/verification.ts);
- * nothing about the idea or deck. Opening a team shows its members and ID
- * cards and the verify / ineligible controls. Loads 30 teams at a time and
+ * team, college and member names only (see app/actions/verification.ts).
+ * Opening a team shows its members, ID cards and deck, and the verify /
+ * request-correction controls. Loads 30 teams at a time and
  * more as you scroll; search and filters run on the server.
  */
 export function VolunteerTeamsBrowser({
@@ -106,7 +106,7 @@ export function VolunteerTeamsBrowser({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
-        {(["pending", "verified", "ineligible"] as const).map((status) => (
+        {(["pending", "needs_correction", "verified", "ineligible"] as const).map((status) => (
           <button
             key={status}
             type="button"
@@ -184,7 +184,7 @@ export function VolunteerTeamsBrowser({
         <Panel className="py-10 text-center text-[14px] text-ignite-muted">
           {loading
             ? "Loading…"
-            : counts.pending + counts.verified + counts.ineligible === 0
+            : counts.pending + counts.verified + counts.needs_correction + counts.ineligible === 0
               ? "No teams registered yet."
               : "No teams match your search or filters."}
         </Panel>

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publicSiteUrl, sendEmail, type Email, type EmailAttachment } from "./send";
-import { ineligibleEmail, registrationReceivedEmail, resultEmail } from "./templates";
+import { correctionEmail, ineligibleEmail, registrationReceivedEmail, resultEmail } from "./templates";
 import { renderIdCardPng } from "./id-card-image";
 
 /**
@@ -12,7 +12,7 @@ import { renderIdCardPng } from "./id-card-image";
  * after the leader's own successful submit).
  */
 
-export type EmailKind = "registration_received" | "ineligible" | "result";
+export type EmailKind = "registration_received" | "correction" | "ineligible" | "result";
 
 type TeamForEmail = {
   id: string;
@@ -29,7 +29,14 @@ type TeamForEmail = {
     role_in_team: string | null;
     created_at: string;
   }[];
-  registrations: { status: string }[] | { status: string } | null;
+  registrations: TeamRegistration[] | TeamRegistration | null;
+};
+
+type TeamRegistration = {
+  status: string;
+  verification_status: string;
+  verification_note: string | null;
+  verification_decided_at: string | null;
 };
 
 /** A row stuck in "sending" this long (the function died mid-send) can be claimed again. */
@@ -40,7 +47,7 @@ async function loadTeam(teamId: string): Promise<TeamForEmail | null> {
   const { data, error } = await admin
     .from("teams")
     .select(
-      "id, name, entry_code, access_token, team_members(id, member_code, full_name, email, is_leader, college, role_in_team, created_at), registrations(status)",
+      "id, name, entry_code, access_token, team_members(id, member_code, full_name, email, is_leader, college, role_in_team, created_at), registrations(status, verification_status, verification_note, verification_decided_at)",
     )
     .eq("id", teamId)
     .maybeSingle();
@@ -68,6 +75,28 @@ export async function queueEmail(teamId: string, kind: EmailKind): Promise<strin
     .maybeSingle();
   if (error) throw new Error(`could not queue email: ${error.message}`);
   return data?.id ?? null;
+}
+
+/**
+ * Like queueEmail, but a row that was already sent (or failed) is reset to
+ * pending so the email goes out again, to the leader's current address.
+ * Returns null only when the row is mid-send right now.
+ */
+export async function requeueEmail(teamId: string, kind: EmailKind): Promise<string | null> {
+  const team = await loadTeam(teamId);
+  const leader = team && leaderOf(team);
+  if (!leader) return null;
+  const admin = createAdminClient();
+  const { data: existing, error } = await admin
+    .from("email_outbox")
+    .update({ status: "pending", to_email: leader.email, last_error: null })
+    .eq("team_id", teamId)
+    .eq("kind", kind)
+    .neq("status", "sending")
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(`could not requeue email: ${error.message}`);
+  return existing?.id ?? (await queueEmail(teamId, kind));
 }
 
 /** Marks the row as being sent, if it's waiting (or stuck); false when someone else has it or it's done. */
@@ -129,12 +158,28 @@ async function buildEmail(kind: EmailKind, team: TeamForEmail, to: string): Prom
     };
   }
 
+  const reg = Array.isArray(team.registrations) ? team.registrations[0] : team.registrations;
+
+  // Verification emails carry the current note, so only while the team is
+  // still in that state (a resend after it was verified has nothing to say).
+  if (kind === "correction") {
+    if (reg?.verification_status !== "needs_correction") return null;
+    return correctionEmail({
+      site,
+      to,
+      leaderName,
+      teamName: team.name,
+      entryCode: team.entry_code,
+      statusUrl,
+      note: reg.verification_note,
+    });
+  }
   if (kind === "ineligible") {
-    return ineligibleEmail({ site, to, leaderName, teamName: team.name, statusUrl });
+    if (reg?.verification_status !== "ineligible") return null;
+    return ineligibleEmail({ site, to, leaderName, teamName: team.name, statusUrl, reason: reg.verification_note });
   }
 
   // Results: only for a decided team, and only while results are published.
-  const reg = Array.isArray(team.registrations) ? team.registrations[0] : team.registrations;
   const outcome = reg?.status === "shortlisted" ? "shortlisted" : reg?.status === "rejected" ? "not_selected" : null;
   if (!outcome) return null;
   const admin = createAdminClient();
@@ -190,7 +235,7 @@ export async function deliver(rowId: string): Promise<"sent" | "failed" | "skipp
   }
 }
 
-/** Queue + send in one go — for the registration and ineligible emails. Never throws. */
+/** Queue + send in one go — for the registration email. Never throws. */
 export async function queueAndDeliver(teamId: string, kind: EmailKind): Promise<void> {
   try {
     const rowId = await queueEmail(teamId, kind);
@@ -201,15 +246,28 @@ export async function queueAndDeliver(teamId: string, kind: EmailKind): Promise<
 }
 
 /**
- * The "couldn't confirm your eligibility" email, by registration id (what
- * the verification screens have). Once per team, even if it's marked
- * ineligible again later.
+ * The email for a verification decision, by registration id (what the
+ * verification screens have): a correction request for needs_correction, the
+ * final notice for ineligible, nothing for the other states. Sent every time
+ * the team enters that state, so an updated note reaches the leader too.
  */
-export async function notifyIneligible(registrationId: string): Promise<void> {
+export async function notifyVerification(registrationId: string): Promise<void> {
   const { data } = await createAdminClient()
     .from("registrations")
     .select("team_id, verification_status")
     .eq("id", registrationId)
     .maybeSingle();
-  if (data?.verification_status === "ineligible") await queueAndDeliver(data.team_id, "ineligible");
+  const kind: EmailKind | null =
+    data?.verification_status === "needs_correction"
+      ? "correction"
+      : data?.verification_status === "ineligible"
+        ? "ineligible"
+        : null;
+  if (!data || !kind) return;
+  try {
+    const rowId = await requeueEmail(data.team_id, kind);
+    if (rowId) await deliver(rowId);
+  } catch (err) {
+    console.error(`[email] could not queue ${kind} for team ${data.team_id}:`, err);
+  }
 }

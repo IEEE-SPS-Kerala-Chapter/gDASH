@@ -1,4 +1,5 @@
 import type { Email } from "./send";
+import { CORRECTION_DEADLINE_DAYS, CORRECTION_FORM_URL } from "@/lib/config";
 
 /**
  * The leader emails, in the same design as the sign-in code email
@@ -86,6 +87,10 @@ const intro = (html: string) =>
   `<tr><td align="center" style="padding:12px 40px 0; font-family:${FONT}; font-size:16px; line-height:24px; color:#4C3D66;">${html}</td></tr>`;
 const block = (html: string) => `<tr><td style="padding:24px 32px 0;">${html}</td></tr>`;
 const center = (html: string) => `<tr><td align="center" style="padding:24px 32px 0;">${html}</td></tr>`;
+const para = (html: string) =>
+  `<tr><td style="padding:16px 32px 0; font-family:${FONT}; font-size:15px; line-height:23px; color:#4C3D66;">${html}</td></tr>`;
+const link = (href: string, label: string) =>
+  `<a href="${esc(href)}" style="color:#2C1D44; font-weight:700; text-decoration:underline;">${esc(label)}</a>`;
 const note = (html: string) =>
   block(
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background-color:#F4F6FA; border-radius:12px; padding:14px 16px; font-family:${FONT}; font-size:14px; line-height:21px; color:#4C3D66;">${html}</td></tr></table>`,
@@ -151,20 +156,132 @@ export function registrationReceivedEmail(opts: {
   };
 }
 
-export function ineligibleEmail(opts: { site: string; to: string; leaderName: string; teamName: string; statusUrl: string }): Email {
+/**
+ * When a correction requested at `requestedAt` is due: CORRECTION_DEADLINE_DAYS
+ * days later, with a label like "Thursday, 24 October 2026" (India time).
+ * For the staff screens; the email itself just says "within N days".
+ */
+export function correctionDeadline(requestedAt: string): { date: Date; label: string } {
+  const date = new Date(new Date(requestedAt).getTime() + CORRECTION_DEADLINE_DAYS * 24 * 60 * 60 * 1000);
+  const label = date.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  return { date, label };
+}
+
+/**
+ * Sent when a volunteer or admin marks a team "needs correction". Never says
+ * "ineligible": the verifier's note says what's wrong, the team has
+ * CORRECTION_DEADLINE_DAYS from the email to respond, and sends corrected details through CORRECTION_FORM_URL (or by
+ * replying, while no form link is set).
+ */
+export function correctionEmail(opts: {
+  site: string;
+  to: string;
+  leaderName: string;
+  teamName: string;
+  entryCode: string;
+  statusUrl: string;
+  /** The verifier's note: what needs correcting. */
+  note?: string | null;
+}): Email {
+  const what = opts.note?.trim() || null;
+  const formUrl = CORRECTION_FORM_URL.trim() || null;
+  const days = `${CORRECTION_DEADLINE_DAYS} day${CORRECTION_DEADLINE_DAYS === 1 ? "" : "s"}`;
+  const within = `within ${days} of this email`;
+  const strong = (s: string) => `<strong style="color:#2C1D44;">${esc(s)}</strong>`;
+  // "Dear Team Nova", but not "Dear Team Team Nova" for a team named "Team Nova".
+  const salutation = /^team\b/i.test(opts.teamName.trim()) ? opts.teamName.trim() : `Team ${opts.teamName.trim()}`;
+  const html = layout({
+    site: opts.site,
+    preview: `Action needed within ${days}: a correction to ${opts.teamName}'s gIGNITE 2026 registration.`,
+    eyebrow: "Action needed",
+    heading: "Correction required",
+    body:
+      intro(`Dear ${esc(salutation)},<br />Greetings from the gIGNITE 2026 Organizing Committee!`) +
+      para(
+        `While verifying the details, ID cards and pitch deck for ${strong(opts.teamName)}, our team found something that needs to be corrected before your registration can move forward.`,
+      ) +
+      (what ? note(`<strong style="color:#2C1D44;">What needs correcting</strong><br />${paragraphs(what)}`) : "") +
+      (formUrl
+        ? para(
+            `Please fix this and submit the updated details using the form below ${strong(within)}. Mention your team code ${strong(opts.entryCode)} in the form so we can match it to your registration.`,
+          ) + center(button(formUrl, "Submit corrected details"))
+        : para(
+            `Please fix this and reply to this email with the updated details ${strong(within)}, mentioning your team code ${strong(opts.entryCode)}.`,
+          )) +
+      para(
+        `Please make sure all required sections are complete. If we don't receive your corrected details ${strong(within)}, your team won't be considered for the evaluation process.`,
+      ) +
+      para(`You can check your registration any time on your ${link(opts.statusUrl, "registration status page")}.`) +
+      para(
+        `Thank you for your cooperation. We look forward to reviewing your team's innovative ideas!<br /><br />Best regards,<br />gIGNITE 2026 Organizing Committee<br />Gadgeon Smart Systems`,
+      ),
+  });
+  return {
+    to: opts.to,
+    subject: `Correction required for your gIGNITE 2026 registration — ${opts.teamName}`,
+    html,
+    text: text(
+      `Dear ${salutation},`,
+      "Greetings from the gIGNITE 2026 Organizing Committee!",
+      "",
+      `While verifying the details, ID cards and pitch deck for "${opts.teamName}", our team found something that needs to be corrected before your registration can move forward.`,
+      "",
+      ...(what ? ["What needs correcting:", what, ""] : []),
+      ...(formUrl
+        ? [
+            `Please fix this and submit the updated details using this form ${within} (mention your team code ${opts.entryCode}):`,
+            formUrl,
+          ]
+        : [
+            `Please fix this and reply to this email with the updated details ${within}, mentioning your team code ${opts.entryCode}.`,
+          ]),
+      "",
+      `Please make sure all required sections are complete. If we don't receive your corrected details ${within}, your team won't be considered for the evaluation process.`,
+      "",
+      `Registration status: ${opts.statusUrl}`,
+      "",
+      "Thank you for your cooperation. We look forward to reviewing your team's innovative ideas!",
+      "",
+      "Best regards,",
+      "gIGNITE 2026 Organizing Committee",
+      "Gadgeon Smart Systems",
+    ),
+  };
+}
+
+/**
+ * Sent when an admin marks a team ineligible — the final call, usually after
+ * a correction request went unanswered. The admin's note is the reason.
+ */
+export function ineligibleEmail(opts: {
+  site: string;
+  to: string;
+  leaderName: string;
+  teamName: string;
+  statusUrl: string;
+  /** The admin's note: why the registration can't move forward. */
+  reason?: string | null;
+}): Email {
+  const reason = opts.reason?.trim() || null;
   const html = layout({
     site: opts.site,
     preview: `An update on ${opts.teamName}'s gIGNITE 2026 registration.`,
     eyebrow: "Registration update",
-    heading: "We couldn't confirm your eligibility",
+    heading: "Your registration can't move forward",
     body:
       intro(
-        `Hi ${esc(opts.leaderName)}, while checking the details and ID cards for <strong style="color:#2C1D44;">${esc(opts.teamName)}</strong>, we couldn't confirm that your team meets the gIGNITE 2026 eligibility requirements.`,
+        `Hi ${esc(opts.leaderName)}, after verifying the registration for <strong style="color:#2C1D44;">${esc(opts.teamName)}</strong>, we're sorry to let you know that it can't move forward in gIGNITE 2026.`,
       ) +
+      (reason ? note(`<strong style="color:#2C1D44;">Reason</strong><br />${paragraphs(reason)}`) : "") +
       note(
-        `If you think this is a mistake, or you'd like to know more, <strong style="color:#2C1D44;">reply to this email</strong> and the organising team will get back to you.`,
-      ) +
-      center(button(opts.statusUrl, "View registration status")),
+        `If you think this is a mistake, <strong style="color:#2C1D44;">reply to this email</strong> and the organising team will get back to you. Thank you for your interest in gIGNITE 2026.`,
+      ),
   });
   return {
     to: opts.to,
@@ -173,9 +290,10 @@ export function ineligibleEmail(opts: { site: string; to: string; leaderName: st
     text: text(
       `Hi ${opts.leaderName},`,
       "",
-      `While checking the details and ID cards for "${opts.teamName}", we couldn't confirm that your team meets the gIGNITE 2026 eligibility requirements.`,
+      `After verifying the registration for "${opts.teamName}", we're sorry to let you know that it can't move forward in gIGNITE 2026.`,
       "",
-      "If you think this is a mistake, or you'd like to know more, reply to this email and the organising team will get back to you.",
+      ...(reason ? ["Reason:", reason, ""] : []),
+      "If you think this is a mistake, reply to this email and the organising team will get back to you. Thank you for your interest in gIGNITE 2026.",
       "",
       `Registration status: ${opts.statusUrl}`,
     ),

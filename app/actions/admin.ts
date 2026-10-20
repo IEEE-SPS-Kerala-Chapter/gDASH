@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
-import { notifyIneligible } from "@/lib/email/deliver";
+import { notifyVerification } from "@/lib/email/deliver";
 import { csvField } from "@/lib/csv";
 
 import { createClient } from "@/lib/supabase/server";
@@ -536,13 +536,14 @@ export async function updateRegistrationStatus(
   return result;
 }
 
-const VERIFICATION_STATUSES = ["pending", "verified", "ineligible"] as const;
+const VERIFICATION_STATUSES = ["pending", "verified", "needs_correction", "ineligible"] as const;
 
 /**
  * Admin (or super-admin) only: record the eligibility check for a
- * registration (ID cards / details checked → verified, or ineligible).
- * Only verified registrations can be assigned judges. A reason is required
- * for "ineligible" so there's a record of why. Who/when is stamped by the
+ * registration (ID cards / details checked → verified, needs correction, or
+ * ineligible). Only verified registrations can be assigned judges. A note is
+ * required for "needs_correction" and "ineligible" — it's emailed to the
+ * team leader (notifyVerification). Who/when is stamped by the
  * registrations_verification_guard trigger from the session, which also
  * refuses to un-verify an entry that still has judges assigned. Same
  * expectedVersion conflict check as updateRegistrationStatus.
@@ -557,8 +558,8 @@ export async function setVerificationStatus(
     return { success: false, error: "Invalid verification status." };
   }
   const trimmedNote = note?.trim() || null;
-  if (status === "ineligible" && !trimmedNote) {
-    return { success: false, error: "Give a reason for marking this team ineligible." };
+  if ((status === "needs_correction" || status === "ineligible") && !trimmedNote) {
+    return { success: false, error: "Write a note saying what's wrong — it's emailed to the team leader." };
   }
   if (trimmedNote && trimmedNote.length > 1000) {
     return { success: false, error: "Keep the note under 1000 characters." };
@@ -584,7 +585,7 @@ export async function setVerificationStatus(
       metadata: { verificationStatus: status, ...(trimmedNote ? { note: trimmedNote } : {}) },
     });
     revalidateDashboard();
-    if (status === "ineligible") after(() => notifyIneligible(registrationId));
+    if (status === "needs_correction" || status === "ineligible") after(() => notifyVerification(registrationId));
   }
   return result;
 }

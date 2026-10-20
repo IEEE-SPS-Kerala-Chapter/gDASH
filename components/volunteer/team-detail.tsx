@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  getVerificationDeckUrl,
   getVerificationIdCardUrl,
   setTeamVerification,
   type VerificationMember,
@@ -10,6 +11,7 @@ import {
   type VerificationTeamDetail,
 } from "@/app/actions/verification";
 import { VerificationPanel } from "@/components/admin/verification-panel";
+import { DeckViewer } from "@/components/admin/deck-panel";
 import { useLiveRefresh } from "@/components/admin/use-live-refresh";
 import { Panel, SectionLabel, Spinner } from "@/components/admin/ui";
 
@@ -19,8 +21,10 @@ function formatDate(value: string) {
 
 /**
  * Volunteer team page: team + member details and each member's ID card,
- * then the same verification panel admins use. Only the fields from
- * getVerificationTeam reach this page — never the idea or deck.
+ * the pitch deck (to check it's built on the official template), then the
+ * same verification panel admins use. Only the fields from
+ * getVerificationTeam and the deck file reach this page — never the idea
+ * text, scores or decisions.
  */
 export function VolunteerTeamDetail({ detail }: { detail: VerificationTeamDetail }) {
   const [state, setState] = useState<VerificationState>(detail.state);
@@ -29,6 +33,7 @@ export function VolunteerTeamDetail({ detail }: { detail: VerificationTeamDetail
   useLiveRefresh();
 
   const { team, members } = detail;
+  const leader = members.find((m) => m.isLeader);
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,12 +49,27 @@ export function VolunteerTeamDetail({ detail }: { detail: VerificationTeamDetail
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr] lg:items-start">
-        <Panel className="flex flex-col gap-4 p-5">
-          <SectionLabel>Members &amp; ID cards</SectionLabel>
-          {members.map((m) => (
-            <MemberRow key={m.id} member={m} />
-          ))}
-        </Panel>
+        <div className="flex min-w-0 flex-col gap-5">
+          <Panel className="flex flex-col gap-4 p-5">
+            <SectionLabel>Members &amp; ID cards</SectionLabel>
+            {members.map((m) => (
+              <MemberRow key={m.id} member={m} />
+            ))}
+          </Panel>
+
+          <DeckViewer
+            loadKey={detail.registrationId}
+            load={() => getVerificationDeckUrl(detail.registrationId)}
+            uploadedAt={team.createdAt}
+            notice={
+              <p className="m-0 rounded-[10px] border border-ignite-magenta/40 bg-ignite-magenta/[0.07] px-4 py-3 text-[13px] leading-[1.5] text-ignite-ink">
+                <span className="font-semibold">Check the deck is built on the official gIGNITE pitch deck template.</span>{" "}
+                If it uses a different template, use Request correction and say so in the note — the team leader is
+                emailed your note and asked to send a corrected deck.
+              </p>
+            }
+          />
+        </div>
 
         <VerificationPanel
           registration={{
@@ -60,6 +80,10 @@ export function VolunteerTeamDetail({ detail }: { detail: VerificationTeamDetail
             verification_decided_at: state.verification.decidedAt,
             verification_decided_by_name: state.verification.decidedByName,
           }}
+          teamName={team.name}
+          entryCode={team.entryCode}
+          canMarkIneligible={false}
+          leader={leader ? { name: leader.fullName, email: leader.email } : null}
           assignedJudgeCount={detail.assignedJudgeCount}
           save={setTeamVerification}
           onChange={setState}

@@ -54,7 +54,7 @@ export type AdminJudgeScore = {
   weighted: number | null;
 };
 
-export type VerificationStatus = "pending" | "verified" | "ineligible";
+export type VerificationStatus = "pending" | "verified" | "needs_correction" | "ineligible";
 
 export type AdminRegistration = {
   id: string;

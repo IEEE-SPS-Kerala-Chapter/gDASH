@@ -251,6 +251,10 @@ export function TeamDetail({
             {reg && (
               <VerificationPanel
                 registration={reg}
+                teamName={team.name}
+                entryCode={team.entry_code}
+                leader={leader ? { name: leader.full_name, email: leader.email } : null}
+                canMarkIneligible={isAdmin}
                 assignedJudgeCount={reg.assignments.length}
                 save={setVerificationStatus}
                 onChange={applyState}

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "./admin";
 import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
-import { deliver, queueEmail, type EmailKind } from "@/lib/email/deliver";
+import { deliver, requeueEmail, type EmailKind } from "@/lib/email/deliver";
 
 export type TeamEmail = {
   kind: EmailKind;
@@ -50,8 +50,7 @@ export async function resendTeamEmail(
   const caller = await getCallerRole();
   if (!caller || !isAdminLevelRole(caller.role)) return { success: false, error: ADMIN_ONLY };
 
-  const admin = createAdminClient();
-  const { data: leader } = await admin
+  const { data: leader } = await createAdminClient()
     .from("team_members")
     .select("email")
     .eq("team_id", teamId)
@@ -60,15 +59,7 @@ export async function resendTeamEmail(
   if (!leader) return { success: false, error: "This team has no leader to email." };
 
   // Reset an existing row (any status but mid-send), or queue a new one.
-  const { data: existing } = await admin
-    .from("email_outbox")
-    .update({ status: "pending", to_email: leader.email, last_error: null })
-    .eq("team_id", teamId)
-    .eq("kind", kind)
-    .neq("status", "sending")
-    .select("id")
-    .maybeSingle();
-  const rowId = existing?.id ?? (await queueEmail(teamId, kind).catch(() => null));
+  const rowId = await requeueEmail(teamId, kind).catch(() => null);
   if (!rowId) return { success: false, error: "That email is being sent right now — check again in a minute." };
 
   const status = await deliver(rowId);

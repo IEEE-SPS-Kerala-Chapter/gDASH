@@ -2,17 +2,20 @@
 
 import { after } from "next/server";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
-import { notifyIneligible } from "@/lib/email/deliver";
+import { notifyVerification } from "@/lib/email/deliver";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCallerRole } from "./admin";
 import { logAuditEvent } from "@/lib/audit-log";
+import { isAdminLevelRole } from "@/lib/roles";
 import type { VerificationStatus } from "@/lib/admin-teams";
+import { deckFileName } from "@/lib/deck-file-name";
 
 /**
  * Team verification for volunteers (and admins): team, member and ID-card
- * details plus the verification fields — never the idea, deck, AI theme,
- * judges, scores or decisions. Everything goes through the SECURITY DEFINER
+ * details, the pitch deck file (to check it uses the official template),
+ * plus the verification fields — never the idea text, AI theme, judges,
+ * scores or decisions. Everything goes through the SECURITY DEFINER
  * functions in supabase/migrations/20260928010000_volunteer_verification.sql,
  * which check the caller's role again; volunteers have no table access.
  */
@@ -108,7 +111,7 @@ function toSummary(t: Record<string, unknown>): VerificationTeamSummary {
   };
 }
 
-export type VerificationCounts = { pending: number; verified: number; ineligible: number };
+export type VerificationCounts = { pending: number; verified: number; needs_correction: number; ineligible: number };
 
 /**
  * One page of the verification list, with search and filters run in the
@@ -140,8 +143,14 @@ export async function getVerificationTeamPage(query: {
   if (error || !data) {
     return { success: false, error: "Could not load teams." };
   }
-  const raw = data as { teams: Record<string, unknown>[]; total: number; counts: VerificationCounts };
-  return { success: true, teams: (raw.teams ?? []).map(toSummary), total: raw.total, counts: raw.counts };
+  const raw = data as { teams: Record<string, unknown>[]; total: number; counts: Partial<VerificationCounts> };
+  const counts: VerificationCounts = {
+    pending: raw.counts?.pending ?? 0,
+    verified: raw.counts?.verified ?? 0,
+    needs_correction: raw.counts?.needs_correction ?? 0,
+    ineligible: raw.counts?.ineligible ?? 0,
+  };
+  return { success: true, teams: (raw.teams ?? []).map(toSummary), total: raw.total, counts };
 }
 
 export async function getVerificationTeam(
@@ -206,7 +215,8 @@ export async function getVerificationTeam(
 
 const GUARD_MESSAGES: Record<string, string> = {
   has_assignments: "Judges are already assigned to this team — ask an admin to unassign them before changing its verification.",
-  reason_required: "Give a reason for marking this team ineligible.",
+  reason_required: "Write a note saying what's wrong — it's emailed to the team leader.",
+  admin_only: "Only admins can mark a team ineligible. Request a correction instead.",
   note_too_long: "Keep the note under 1000 characters.",
   invalid_status: "Invalid verification status.",
 };
@@ -224,6 +234,10 @@ export async function setTeamVerification(
   const caller = await getCallerRole();
   if (!caller || !VERIFIER_ROLES.includes(caller.role)) {
     return { success: false, error: "Only volunteers and admins can verify teams." };
+  }
+  // Also enforced by set_verification_status; this just gives a clean message.
+  if (status === "ineligible" && !isAdminLevelRole(caller.role)) {
+    return { success: false, error: GUARD_MESSAGES.admin_only };
   }
 
   const supabase = await createClient();
@@ -254,10 +268,13 @@ export async function setTeamVerification(
   await logAuditEvent(supabase, "registration.verification_changed", {
     targetType: "registration",
     targetId: registrationId,
-    metadata: { verificationStatus: status, ...(status === "ineligible" && note ? { note: note.trim() } : {}) },
+    metadata: {
+      verificationStatus: status,
+      ...((status === "needs_correction" || status === "ineligible") && note ? { note: note.trim() } : {}),
+    },
   });
   revalidateDashboard();
-  if (status === "ineligible") after(() => notifyIneligible(registrationId));
+  if (status === "needs_correction" || status === "ineligible") after(() => notifyVerification(registrationId));
   return { success: true, state };
 }
 
@@ -283,4 +300,34 @@ export async function getVerificationIdCardUrl(
     return { success: false, error: "Could not load the ID card." };
   }
   return { success: true, url: data.signedUrl };
+}
+
+/**
+ * A 5-minute signed link to a registration's pitch deck, so volunteers can
+ * check it was built on the official template while verifying the team.
+ * Keyed by registration id and looked up server-side after the role check,
+ * like getVerificationIdCardUrl: the caller never supplies a storage path.
+ * Only the deck file is exposed — not the idea text, scores or decisions.
+ */
+export async function getVerificationDeckUrl(
+  registrationId: string,
+): Promise<{ success: true; url: string; fileName: string } | { success: false; error: string }> {
+  if (!(await callerCanVerify())) {
+    return { success: false, error: "Only volunteers and admins can view decks." };
+  }
+  const admin = createAdminClient();
+  const { data: registration } = await admin
+    .from("registrations")
+    .select("deck_path")
+    .eq("id", registrationId)
+    .maybeSingle();
+  const path = registration?.deck_path;
+  if (!path) {
+    return { success: false, error: "No deck uploaded." };
+  }
+  const { data, error } = await admin.storage.from("registration-decks").createSignedUrl(path, 60 * 5);
+  if (error || !data) {
+    return { success: false, error: "Could not load the deck." };
+  }
+  return { success: true, url: data.signedUrl, fileName: deckFileName(path) };
 }

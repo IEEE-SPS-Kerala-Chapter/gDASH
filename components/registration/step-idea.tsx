@@ -8,6 +8,7 @@ import { Field, TextArea, FormCard, Spinner } from "./ui";
 import { cn } from "@/lib/utils";
 import { displayFileName } from "@/lib/upload-file-name";
 import { createUploadUrl } from "@/app/actions/uploads";
+import { DECK_TEMPLATE_URL } from "@/lib/config";
 import { ExternalLink, Presentation } from "lucide-react";
 
 const MAX_DECK_BYTES = 20 * 1024 * 1024;
@@ -15,7 +16,6 @@ const ALLOWED_DECK_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ];
-const DECK_TEMPLATE_URL = "https://docs.google.com/presentation/d/131gSVctKwqtEYeG9JiWsmXSEDMM98I4F/edit?slide=id.p1#slide=id.p1";
 
 export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
   const {
@@ -100,6 +100,20 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
       <Field
         label="📎 Drop Your Deck — built on the official gIGNITE template"
+        hint={
+          <>
+            Decks that don&apos;t use{" "}
+            <a
+              href={DECK_TEMPLATE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-ignite-ink underline hover:text-ignite-magenta"
+            >
+              the official template
+            </a>{" "}
+            may not be evaluated. Fill in the template, then upload it here.
+          </>
+        }
         error={e?.deckPath?.message}
       >
         <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-ignite-bg px-[15px] py-[13px]">

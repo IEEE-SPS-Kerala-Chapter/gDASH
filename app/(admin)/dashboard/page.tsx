@@ -38,7 +38,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ pag
       <div className="flex flex-col gap-4">
         <PageHeading
           title="Team verification"
-          subtitle="Check each team's members and ID cards, then mark the team Verified or Ineligible."
+          subtitle="Check each team's members, ID cards and pitch deck, then mark the team Verified or request a correction."
         />
         {teamsResult.success ? (
           <VolunteerTeamsBrowser
