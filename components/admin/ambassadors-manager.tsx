@@ -109,7 +109,8 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
             <SectionLabel>Ranking</SectionLabel>
             <div className="flex flex-wrap items-center gap-3">
               <span className="font-ui text-[13px] text-ignite-muted">
-                {ranking.referred} registration{ranking.referred === 1 ? "" : "s"} referred · {ranking.noAmbassador} with no ambassador ·
+                {ranking.referred} registration{ranking.referred === 1 ? "" : "s"} referred · {ranking.referredVerified} verified ·{" "}
+                {ranking.referredShortlisted} finale shortlisted · {ranking.noAmbassador} with no ambassador ·
                 updates every 15 seconds
               </span>
               <SecondaryButton type="button" onClick={handleExport} disabled={exporting}>
@@ -118,7 +119,7 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
             </div>
           </div>
           <Panel className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-[14px]">
+            <table className="w-full min-w-[860px] border-collapse text-[14px]">
               <thead>
                 <tr className="border-b border-ignite-edge/[0.12] text-left font-ui text-[12px] font-bold uppercase tracking-[0.12em] text-ignite-muted">
                   <th className="px-4 py-3">Rank</th>
@@ -126,7 +127,8 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
                   <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3">College</th>
                   <th className="px-4 py-3 text-right">Registrations</th>
-                  <th className="px-4 py-3 text-right">Shortlisted</th>
+                  <th className="px-4 py-3 text-right">Verified</th>
+                  <th className="px-4 py-3 text-right">Finale shortlisted</th>
                   <th className="px-4 py-3">
                     <span className="sr-only">Delete</span>
                   </th>
@@ -241,6 +243,7 @@ function RankingRow({ row }: { row: AmbassadorRankingRow }) {
         />
       </td>
       <td className="px-4 py-2.5 text-right font-display text-[16px] font-bold text-ignite-ink">{row.total}</td>
+      <td className="px-4 py-2.5 text-right text-ignite-ink-soft">{row.verified}</td>
       <td className="px-4 py-2.5 text-right text-ignite-ink-soft">{row.shortlisted}</td>
       <td className="px-4 py-2.5 text-right">
         {row.deleted ? (

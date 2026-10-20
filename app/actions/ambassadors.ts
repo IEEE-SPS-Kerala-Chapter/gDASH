@@ -55,6 +55,9 @@ export type AmbassadorRankingRow = {
   college: string | null;
   deleted: boolean;
   total: number;
+  /** Referred teams that passed ID verification. */
+  verified: number;
+  /** Referred teams shortlisted for the Grand Finale. */
   shortlisted: number;
   /** null while the ambassador has no referrals yet. */
   rank: number | null;
@@ -64,6 +67,8 @@ export type AmbassadorRanking = {
   lastNumber: number | null;
   rows: AmbassadorRankingRow[];
   referred: number;
+  referredVerified: number;
+  referredShortlisted: number;
   noAmbassador: number;
 };
 
@@ -78,10 +83,24 @@ export async function getAmbassadorRanking(): Promise<{ success: true; ranking: 
   if (error || !data) {
     return { success: false, error: "Could not load the ambassador ranking." };
   }
-  const raw = data as { last_number: number | null; rows: AmbassadorRankingRow[]; referred: number; no_ambassador: number };
+  const raw = data as {
+    last_number: number | null;
+    rows: AmbassadorRankingRow[];
+    referred: number;
+    referred_verified: number;
+    referred_shortlisted: number;
+    no_ambassador: number;
+  };
   return {
     success: true,
-    ranking: { lastNumber: raw.last_number, rows: raw.rows, referred: raw.referred, noAmbassador: raw.no_ambassador },
+    ranking: {
+      lastNumber: raw.last_number,
+      rows: raw.rows,
+      referred: raw.referred,
+      referredVerified: raw.referred_verified,
+      referredShortlisted: raw.referred_shortlisted,
+      noAmbassador: raw.no_ambassador,
+    },
   };
 }
 
@@ -97,13 +116,14 @@ export async function exportAmbassadorsCsv(): Promise<
   if (!result.success) return result;
   const rows = [...result.ranking.rows].sort((a, b) => a.number - b.number);
 
-  const header = ["Ambassador ID", "Name", "College", "Registrations", "Shortlisted", "Rank", "Status"].map(csvField);
+  const header = ["Ambassador ID", "Name", "College", "Registrations", "Verified", "Finale shortlisted", "Rank", "Status"].map(csvField);
   const lines = rows.map((r) =>
     [
       formatAmbassadorId(r.number),
       r.name ?? "",
       r.college ?? "",
       String(r.total),
+      String(r.verified),
       String(r.shortlisted),
       r.rank === null ? "" : String(r.rank),
       r.deleted ? "Deleted" : "Active",
