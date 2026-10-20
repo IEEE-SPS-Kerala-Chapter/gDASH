@@ -100,20 +100,6 @@ export function StepIdea({ form }: { form: UseFormReturn<RegistrationForm> }) {
 
       <Field
         label="📎 Drop Your Deck — built on the official gIGNITE template"
-        hint={
-          <>
-            Decks that don&apos;t use{" "}
-            <a
-              href={DECK_TEMPLATE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-ignite-ink underline hover:text-ignite-magenta"
-            >
-              the official template
-            </a>{" "}
-            may not be evaluated. Fill in the template, then upload it here.
-          </>
-        }
         error={e?.deckPath?.message}
       >
         <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] border-dashed border-ignite-edge/[0.18] bg-ignite-bg px-[15px] py-[13px]">
