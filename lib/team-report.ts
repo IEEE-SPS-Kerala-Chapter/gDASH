@@ -136,7 +136,8 @@ export async function renderTeamReport(teamId: string): Promise<Uint8Array | nul
 
 /** A short-lived link to a stored report (or deck) that downloads as `downloadName`. */
 export async function signedDownloadUrl(bucket: string, filePath: string, downloadName: string): Promise<string | null> {
-  const { data } = await createAdminClient().storage.from(bucket).createSignedUrl(filePath, 60 * 10, { download: downloadName });
+  // 5 minutes, like the deck and ID-card links: the browser uses it straight away.
+  const { data } = await createAdminClient().storage.from(bucket).createSignedUrl(filePath, 60 * 5, { download: downloadName });
   return data?.signedUrl ?? null;
 }
 

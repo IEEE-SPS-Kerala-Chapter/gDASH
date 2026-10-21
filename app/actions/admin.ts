@@ -792,6 +792,15 @@ export async function deleteRegistration(teamId: string): Promise<DeleteResult> 
       console.error(`Could not clean up deck for deleted team ${teamId}:`, deckError.message);
     }
   }
+  // Generated team reports (lib/team-report.ts) hold the same ID photos and
+  // contacts — they go too.
+  const { data: reports } = await admin.storage.from("team-reports").list(teamId, { limit: 100 });
+  if (reports && reports.length > 0) {
+    const { error: reportError } = await admin.storage.from("team-reports").remove(reports.map((f) => `${teamId}/${f.name}`));
+    if (reportError) {
+      console.error(`Could not clean up reports for deleted team ${teamId}:`, reportError.message);
+    }
+  }
 
   revalidateDashboard();
 
