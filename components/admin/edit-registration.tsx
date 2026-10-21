@@ -7,7 +7,7 @@ import { createUploadUrl, type UploadKind } from "@/app/actions/uploads";
 import { createClient } from "@/lib/supabase/client";
 import { AI_THEMES, KERALA_DISTRICTS } from "@/lib/validations/team";
 import { MEMBER_YEARS } from "@/lib/validations/member";
-import { TEAM_ROLES } from "@/lib/validations/roles";
+import { OTHER_ROLE, TEAM_ROLES } from "@/lib/validations/roles";
 import { KERALA_BTECH_COLLEGES } from "@/lib/kerala-colleges";
 import type { RegistrationEdit } from "@/lib/validations/registration-edit";
 import { NO_AMBASSADOR, type AmbassadorDetails } from "@/lib/ambassador";
@@ -273,14 +273,7 @@ export function EditRegistration({
                 </Select>
               </Field>
               {!m.isLeader && (
-                <Field label="Role in team">
-                  <TextInput
-                    value={m.roleInTeam}
-                    maxLength={60}
-                    list="edit-role-options"
-                    onChange={(e) => setMember(m.id, { roleInTeam: e.target.value })}
-                  />
-                </Field>
+                <RoleField value={m.roleInTeam} onChange={(roleInTeam) => setMember(m.id, { roleInTeam })} />
               )}
             </div>
             <ReplaceFileField
@@ -304,11 +297,6 @@ export function EditRegistration({
       ) : (
         <span className="text-[13px] text-ignite-muted">This team has the maximum of {MAX_MEMBERS} members.</span>
       )}
-      <datalist id="edit-role-options">
-        {TEAM_ROLES.filter((r) => r !== "Other").map((r) => (
-          <option key={r} value={r} />
-        ))}
-      </datalist>
 
       <Panel className="flex flex-col gap-4 p-5">
         <EditHeading>Idea</EditHeading>
@@ -361,6 +349,44 @@ export function EditRegistration({
         member gets the next member code and a check-in QR.
       </span>
     </div>
+  );
+}
+
+/**
+ * Role dropdown, as on the registration form: the standard roles, or
+ * "Other" with a free-text role. A saved role that isn't in the list (typed
+ * under "Other" at registration) opens as "Other" with its text.
+ */
+function RoleField({ value, onChange }: { value: string; onChange: (role: string) => void }) {
+  const isListed = (TEAM_ROLES as readonly string[]).includes(value) && value !== OTHER_ROLE;
+  const [choice, setChoice] = useState<string>(isListed ? value : value ? OTHER_ROLE : "");
+
+  return (
+    <>
+      <Field label="Role in team">
+        <Select
+          value={choice}
+          onChange={(e) => {
+            const next = e.target.value;
+            setChoice(next);
+            // "Other" starts empty for the text box; a listed role is the role.
+            onChange(next === OTHER_ROLE ? "" : next);
+          }}
+        >
+          {!choice && <option value="">Choose a role</option>}
+          {TEAM_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      {choice === OTHER_ROLE && (
+        <Field label="Role (specify)">
+          <TextInput value={value} maxLength={60} placeholder="e.g. Product design" onChange={(e) => onChange(e.target.value)} />
+        </Field>
+      )}
+    </>
   );
 }
 
