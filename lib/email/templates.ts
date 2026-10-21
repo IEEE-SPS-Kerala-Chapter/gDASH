@@ -180,7 +180,7 @@ export function detailsUpdatedEmail(opts: {
     .join("");
   const html = layout({
     site: opts.site,
-    preview: `${opts.teamName}'s registration details were updated. Updated ID cards are attached.`,
+    preview: `${opts.teamName}'s registration details were updated. ID cards for all members are attached.`,
     eyebrow: "Registration updated",
     heading: "Your details were updated",
     body:
@@ -191,7 +191,7 @@ export function detailsUpdatedEmail(opts: {
         `<div style="font-family:${FONT}; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#2C1D44; padding-bottom:4px;">Your squad · ${esc(opts.entryCode)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${memberRows}</table>`,
       ) +
       note(
-        `<strong style="color:#2C1D44;">Updated ID cards attached.</strong> There's one for every member, including anyone who was added. Please use these and discard any ID cards you received earlier — share each card with its member and keep them handy on event day.`,
+        `<strong style="color:#2C1D44;">ID cards for all members are attached</strong> — existing members' cards and codes are unchanged (except where their details were corrected), and new members' cards are included. Please share each card with its member and keep them handy on event day.`,
       ) +
       note(`Something not right? Just reply to this email and the organising team will get back to you.`) +
       center(button(opts.statusUrl, "View registration status")),
@@ -207,7 +207,7 @@ export function detailsUpdatedEmail(opts: {
       "",
       ...opts.members.map((m) => `- ${m.name}${m.isLeader ? " (Leader)" : ""} — ${m.code}`),
       "",
-      "Updated ID cards are attached — one for every member, including anyone who was added. Please use these and discard any ID cards you received earlier.",
+      "ID cards for all members are attached — existing members' cards and codes are unchanged (except where their details were corrected), and new members' cards are included. Please share each card with its member.",
       "",
       "Something not right? Just reply to this email.",
       "",
