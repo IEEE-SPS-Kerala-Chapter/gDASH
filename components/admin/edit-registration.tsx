@@ -119,6 +119,23 @@ export function EditRegistration({
   const [uploading, setUploading] = useState(0);
   const [nextKey, setNextKey] = useState(1);
   const addedCount = form.members.filter((m) => m.isNew).length;
+  // What the ID cards show: member details (and new members), team name, college.
+  const [original] = useState(() => initialForm(team));
+  const membersChanged =
+    addedCount > 0 ||
+    form.team.name !== original.team.name ||
+    form.team.college !== original.team.college ||
+    form.members.some((m) => {
+      const o = original.members.find((x) => x.id === m.id);
+      return (
+        !o ||
+        m.idCardPath !== null ||
+        (["fullName", "email", "phone", "branch", "year", "roleInTeam"] as const).some((k) => m[k] !== o[k])
+      );
+    });
+  // null = follow membersChanged until the super-admin ticks or unticks it.
+  const [notifyChoice, setNotifyChoice] = useState<boolean | null>(null);
+  const notifyLeader = notifyChoice ?? membersChanged;
   const wasVerified = team.registration!.verification_status !== "pending";
   const originalLeaderEmail = team.members.find((m) => m.is_leader)?.email;
   const leaderEmailChanged = form.members.some((m) => m.isLeader && m.email.trim().toLowerCase() !== originalLeaderEmail);
@@ -151,7 +168,7 @@ export function EditRegistration({
       return;
     }
     setSaving(true);
-    const result = await updateRegistrationDetails(team.id, baseVersion, form).catch(() => ({
+    const result = await updateRegistrationDetails(team.id, baseVersion, form, notifyLeader).catch(() => ({
       success: false as const,
       error: "No connection — nothing was saved.",
       stale: false,
@@ -160,8 +177,8 @@ export function EditRegistration({
     if (result.success) {
       toast.success(
         result.addedMembers > 0
-          ? `Details updated — ${result.addedMembers} member${result.addedMembers === 1 ? "" : "s"} added.${result.verificationReset ? " Verification is back to pending." : ""}`
-          : "Details updated.",
+          ? `Details updated — ${result.addedMembers} member${result.addedMembers === 1 ? "" : "s"} added.${result.verificationReset ? " Verification is back to pending." : ""}${notifyLeader ? " The leader is being emailed the updated ID cards." : ""}`
+          : `Details updated.${notifyLeader ? " The leader is being emailed the updated ID cards." : ""}`,
       );
       onDone();
       return;
@@ -331,6 +348,22 @@ export function EditRegistration({
           onUploaded={(path) => setIdea({ deckPath: path })}
         />
       </Panel>
+
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-ignite-edge/[0.12] bg-ignite-surface px-4 py-3 text-[14px] leading-[1.5] text-ignite-ink-soft">
+        <input
+          type="checkbox"
+          checked={notifyLeader}
+          onChange={(e) => setNotifyChoice(e.target.checked)}
+          className="mt-[3px] h-4 w-4 flex-none"
+        />
+        <span>
+          <span className="font-semibold text-ignite-ink">Email the team leader the updated details and all ID cards</span>
+          <span className="block text-[13px] text-ignite-muted">
+            A fresh ID card for every member — existing, changed and new — replacing the earlier ones.
+            {membersChanged ? " Ticked because member or team details changed." : ""}
+          </span>
+        </span>
+      </label>
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <div className="sm:w-56">

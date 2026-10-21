@@ -2,7 +2,7 @@
 
 import { after } from "next/server";
 import { revalidateDashboard } from "@/lib/revalidate-dashboard";
-import { notifyVerification } from "@/lib/email/deliver";
+import { notifyDetailsUpdated, notifyVerification } from "@/lib/email/deliver";
 import { csvField } from "@/lib/csv";
 
 import { createClient } from "@/lib/supabase/server";
@@ -753,6 +753,8 @@ export async function updateRegistrationDetails(
   teamId: string,
   expectedVersion: number,
   input: RegistrationEdit,
+  /** Email the leader the updated squad with every member's ID card. */
+  notifyLeader = false,
 ): Promise<EditDetailsResult> {
   const caller = await getCallerRole();
   if (!caller || caller.role !== "super_admin") {
@@ -879,7 +881,7 @@ export async function updateRegistrationDetails(
     targetType: "team",
     targetId: teamId,
     targetLabel: edit.team.name,
-    metadata: { changes },
+    metadata: { changes, ...(notifyLeader ? { leaderEmailed: true } : {}) },
   });
 
   // The replaced files are no longer referenced anywhere — best-effort
@@ -896,6 +898,7 @@ export async function updateRegistrationDetails(
   }
 
   revalidateDashboard();
+  if (notifyLeader) after(() => notifyDetailsUpdated(teamId));
   const result = data as { added_members?: number; verification_reset?: boolean } | null;
   return {
     success: true,

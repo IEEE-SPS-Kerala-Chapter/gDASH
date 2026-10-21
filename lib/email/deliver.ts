@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { publicSiteUrl, sendEmail, type Email, type EmailAttachment } from "./send";
-import { correctionEmail, ineligibleEmail, registrationReceivedEmail, resultEmail } from "./templates";
+import { correctionEmail, detailsUpdatedEmail, ineligibleEmail, registrationReceivedEmail, resultEmail } from "./templates";
 import { renderIdCardPng } from "./id-card-image";
 
 /**
@@ -12,7 +12,7 @@ import { renderIdCardPng } from "./id-card-image";
  * after the leader's own successful submit).
  */
 
-export type EmailKind = "registration_received" | "correction" | "ineligible" | "result";
+export type EmailKind = "registration_received" | "details_updated" | "correction" | "ineligible" | "result";
 
 type TeamForEmail = {
   id: string;
@@ -130,8 +130,9 @@ async function buildEmail(kind: EmailKind, team: TeamForEmail, to: string): Prom
   const statusUrl = `${site}/register/status/${team.access_token}`;
   const leaderName = leader.full_name.split(" ")[0] || leader.full_name;
 
-  if (kind === "registration_received") {
-    // Leader first, then members in the order they were added.
+  if (kind === "registration_received" || kind === "details_updated") {
+    // Leader first, then members in the order they were added. A fresh ID
+    // card for every member, from their current details.
     const members = [...team.team_members].sort(
       (a, b) => Number(b.is_leader) - Number(a.is_leader) || a.created_at.localeCompare(b.created_at),
     );
@@ -144,18 +145,17 @@ async function buildEmail(kind: EmailKind, team: TeamForEmail, to: string): Prom
         contentType: "image/png",
       });
     }
-    return {
-      ...registrationReceivedEmail({
-        site,
-        to,
-        leaderName,
-        teamName: team.name,
-        entryCode: team.entry_code,
-        statusUrl,
-        members: members.map((m) => ({ name: m.full_name, code: m.member_code ?? "", isLeader: m.is_leader })),
-      }),
-      attachments,
+    const details = {
+      site,
+      to,
+      leaderName,
+      teamName: team.name,
+      entryCode: team.entry_code,
+      statusUrl,
+      members: members.map((m) => ({ name: m.full_name, code: m.member_code ?? "", isLeader: m.is_leader })),
     };
+    const email = kind === "registration_received" ? registrationReceivedEmail(details) : detailsUpdatedEmail(details);
+    return { ...email, attachments };
   }
 
   const reg = Array.isArray(team.registrations) ? team.registrations[0] : team.registrations;
@@ -269,5 +269,19 @@ export async function notifyVerification(registrationId: string): Promise<void> 
     if (rowId) await deliver(rowId);
   } catch (err) {
     console.error(`[email] could not queue ${kind} for team ${data.team_id}:`, err);
+  }
+}
+
+/**
+ * After a super-admin edit: the updated squad with every member's ID card,
+ * to the leader's current email. Sent after every edit that asks for it.
+ * Never throws.
+ */
+export async function notifyDetailsUpdated(teamId: string): Promise<void> {
+  try {
+    const rowId = await requeueEmail(teamId, "details_updated");
+    if (rowId) await deliver(rowId);
+  } catch (err) {
+    console.error(`[email] could not queue details_updated for team ${teamId}:`, err);
   }
 }

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const LABELS: Record<EmailKind, string> = {
   registration_received: "Registration + ID cards",
+  details_updated: "Details updated + ID cards",
   correction: "Correction request",
   ineligible: "Not eligible (final)",
   result: "Result",

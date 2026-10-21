@@ -157,6 +157,66 @@ export function registrationReceivedEmail(opts: {
 }
 
 /**
+ * After the super-admin edits a team (a member added or replaced, or
+ * details corrected): the current squad, with a fresh ID card for every
+ * member attached (deliver.ts adds them), replacing any earlier ones.
+ */
+export function detailsUpdatedEmail(opts: {
+  site: string;
+  to: string;
+  leaderName: string;
+  teamName: string;
+  entryCode: string;
+  statusUrl: string;
+  members: { name: string; code: string; isLeader: boolean }[];
+}): Email {
+  const memberRows = opts.members
+    .map(
+      (m) => `<tr>
+        <td style="padding:8px 0; border-bottom:1px solid #ECEAF2; font-family:${FONT}; font-size:15px; color:#2C1D44;">${esc(m.name)}${m.isLeader ? ' <span style="color:#C756D9; font-weight:600;">· Leader</span>' : ""}</td>
+        <td align="right" style="padding:8px 0; border-bottom:1px solid #ECEAF2; font-family:${FONT}; font-size:14px; font-weight:700; letter-spacing:1px; color:#2C1D44;">${esc(m.code)}</td>
+      </tr>`,
+    )
+    .join("");
+  const html = layout({
+    site: opts.site,
+    preview: `${opts.teamName}'s registration details were updated. Updated ID cards are attached.`,
+    eyebrow: "Registration updated",
+    heading: "Your details were updated",
+    body:
+      intro(
+        `Hi ${esc(opts.leaderName)}, the gIGNITE 2026 organising team has updated the registration details for <strong style="color:#2C1D44;">${esc(opts.teamName)}</strong>. Here's your squad as it stands now.`,
+      ) +
+      block(
+        `<div style="font-family:${FONT}; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#2C1D44; padding-bottom:4px;">Your squad · ${esc(opts.entryCode)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${memberRows}</table>`,
+      ) +
+      note(
+        `<strong style="color:#2C1D44;">Updated ID cards attached.</strong> There's one for every member, including anyone who was added. Please use these and discard any ID cards you received earlier — share each card with its member and keep them handy on event day.`,
+      ) +
+      note(`Something not right? Just reply to this email and the organising team will get back to you.`) +
+      center(button(opts.statusUrl, "View registration status")),
+  });
+  return {
+    to: opts.to,
+    subject: `Your gIGNITE 2026 registration was updated — ${opts.teamName}`,
+    html,
+    text: text(
+      `Hi ${opts.leaderName},`,
+      "",
+      `The gIGNITE 2026 organising team has updated the registration details for "${opts.teamName}". Here's your squad as it stands now (team code ${opts.entryCode}):`,
+      "",
+      ...opts.members.map((m) => `- ${m.name}${m.isLeader ? " (Leader)" : ""} — ${m.code}`),
+      "",
+      "Updated ID cards are attached — one for every member, including anyone who was added. Please use these and discard any ID cards you received earlier.",
+      "",
+      "Something not right? Just reply to this email.",
+      "",
+      `Registration status: ${opts.statusUrl}`,
+    ),
+  };
+}
+
+/**
  * When a correction requested at `requestedAt` is due: CORRECTION_DEADLINE_DAYS
  * days later, with a label like "Thursday, 24 October 2026" (India time).
  * For the staff screens; the email itself just says "within N days".
