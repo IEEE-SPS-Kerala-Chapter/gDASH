@@ -593,33 +593,37 @@ export async function setVerificationStatus(
 
 type CsvResult = { success: true; csv: string; filename: string } | { success: false; error: string };
 
+// The leader plus up to 4 members (a team is 2–5 people).
+const MAX_OTHER_MEMBERS = 4;
+
 const TEAM_CSV_HEADER = [
   "Team Name",
   "Team ID",
   "Team Leader Name",
   "Team Leader Phone",
-  "Team Members Names",
-  "Team Members Phone Numbers",
+  ...Array.from({ length: MAX_OTHER_MEMBERS }, (_, i) => `Member ${i + 1}`),
   "College Name",
   "Chosen Track",
 ];
 
 /**
- * The team contact sheet both exports use. Members (leader excluded) are
- * listed in member order, names and phone numbers in the same order and
- * separated by "; ", so the two columns line up.
+ * The team contact sheet both exports use. Each member (leader excluded)
+ * gets their own column, in member order, as "Name; Phone"; a smaller
+ * team leaves the rest empty.
  */
 function teamsCsv(teams: AdminTeam[]): string {
   const rows = teams.map((team) => {
     const leader = team.members.find((m) => m.is_leader);
     const others = team.members.filter((m) => !m.is_leader);
+    const memberCells = Array.from({ length: MAX_OTHER_MEMBERS }, (_, i) =>
+      others[i] ? `${others[i].full_name}; ${others[i].phone}` : "",
+    );
     return [
       team.name,
       team.entry_code,
       leader?.full_name ?? "",
       leader?.phone ?? "",
-      others.map((m) => m.full_name).join("; "),
-      others.map((m) => m.phone).join("; "),
+      ...memberCells,
       leader?.college ?? team.members[0]?.college ?? "",
       team.ai_theme,
     ].map(csvField);
