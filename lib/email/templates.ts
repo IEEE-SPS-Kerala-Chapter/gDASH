@@ -202,7 +202,7 @@ export function correctionEmail(opts: {
     eyebrow: "Action needed",
     heading: "Correction required",
     body:
-      intro(`Dear ${esc(salutation)},<br />Greetings from the gIGNITE 2026 Organizing Committee!`) +
+      intro(`Dear ${esc(salutation)},<br /><br />Greetings from the gIGNITE 2026 Organizing Committee!`) +
       para(
         `While verifying the details, ID cards and pitch deck for ${strong(opts.teamName)}, our team found something that needs to be corrected before your registration can move forward.`,
       ) +
@@ -228,6 +228,7 @@ export function correctionEmail(opts: {
     html,
     text: text(
       `Dear ${salutation},`,
+      "",
       "Greetings from the gIGNITE 2026 Organizing Committee!",
       "",
       `While verifying the details, ID cards and pitch deck for "${opts.teamName}", our team found something that needs to be corrected before your registration can move forward.`,
