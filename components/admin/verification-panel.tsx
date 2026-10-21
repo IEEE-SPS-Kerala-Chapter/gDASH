@@ -55,7 +55,8 @@ const DRAFT: Record<EmailedStatus, { placeholder: string; title: string; confirm
  * Ineligible — the final call, usually once a correction request's deadline
  * has passed (also enforced server-side). Both of those email the note to
  * the team leader, so they go through a pop-up showing the exact email
- * before anything is saved. Changing a Verified entry is refused
+ * before anything is saved. Once Verified, the only action is Reset to
+ * pending; corrections and ineligibility start again from there. Changing a Verified entry is refused
  * server-side while judges are still assigned, so that's surfaced up front
  * here. A change made from a stale view (someone else changed this
  * registration first) is refused and the latest is shown. `save` is the
@@ -211,20 +212,28 @@ export function VerificationPanel<S>({
             </button>
           </div>
         </div>
+      ) : verification.status === "verified" ? (
+        <button
+          type="button"
+          onClick={() => submit("pending")}
+          disabled={busy}
+          className="rounded-[9px] border-[1.5px] border-ignite-ink/70 px-4 py-2.5 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-lavender disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Saving…" : "Reset to pending"}
+        </button>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2.5">
-            {verification.status !== "verified" && (
-              <button
-                type="button"
-                onClick={() => submit("verified")}
-                disabled={busy}
-                className="flex-1 rounded-[9px] bg-ignite-primary px-4 py-2.5 font-display text-[14px] font-medium text-ignite-on-primary transition-colors hover:bg-ignite-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {busy ? "Saving…" : "Mark verified"}
-              </button>
-            )}
-            {verification.status !== "needs_correction" && verification.status !== "ineligible" && (
+            <button
+              type="button"
+              onClick={() => submit("verified")}
+              disabled={busy}
+              className="flex-1 rounded-[9px] bg-ignite-primary px-4 py-2.5 font-display text-[14px] font-medium text-ignite-on-primary transition-colors hover:bg-ignite-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy ? "Saving…" : "Mark verified"}
+            </button>
+            {/* Only from pending: a verified team is reset to pending first. */}
+            {verification.status === "pending" && (
               <button
                 type="button"
                 onClick={() => setDrafting("needs_correction")}
@@ -235,7 +244,7 @@ export function VerificationPanel<S>({
               </button>
             )}
           </div>
-          {canMarkIneligible && verification.status !== "ineligible" && (
+          {canMarkIneligible && (verification.status === "pending" || verification.status === "needs_correction") && (
             <button
               type="button"
               onClick={() => setDrafting("ineligible")}
