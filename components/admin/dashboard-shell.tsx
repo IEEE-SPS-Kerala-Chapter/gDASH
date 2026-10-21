@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Trophy } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Trophy, FolderArchive } from "lucide-react";
+import { useTeamReportsZip } from "./team-reports";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { exportFinaleShortlistCsv, exportRegistrationsCsv } from "@/app/actions/admin";
@@ -38,6 +39,7 @@ export function DashboardShell({
   const router = useRouter();
   const pathname = usePathname();
   const [exporting, setExporting] = useState<"all" | "finale" | null>(null);
+  const reportsZip = useTeamReportsZip();
   const [signingOut, setSigningOut] = useState(false);
 
   // No reset afterwards: the login page replaces this one once it's done.
@@ -80,6 +82,7 @@ export function DashboardShell({
   return (
     <div className="relative flex min-h-screen bg-ignite-bg font-ui text-ignite-ink-soft">
       <GridBackground faded />
+      {reportsZip.panel}
 
       {/* Sidebar — desktop only; mobile gets a compact top bar instead. */}
       <aside className="hero-dark sticky top-0 z-10 hidden h-screen w-[236px] flex-none flex-col justify-between overflow-y-auto border-r border-white/[0.06] px-3.5 py-5 lg:flex">
@@ -148,6 +151,29 @@ export function DashboardShell({
               >
                 <Trophy className="h-[17px] w-[17px]" />
                 <span>{exporting === "finale" ? "Exporting…" : "Export finale shortlist"}</span>
+              </button>
+            )}
+            {isAdminLevelRole(role) && (
+              <button
+                type="button"
+                onClick={() => reportsZip.start("all")}
+                disabled={reportsZip.running}
+                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                <FolderArchive className="h-[17px] w-[17px]" />
+                <span>Download zip of all teams</span>
+              </button>
+            )}
+            {isAdminLevelRole(role) && (
+              <button
+                type="button"
+                onClick={() => reportsZip.start("shortlist")}
+                disabled={reportsZip.running || !resultsPublished}
+                title={resultsPublished ? undefined : "Available once the results are published"}
+                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                <FolderArchive className="h-[17px] w-[17px]" />
+                <span>Download finale shortlist zip</span>
               </button>
             )}
             <Link href="/dashboard/profile" className={navItemClass(pathname === "/dashboard/profile")}>

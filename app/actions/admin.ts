@@ -12,6 +12,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { getMfaState, mfaSatisfied } from "@/lib/staff-mfa";
 import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
 import { ambassadorFormValueToNumber, ambassadorLabel } from "@/lib/ambassador";
+import { reportFileBase } from "@/lib/report-file-name";
 import {
   TEAM_SELECT,
   TEAM_LIST_SELECT,
@@ -694,6 +695,40 @@ export async function exportFinaleShortlistCsv(): Promise<CsvResult> {
   await logAuditEvent(supabase, "registrations.finale_exported", { metadata: { teamCount: shortlisted.length } });
 
   return { success: true, csv, filename: `gignite-finale-shortlist-${today}.csv` };
+}
+
+/**
+ * Admin (or super-admin) only: the teams for a "zip of team reports"
+ * download — every team, or (once results are published) the teams
+ * shortlisted for the Grand Finale. The browser then fetches each team's
+ * report (app/(admin)/dashboard/team-report/[teamId]/route.ts) and builds
+ * the zip itself. Logged once per download.
+ */
+export async function listTeamsForReports(
+  scope: "all" | "shortlist",
+): Promise<{ success: true; teams: { id: string; fileBase: string }[] } | { success: false; error: string }> {
+  const caller = await getCallerRole();
+  if (!caller || !isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can download team reports." };
+  }
+  const supabase = await createClient();
+  if (scope === "shortlist") {
+    const { data: publication } = await supabase.from("results_publication").select("is_published").eq("id", true).single();
+    if (!publication?.is_published) {
+      return { success: false, error: "Publish the results first — the finale shortlist is available after that." };
+    }
+  }
+
+  let query = supabase.from("teams").select("id, name, entry_code, registrations!inner(status)").order("name");
+  if (scope === "shortlist") query = query.eq("registrations.status", "shortlisted");
+  const { data, error } = await query;
+  if (error) {
+    return { success: false, error: "Could not load the teams." };
+  }
+
+  const teams = (data ?? []).map((t) => ({ id: t.id as string, fileBase: reportFileBase(t.name as string, t.entry_code as string) }));
+  await logAuditEvent(supabase, "registrations.reports_exported", { metadata: { scope, teamCount: teams.length } });
+  return { success: true, teams };
 }
 
 type DeleteResult = { success: true } | { success: false; error: string };

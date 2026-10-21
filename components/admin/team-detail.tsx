@@ -17,6 +17,7 @@ import { DeckPanel } from "./deck-panel";
 import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
 import { EditRegistration } from "./edit-registration";
+import { TeamReportButton } from "./team-reports";
 import { ambassadorDisplay, type AmbassadorDetails } from "@/lib/ambassador";
 import { TeamEmails } from "./team-emails";
 import { useLiveRefresh } from "./use-live-refresh";
@@ -182,6 +183,12 @@ export function TeamDetail({
             >
               {editLocked ? "Editing locked" : "Edit details"}
             </button>
+          )}
+          {isAdmin && reg && (
+            <TeamReportButton
+              teamId={team.id}
+              className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
+            />
           )}
           {leader && isAdmin && (
             <a

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { exportFinaleShortlistCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
+import { useTeamReportsZip } from "./team-reports";
 import {
   getResultsPublication,
   setResultsPublished,
@@ -30,6 +31,7 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
   const [confirming, setConfirming] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const reportsZip = useTeamReportsZip();
   const router = useRouter();
 
   async function handleExportFinale() {
@@ -141,11 +143,20 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
               The {counts.shortlisted} team{counts.shortlisted === 1 ? "" : "s"} shortlisted for the Grand Finale: team name and ID,
               leader and members with phone numbers, college and track.
             </p>
-            <div className="w-fit">
-              <PrimaryButton type="button" onClick={handleExportFinale} disabled={exporting} loading={exporting}>
-                {exporting ? "Exporting…" : "Export finale shortlist (CSV)"}
-              </PrimaryButton>
+            <div className="flex flex-wrap gap-2.5">
+              <div className="w-fit">
+                <PrimaryButton type="button" onClick={handleExportFinale} disabled={exporting} loading={exporting}>
+                  {exporting ? "Exporting…" : "Export finale shortlist (CSV)"}
+                </PrimaryButton>
+              </div>
+              <SecondaryButton type="button" onClick={() => reportsZip.start("shortlist")} disabled={reportsZip.running}>
+                {reportsZip.running ? "Building zip…" : "Download finale shortlist zip"}
+              </SecondaryButton>
             </div>
+            <p className="m-0 text-[12px] text-ignite-muted">
+              The zip has a Team reports folder (one PDF per team) and a Pitch decks folder, both named TeamName-TeamID.
+            </p>
+            {reportsZip.panel}
           </div>
         </div>
       ) : confirming ? (
