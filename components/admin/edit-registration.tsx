@@ -49,6 +49,7 @@ function initialForm(team: AdminTeam): RegistrationEdit {
     },
     members: team.members.map((m) => ({
       id: m.id,
+      isNew: false,
       isLeader: m.is_leader,
       fullName: m.full_name,
       email: m.email,
@@ -70,10 +71,29 @@ function initialForm(team: AdminTeam): RegistrationEdit {
   };
 }
 
+const MAX_MEMBERS = 5;
+
+/** A blank member to fill in; the id is a client key until it's saved. */
+function newMember(key: string): RegistrationEdit["members"][number] {
+  return {
+    id: key,
+    isNew: true,
+    isLeader: false,
+    fullName: "",
+    email: "",
+    phone: "",
+    branch: "",
+    year: "" as RegistrationEdit["members"][number]["year"],
+    roleInTeam: "",
+    idCardPath: null,
+  };
+}
+
 /**
  * Super-admin only: correct a submitted registration (team, members, idea,
- * replacement ID cards / deck). Shown in place of the read-only panels on
- * the team page; the server refuses it once judging has started.
+ * replacement ID cards / deck) and add members (up to 5, each with an ID
+ * card). Shown in place of the read-only panels on the team page; the
+ * server refuses it once judging has started.
  */
 export function EditRegistration({
   team,
@@ -97,6 +117,9 @@ export function EditRegistration({
   const [baseVersion] = useState(() => team.registration!.version);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(0);
+  const [nextKey, setNextKey] = useState(1);
+  const addedCount = form.members.filter((m) => m.isNew).length;
+  const wasVerified = team.registration!.verification_status !== "pending";
   const originalLeaderEmail = team.members.find((m) => m.is_leader)?.email;
   const leaderEmailChanged = form.members.some((m) => m.isLeader && m.email.trim().toLowerCase() !== originalLeaderEmail);
 
@@ -105,8 +128,26 @@ export function EditRegistration({
   const setMember = (id: string, patch: Partial<RegistrationEdit["members"][number]>) =>
     setForm((f) => ({ ...f, members: f.members.map((m) => (m.id === id ? { ...m, ...patch } : m)) }));
 
+  function addMember() {
+    setForm((f) => ({ ...f, members: [...f.members, newMember(`new-${nextKey}`)] }));
+    setNextKey((k) => k + 1);
+  }
+
+  function removeNewMember(key: string) {
+    setForm((f) => ({ ...f, members: f.members.filter((m) => m.id !== key) }));
+  }
+
   async function save() {
     if (leaderEmailChanged && !window.confirm("You changed the leader's email. They will need to sign in with the new email to see their status page. Save?")) {
+      return;
+    }
+    if (
+      addedCount > 0 &&
+      wasVerified &&
+      !window.confirm(
+        `Adding ${addedCount === 1 ? "a member" : `${addedCount} members`} puts this team's verification back to pending, so the new ID card${addedCount === 1 ? "" : "s"} can be checked. Save?`,
+      )
+    ) {
       return;
     }
     setSaving(true);
@@ -117,7 +158,11 @@ export function EditRegistration({
     }));
     setSaving(false);
     if (result.success) {
-      toast.success("Details updated.");
+      toast.success(
+        result.addedMembers > 0
+          ? `Details updated — ${result.addedMembers} member${result.addedMembers === 1 ? "" : "s"} added.${result.verificationReset ? " Verification is back to pending." : ""}`
+          : "Details updated.",
+      );
       onDone();
       return;
     }
@@ -184,8 +229,22 @@ export function EditRegistration({
         const original = team.members.find((o) => o.id === m.id);
         return (
           <Panel key={m.id} className="flex flex-col gap-4 p-5">
-            <EditHeading>
-              {m.isLeader ? "Team leader" : `Member ${i + 1}`} · {original?.member_code}
+            <EditHeading
+              tag={m.isNew ? "New" : undefined}
+              action={
+                m.isNew ? (
+                  <button
+                    type="button"
+                    onClick={() => removeNewMember(m.id)}
+                    className="font-ui text-[13px] font-semibold text-ignite-danger hover:underline"
+                  >
+                    Remove
+                  </button>
+                ) : undefined
+              }
+            >
+              {m.isLeader ? "Team leader" : `Member ${i + 1}`}
+              {original?.member_code ? ` · ${original.member_code}` : m.isNew ? " · code assigned on save" : ""}
             </EditHeading>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Full name">
@@ -226,13 +285,25 @@ export function EditRegistration({
             </div>
             <ReplaceFileField
               kind="id-card"
-              label="Replace ID card"
+              label={m.isNew ? "Upload ID card" : "Replace ID card"}
+              required={m.isNew}
               onUploading={(busy) => setUploading((n) => n + (busy ? 1 : -1))}
               onUploaded={(path) => setMember(m.id, { idCardPath: path })}
             />
           </Panel>
         );
       })}
+      {form.members.length < MAX_MEMBERS ? (
+        <button
+          type="button"
+          onClick={addMember}
+          className="rounded-xl border-[1.5px] border-dashed border-ignite-ink/40 bg-ignite-surface px-4 py-3.5 font-ui text-[14px] font-semibold text-ignite-ink transition-colors hover:border-ignite-ink hover:bg-ignite-lavender"
+        >
+          + Add member ({form.members.length} of {MAX_MEMBERS})
+        </button>
+      ) : (
+        <span className="text-[13px] text-ignite-muted">This team has the maximum of {MAX_MEMBERS} members.</span>
+      )}
       <datalist id="edit-role-options">
         {TEAM_ROLES.filter((r) => r !== "Other").map((r) => (
           <option key={r} value={r} />
@@ -286,17 +357,21 @@ export function EditRegistration({
         </div>
       </div>
       <span className="text-[12px] text-ignite-muted">
-        Every change is recorded in the audit log. Entry ID, member codes and check-in QR codes stay the same.
+        Every change is recorded in the audit log. Entry ID, member codes and check-in QR codes stay the same; a new
+        member gets the next member code and a check-in QR.
       </span>
     </div>
   );
 }
 
-function EditHeading({ children }: { children: ReactNode }) {
+function EditHeading({ children, tag, action }: { children: ReactNode; tag?: string; action?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <SectionLabel>{children}</SectionLabel>
-      <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Editing</span>
+      <div className="flex items-center gap-3">
+        {action}
+        <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">{tag ?? "Editing"}</span>
+      </div>
     </div>
   );
 }
@@ -307,11 +382,13 @@ type FileState = { status: "idle" } | { status: "uploading"; name: string } | { 
 function ReplaceFileField({
   kind,
   label,
+  required = false,
   onUploading,
   onUploaded,
 }: {
   kind: UploadKind;
   label: string;
+  required?: boolean;
   onUploading: (busy: boolean) => void;
   onUploaded: (path: string) => void;
 }) {
@@ -361,11 +438,13 @@ function ReplaceFileField({
           {state.status === "uploading"
             ? `Uploading ${state.name}…`
             : state.status === "done"
-              ? `New file ready: ${state.name} (replaces the current one on Save)`
+              ? required
+                ? `File ready: ${state.name} (saved with the member)`
+                : `New file ready: ${state.name} (replaces the current one on Save)`
               : label}
         </span>
         <span className={state.status === "error" ? "text-[12px] text-ignite-danger" : "text-[12px] text-ignite-muted"}>
-          {state.status === "error" ? state.message : `Optional · ${rules.label}`}
+          {state.status === "error" ? state.message : `${required ? "Required" : "Optional"} · ${rules.label}`}
         </span>
       </div>
     </label>

@@ -12,7 +12,10 @@ const phoneRegex = /^\+?[0-9]{10,13}$/;
 const TEAM_NAME_CHARSET_RE = /^[A-Za-z0-9 '&.-]+$/;
 
 const editMemberSchema = z.object({
-  id: z.string().uuid(),
+  /** The member's id, or a client key like "new-1" for a member being added. */
+  id: z.string().min(1),
+  /** Being added in this edit (not yet in the database). */
+  isNew: z.boolean().default(false),
   isLeader: z.boolean(),
   fullName: z.string().trim().min(2, "Enter the full name").max(80, "Name can be at most 80 characters"),
   email: emailField("Enter an email address"),
@@ -21,9 +24,11 @@ const editMemberSchema = z.object({
   year: z.enum(MEMBER_YEARS, { message: "Choose a year" }),
   // The leader has no role; everyone else needs one.
   roleInTeam: z.string().trim().max(60, "Role can be at most 60 characters"),
-  /** A newly uploaded ID card, or null to keep the current one. */
+  /** A newly uploaded ID card, or null to keep the current one (required for a new member). */
   idCardPath: z.string().min(1).nullable(),
 });
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const registrationEditSchema = z
   .object({
@@ -39,7 +44,7 @@ export const registrationEditSchema = z
       district: z.enum(KERALA_DISTRICTS, { message: "Choose a district" }),
       college: z.string().trim().min(2, "Enter the college").max(120, "College can be at most 120 characters"),
     }),
-    members: z.array(editMemberSchema).min(1).max(5),
+    members: z.array(editMemberSchema).min(1).max(5, "A team can have at most 5 members"),
     /** "none" or an ambassador number as text (see lib/ambassador.ts). */
     ambassador: z.string().regex(/^(none|\d{1,3})$/, "Choose an ambassador or \"No ambassador referred\""),
     idea: ideaSchema.omit({ deckPath: true }).extend({
@@ -51,6 +56,19 @@ export const registrationEditSchema = z
     const emails = new Map<string, number>();
     const phones = new Map<string, number>();
     data.members.forEach((m, i) => {
+      if (m.isNew && m.isLeader) {
+        ctx.addIssue({ code: "custom", path: ["members", i, "isLeader"], message: "A new member can't be the leader." });
+      }
+      if (!m.isNew && !UUID_RE.test(m.id)) {
+        ctx.addIssue({ code: "custom", path: ["members", i, "id"], message: "Unknown member." });
+      }
+      if (m.isNew && !m.idCardPath) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["members", i, "idCardPath"],
+          message: `Upload an ID card for the new member${m.fullName ? ` (${m.fullName})` : ""}.`,
+        });
+      }
       if (!m.isLeader && m.roleInTeam.length < 2) {
         ctx.addIssue({ code: "custom", path: ["members", i, "roleInTeam"], message: "Enter a role" });
       }

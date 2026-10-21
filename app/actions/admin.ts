@@ -725,7 +725,9 @@ export async function deleteRegistration(teamId: string): Promise<DeleteResult> 
   return { success: true };
 }
 
-type EditDetailsResult = { success: true } | { success: false; error: string; stale?: boolean };
+type EditDetailsResult =
+  | { success: true; addedMembers: number; verificationReset: boolean }
+  | { success: false; error: string; stale?: boolean };
 
 const EDIT_GUARD_MESSAGES: Record<string, string> = {
   judging_started: "Judging has started for this team — its details are locked. Unassign all judges to edit.",
@@ -734,6 +736,7 @@ const EDIT_GUARD_MESSAGES: Record<string, string> = {
   bad_member: "Member list is out of date — reload the page.",
   not_found: "Registration not found.",
   invalid_ambassador: "That ambassador ID is outside the current range or was deleted.",
+  team_full: "A team can have at most 5 members.",
 };
 
 /**
@@ -779,8 +782,10 @@ export async function updateRegistrationDetails(
       district: edit.team.district,
       college: edit.team.college,
     },
+    // A new member goes without an id (the function inserts it); its key
+    // comes back in error hints.
     p_members: edit.members.map((m) => ({
-      id: m.id,
+      ...(m.isNew ? { key: m.id } : { id: m.id }),
       full_name: m.fullName,
       email: m.email,
       phone: m.phone,
@@ -810,6 +815,10 @@ export async function updateRegistrationDetails(
       };
     }
     const [kind, memberId] = hint.split(":");
+    if (kind === "id_card_required") {
+      const who = edit.members.find((m) => m.id === memberId)?.fullName || "the new member";
+      return { success: false, error: `Upload an ID card for ${who}.` };
+    }
     if (kind === "email_taken" || kind === "phone_taken") {
       const who = edit.members.find((m) => m.id === memberId)?.fullName ?? "a member";
       return {
@@ -839,6 +848,10 @@ export async function updateRegistrationDetails(
   note("District", before.district, edit.team.district);
   note("College", before.members[0]?.college ?? null, edit.team.college);
   for (const m of edit.members) {
+    if (m.isNew) {
+      changes.push({ field: "Member added", member: m.fullName, to: `${m.email} · ${m.phone}` });
+      continue;
+    }
     const old = before.members.find((b) => b.id === m.id);
     if (!old) continue;
     const who = `${old.full_name} (${old.member_code})`;
@@ -883,7 +896,12 @@ export async function updateRegistrationDetails(
   }
 
   revalidateDashboard();
-  return { success: true };
+  const result = data as { added_members?: number; verification_reset?: boolean } | null;
+  return {
+    success: true,
+    addedMembers: result?.added_members ?? 0,
+    verificationReset: Boolean(result?.verification_reset),
+  };
 }
 
 export type StaffAccount = {
