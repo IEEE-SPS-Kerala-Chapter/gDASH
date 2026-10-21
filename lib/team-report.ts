@@ -24,7 +24,7 @@ import { reportFileBase } from "@/lib/report-file-name";
  */
 
 // Bump when the layout changes, so stored reports are rebuilt.
-const REPORT_FORMAT = 2;
+const REPORT_FORMAT = 3;
 const REPORTS_BUCKET = "team-reports";
 
 export type TeamReport = {
@@ -150,6 +150,8 @@ const PAGE_W = 595.28;
 const PAGE_H = 841.89;
 const MARGIN = 48;
 const CONTENT_W = PAGE_W - MARGIN * 2;
+// The logo bar and brand strip at the top of every page.
+const HEADER_H = 74;
 
 const INK = rgb(0x2c / 255, 0x1d / 255, 0x44 / 255);
 const MUTED = rgb(0x6a / 255, 0x72 / 255, 0x82 / 255);
@@ -157,24 +159,66 @@ const MAGENTA = rgb(0xc7 / 255, 0x56 / 255, 0xd9 / 255);
 const RULE = rgb(0xe1 / 255, 0xdc / 255, 0xef / 255);
 
 type Fonts = { regular: PDFFont; semi: PDFFont; bold: PDFFont; display: PDFFont };
+/** The site header's partner logos (components/registration/ui.tsx LogoHeaderBar) and the gIGNITE wordmark. */
+type Logos = { gadgeon: PDFImage; fisat: PDFImage; ieee: PDFImage; gignite: PDFImage };
 
-let fontBytes: Promise<Record<keyof Fonts, Buffer>> | null = null;
+type AssetBytes = { fonts: Record<keyof Fonts, Buffer>; logos: Record<keyof Logos, Buffer> };
 
-function loadFontBytes() {
-  fontBytes ??= (async () => {
-    const font = (file: string) => readFile(path.join(process.cwd(), "lib/email/fonts", file));
-    const [regular, semi, bold, display] = await Promise.all([
+let assetBytes: Promise<AssetBytes> | null = null;
+
+function loadAssetBytes() {
+  assetBytes ??= (async () => {
+    const root = process.cwd();
+    const font = (file: string) => readFile(path.join(root, "lib/email/fonts", file));
+    const image = (file: string) => readFile(path.join(root, "public", file));
+    const [regular, semi, bold, display, gadgeon, fisat, ieee, gignite] = await Promise.all([
       font("Urbanist-Regular.ttf"),
       font("Urbanist-SemiBold.ttf"),
       font("Urbanist-Bold.ttf"),
       font("Sora-SemiBold.ttf"),
+      image("gadgeon-logo.png"),
+      image("fisat-sb-logo.png"),
+      image("ieee_sps_kc_logo.png"),
+      image("gignite-logo.png"),
     ]);
-    return { regular, semi, bold, display };
+    return { fonts: { regular, semi, bold, display }, logos: { gadgeon, fisat, ieee, gignite } };
   })();
-  fontBytes.catch(() => {
-    fontBytes = null;
+  assetBytes.catch(() => {
+    assetBytes = null;
   });
-  return fontBytes;
+  return assetBytes;
+}
+
+// The brand gradient (bg-brand-gradient in app/globals.css): orange → magenta → blue.
+const BRAND_STOPS = [
+  [0xf4, 0x79, 0x20],
+  [0xc7, 0x56, 0xd9],
+  [0x31, 0x82, 0xfc],
+] as const;
+
+function brandColorAt(t: number) {
+  const scaled = Math.min(Math.max(t, 0), 1) * (BRAND_STOPS.length - 1);
+  const i = Math.min(Math.floor(scaled), BRAND_STOPS.length - 2);
+  const f = scaled - i;
+  const [a, b] = [BRAND_STOPS[i], BRAND_STOPS[i + 1]];
+  return rgb(...([0, 1, 2].map((k) => (a[k] + (b[k] - a[k]) * f) / 255) as [number, number, number]));
+}
+
+/** A horizontal brand-gradient strip, drawn as thin slices. */
+function drawBrandStrip(page: PDFPage, x: number, y: number, width: number, height: number) {
+  const slices = 80;
+  const w = width / slices;
+  for (let i = 0; i < slices; i++) {
+    // A hair of overlap so no seams show between slices.
+    page.drawRectangle({ x: x + i * w, y, width: w + 0.4, height, color: brandColorAt(i / (slices - 1)) });
+  }
+}
+
+/** Draws `image` fitted into a box `height` tall, at x (left), centred or right-aligned on it. */
+function drawLogo(page: PDFPage, image: PDFImage, x: number, top: number, height: number, align: "left" | "center" | "right") {
+  const width = (image.width / image.height) * height;
+  const left = align === "left" ? x : align === "center" ? x - width / 2 : x - width;
+  page.drawImage(image, { x: left, y: top - height, width, height });
 }
 
 /** Plain text the fonts can lay out: no tabs or control characters, normalised line breaks. */
@@ -221,15 +265,31 @@ class Writer {
   constructor(
     private doc: PDFDocument,
     readonly fonts: Fonts,
+    private logos: Logos,
     private footer: string,
   ) {
     this.newPage();
   }
 
+  /** A page with the site's header — partner logos over the brand strip — and the footer line. */
   newPage() {
     this.page = this.doc.addPage([PAGE_W, PAGE_H]);
-    this.y = PAGE_H - MARGIN;
+    const logoTop = PAGE_H - 20;
+    drawLogo(this.page, this.logos.gadgeon, MARGIN, logoTop, 30, "left");
+    drawLogo(this.page, this.logos.fisat, PAGE_W / 2, logoTop, 30, "center");
+    drawLogo(this.page, this.logos.ieee, PAGE_W - MARGIN, logoTop, 28, "right");
+    drawBrandStrip(this.page, 0, PAGE_H - HEADER_H + 14, PAGE_W, 3.5);
+    this.y = PAGE_H - HEADER_H - 14;
+
+    drawBrandStrip(this.page, MARGIN, 38, CONTENT_W, 1.2);
     this.page.drawText(this.footer, { x: MARGIN, y: 24, size: 8, font: this.fonts.regular, color: MUTED });
+  }
+
+  /** The gIGNITE wordmark, `height` tall, at the cursor. */
+  wordmark(height: number) {
+    this.ensure(height + 8);
+    drawLogo(this.page, this.logos.gignite, MARGIN, this.y, height, "left");
+    this.y -= height + 8;
   }
 
   /** Room for `height` more points, or a new page. */
@@ -336,12 +396,18 @@ function formatDate(value: string): string {
 async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  const bytes = await loadFontBytes();
+  const bytes = await loadAssetBytes();
   const fonts: Fonts = {
-    regular: await doc.embedFont(bytes.regular),
-    semi: await doc.embedFont(bytes.semi),
-    bold: await doc.embedFont(bytes.bold),
-    display: await doc.embedFont(bytes.display),
+    regular: await doc.embedFont(bytes.fonts.regular),
+    semi: await doc.embedFont(bytes.fonts.semi),
+    bold: await doc.embedFont(bytes.fonts.bold),
+    display: await doc.embedFont(bytes.fonts.display),
+  };
+  const logos: Logos = {
+    gadgeon: await doc.embedPng(bytes.logos.gadgeon),
+    fisat: await doc.embedPng(bytes.logos.fisat),
+    ieee: await doc.embedPng(bytes.logos.ieee),
+    gignite: await doc.embedPng(bytes.logos.gignite),
   };
   doc.setTitle(`${team.name} (${team.entry_code}) — gIGNITE 2026 team report`);
   doc.setCreator("gIGNITE 2026");
@@ -357,10 +423,11 @@ async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promis
   ]);
   const fileBase = reportFileBase(team.name, team.entry_code);
 
-  const w = new Writer(doc, fonts, `gIGNITE 2026 · ${team.name} · ${team.entry_code} · generated ${formatDate(new Date().toISOString())}`);
+  const w = new Writer(doc, fonts, logos, `gIGNITE 2026 · ${team.name} · ${team.entry_code} · generated ${formatDate(new Date().toISOString())}`);
 
   // Team.
-  w.text("gIGNITE 2026 · TEAM REPORT", { font: fonts.bold, size: 9, color: MAGENTA, gap: 6 });
+  w.wordmark(30);
+  w.text("2026 · TEAM REPORT", { font: fonts.bold, size: 9, color: MAGENTA, gap: 6 });
   w.text(team.name, { font: fonts.display, size: 22, gap: 2 });
   w.text(`${team.entry_code} · ${team.ai_theme}`, { font: fonts.semi, size: 11.5, color: MUTED, gap: 6 });
 
