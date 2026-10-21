@@ -191,7 +191,7 @@ export function detailsUpdatedEmail(opts: {
         `<div style="font-family:${FONT}; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#2C1D44; padding-bottom:4px;">Your squad · ${esc(opts.entryCode)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${memberRows}</table>`,
       ) +
       note(
-        `<strong style="color:#2C1D44;">ID cards for all members are attached</strong> — existing members' cards and codes are unchanged (except where their details were corrected), and new members' cards are included. Please share each card with its member and keep them handy on event day.`,
+        `<strong style="color:#2C1D44;">ID cards for all members are attached.</strong>`,
       ) +
       note(`Something not right? Just reply to this email and the organising team will get back to you.`) +
       center(button(opts.statusUrl, "View registration status")),
@@ -207,7 +207,7 @@ export function detailsUpdatedEmail(opts: {
       "",
       ...opts.members.map((m) => `- ${m.name}${m.isLeader ? " (Leader)" : ""} — ${m.code}`),
       "",
-      "ID cards for all members are attached — existing members' cards and codes are unchanged (except where their details were corrected), and new members' cards are included. Please share each card with its member.",
+      "ID cards for all members are attached.",
       "",
       "Something not right? Just reply to this email.",
       "",
