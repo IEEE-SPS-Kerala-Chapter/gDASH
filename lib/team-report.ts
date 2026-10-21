@@ -24,7 +24,7 @@ import { reportFileBase } from "@/lib/report-file-name";
  */
 
 // Bump when the layout changes, so stored reports are rebuilt.
-const REPORT_FORMAT = 3;
+const REPORT_FORMAT = 4;
 const REPORTS_BUCKET = "team-reports";
 
 export type TeamReport = {
@@ -152,6 +152,10 @@ const MARGIN = 48;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 // The logo bar and brand strip at the top of every page.
 const HEADER_H = 74;
+// Image grids (ID cards): one row is the box, its caption and the gap below.
+const IMAGE_BOX_H = 190;
+const IMAGE_CAPTION_H = 26;
+const IMAGE_ROW_H = IMAGE_BOX_H + IMAGE_CAPTION_H + 8;
 
 const INK = rgb(0x2c / 255, 0x1d / 255, 0x44 / 255);
 const MUTED = rgb(0x6a / 255, 0x72 / 255, 0x82 / 255);
@@ -310,8 +314,13 @@ class Writer {
     this.y -= opts.gap ?? 0;
   }
 
-  heading(value: string) {
-    this.ensure(48);
+  /**
+   * A section title. `keepWith` is the height of what must follow it on the
+   * same page (e.g. the first row of images), so a title is never left at
+   * the bottom of a page with its content on the next.
+   */
+  heading(value: string, keepWith = 0) {
+    this.ensure(48 + keepWith);
     this.y -= 14;
     this.text(value.toUpperCase(), { font: this.fonts.bold, size: 9.5, color: MAGENTA, gap: 4 });
     this.page.drawLine({
@@ -340,8 +349,8 @@ class Writer {
   imageGrid(items: { image: PDFImage | null; caption: string; missing?: string }[]) {
     const gap = 16;
     const boxW = (CONTENT_W - gap) / 2;
-    const boxH = 190;
-    const captionH = 26;
+    const boxH = IMAGE_BOX_H;
+    const captionH = IMAGE_CAPTION_H;
     for (let i = 0; i < items.length; i += 2) {
       this.ensure(boxH + captionH + 8);
       const top = this.y;
@@ -474,7 +483,7 @@ async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promis
 
   // Generated ID cards.
   w.newPage();
-  w.heading("gIGNITE ID cards");
+  w.heading("gIGNITE ID cards", IMAGE_ROW_H);
   w.imageGrid(
     await Promise.all(
       members.map(async (m, i) => ({
@@ -486,7 +495,7 @@ async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promis
   );
 
   // Uploaded college ID cards.
-  w.heading("College ID cards (uploaded)");
+  w.heading("College ID cards (uploaded)", IMAGE_ROW_H);
   w.imageGrid(
     await Promise.all(
       members.map(async (m, i) => ({
