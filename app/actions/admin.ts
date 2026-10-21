@@ -601,7 +601,8 @@ const TEAM_CSV_HEADER = [
   "Team ID",
   "Team Leader Name",
   "Team Leader Phone",
-  ...Array.from({ length: MAX_OTHER_MEMBERS }, (_, i) => `Member ${i + 1}`),
+  // The leader is member 1, so the others are Member 2 to Member 5.
+  ...Array.from({ length: MAX_OTHER_MEMBERS }, (_, i) => `Member ${i + 2}`),
   "College Name",
   "Chosen Track",
 ];
