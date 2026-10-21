@@ -26,6 +26,7 @@ const ACTION_LABELS: Record<string, string> = {
   "judge.score_submitted": "Submitted a score",
   "staff.created": "Created a staff account",
   "registrations.exported": "Exported registrations CSV",
+  "registrations.finale_exported": "Exported finale shortlist CSV",
   "ambassadors.exported": "Exported ambassadors CSV",
   "auth.signed_in": "Signed in",
   "auth.password_reset": "Reset their password",

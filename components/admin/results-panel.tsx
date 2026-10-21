@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { exportFinaleShortlistCsv } from "@/app/actions/admin";
+import { downloadCsv } from "@/lib/csv-download";
 import {
   getResultsPublication,
   setResultsPublished,
@@ -26,6 +29,19 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
   const [savingMessages, setSavingMessages] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [switching, setSwitching] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const router = useRouter();
+
+  async function handleExportFinale() {
+    setExporting(true);
+    const result = await exportFinaleShortlistCsv().catch(() => ({ success: false as const, error: "No connection — try again." }));
+    setExporting(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    downloadCsv(result.csv, result.filename);
+  }
 
   const { counts } = state;
   const messagesChanged =
@@ -59,6 +75,8 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
     }
     toast.success(publish ? "Results published." : "Results hidden again.");
     await reload();
+    // The sidebar's "Export finale shortlist" follows the published state.
+    router.refresh();
   }
 
   return (
@@ -118,6 +136,17 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
             </SecondaryButton>
           </div>
           <ResultEmails decidedTeams={counts.shortlisted + counts.notSelected} messagesUnsaved={messagesChanged} />
+          <div className="mt-2 flex flex-col gap-2 border-t border-ignite-edge/[0.07] pt-4">
+            <p className="m-0 text-[13px] text-ignite-muted">
+              The {counts.shortlisted} team{counts.shortlisted === 1 ? "" : "s"} shortlisted for the Grand Finale: team name and ID,
+              leader and members with phone numbers, college and track.
+            </p>
+            <div className="w-fit">
+              <PrimaryButton type="button" onClick={handleExportFinale} disabled={exporting} loading={exporting}>
+                {exporting ? "Exporting…" : "Export finale shortlist (CSV)"}
+              </PrimaryButton>
+            </div>
+          </div>
         </div>
       ) : confirming ? (
         <div className="flex flex-col gap-3 rounded-xl bg-ignite-lavender px-4 py-3">

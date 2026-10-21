@@ -4,10 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Trophy } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
-import { exportRegistrationsCsv } from "@/app/actions/admin";
+import { exportFinaleShortlistCsv, exportRegistrationsCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
 import { roleLabel, isAdminLevelRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -26,15 +26,18 @@ import { cn } from "@/lib/utils";
 export function DashboardShell({
   role,
   name,
+  resultsPublished = false,
   children,
 }: {
   role: string;
   name: string;
+  /** Enables "Export finale shortlist" (admins). */
+  resultsPublished?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"all" | "finale" | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
   // No reset afterwards: the login page replaces this one once it's done.
@@ -45,10 +48,13 @@ export function DashboardShell({
     router.refresh();
   }
 
-  async function handleExport() {
-    setExporting(true);
-    const result = await exportRegistrationsCsv();
-    setExporting(false);
+  async function handleExport(which: "all" | "finale") {
+    setExporting(which);
+    const result = await (which === "all" ? exportRegistrationsCsv() : exportFinaleShortlistCsv()).catch(() => ({
+      success: false as const,
+      error: "No connection — try again.",
+    }));
+    setExporting(null);
     if (!result.success) {
       toast.error(result.error);
       return;
@@ -127,9 +133,21 @@ export function DashboardShell({
               </Link>
             )}
             {isAdminLevelRole(role) && (
-              <button type="button" onClick={handleExport} disabled={exporting} className={navItemClass(false)}>
+              <button type="button" onClick={() => handleExport("all")} disabled={exporting !== null} className={navItemClass(false)}>
                 <Download className="h-[17px] w-[17px]" />
-                <span>{exporting ? "Exporting…" : "Export"}</span>
+                <span>{exporting === "all" ? "Exporting…" : "Export all teams"}</span>
+              </button>
+            )}
+            {isAdminLevelRole(role) && (
+              <button
+                type="button"
+                onClick={() => handleExport("finale")}
+                disabled={exporting !== null || !resultsPublished}
+                title={resultsPublished ? undefined : "Available once the results are published"}
+                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                <Trophy className="h-[17px] w-[17px]" />
+                <span>{exporting === "finale" ? "Exporting…" : "Export finale shortlist"}</span>
               </button>
             )}
             <Link href="/dashboard/profile" className={navItemClass(pathname === "/dashboard/profile")}>

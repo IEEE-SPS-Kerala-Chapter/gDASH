@@ -11,7 +11,7 @@ import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getMfaState, mfaSatisfied } from "@/lib/staff-mfa";
 import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
-import { ambassadorFormValueToNumber, ambassadorLabel, formatAmbassadorId } from "@/lib/ambassador";
+import { ambassadorFormValueToNumber, ambassadorLabel } from "@/lib/ambassador";
 import {
   TEAM_SELECT,
   TEAM_LIST_SELECT,
@@ -593,12 +593,46 @@ export async function setVerificationStatus(
 
 type CsvResult = { success: true; csv: string; filename: string } | { success: false; error: string };
 
+const TEAM_CSV_HEADER = [
+  "Team Name",
+  "Team ID",
+  "Team Leader Name",
+  "Team Leader Phone",
+  "Team Members Names",
+  "Team Members Phone Numbers",
+  "College Name",
+  "Chosen Track",
+];
+
 /**
- * Admin (or super-admin) only: build a CSV of all registrations for offline
- * use (badges, contact lists). Includes leader emails/phones, so — unlike
- * the plain team reads above, which RLS's is_staff() happily allows for
- * judges too — this one gates on role explicitly. Judges shouldn't be able
- * to pull every team's contact info in one shot; it's the same bias/privacy
+ * The team contact sheet both exports use. Members (leader excluded) are
+ * listed in member order, names and phone numbers in the same order and
+ * separated by "; ", so the two columns line up.
+ */
+function teamsCsv(teams: AdminTeam[]): string {
+  const rows = teams.map((team) => {
+    const leader = team.members.find((m) => m.is_leader);
+    const others = team.members.filter((m) => !m.is_leader);
+    return [
+      team.name,
+      team.entry_code,
+      leader?.full_name ?? "",
+      leader?.phone ?? "",
+      others.map((m) => m.full_name).join("; "),
+      others.map((m) => m.phone).join("; "),
+      leader?.college ?? team.members[0]?.college ?? "",
+      team.ai_theme,
+    ].map(csvField);
+  });
+  return [TEAM_CSV_HEADER.map(csvField).join(","), ...rows.map((r) => r.join(","))].join("\n");
+}
+
+/**
+ * Admin (or super-admin) only: a CSV of every registered team for offline
+ * use (contact lists, badges). Includes phone numbers, so — unlike the
+ * plain team reads above, which RLS's is_staff() happily allows for judges
+ * too — this one gates on role explicitly. Judges shouldn't be able to
+ * pull every team's contact info in one shot; it's the same bias/privacy
  * concern as hiding member contact details on the judge team-detail view.
  */
 export async function exportRegistrationsCsv(): Promise<CsvResult> {
@@ -615,47 +649,46 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
     return result;
   }
 
-  const header = [
-    "Team Name",
-    "Theme",
-    "District",
-    "Ambassador",
-    "Leader Name",
-    "Leader Email",
-    "Leader Phone",
-    "Leader College",
-    "All Members",
-    "Verification",
-    "Status",
-    "Submitted At",
-  ];
-
-  const rows = result.teams.map((team) => {
-    const leader = team.members.find((m) => m.is_leader);
-    const allMembers = team.members.map((m) => m.full_name).join("; ");
-    return [
-      team.name,
-      team.ai_theme,
-      team.district,
-      team.registration?.ambassador_number != null ? formatAmbassadorId(team.registration.ambassador_number) : "",
-      leader?.full_name ?? "",
-      leader?.email ?? "",
-      leader?.phone ?? "",
-      leader?.college ?? "",
-      allMembers,
-      team.registration?.verification_status ?? "",
-      team.registration?.status ?? "",
-      team.registration?.created_at ?? "",
-    ].map(csvField);
-  });
-
-  const csv = [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const csv = teamsCsv(result.teams);
   const today = new Date().toISOString().slice(0, 10);
 
   const supabase = await createClient();
   await logAuditEvent(supabase, "registrations.exported", { metadata: { teamCount: result.teams.length } });
 
-  return { success: true, csv, filename: `registrations-${today}.csv` };
+  return { success: true, csv, filename: `gignite-all-teams-${today}.csv` };
+}
+
+/**
+ * Admin (or super-admin) only: the same sheet for the teams shortlisted
+ * for the Grand Finale. Only once results are published (the decisions are
+ * final then); built from the current data each time it's downloaded.
+ */
+export async function exportFinaleShortlistCsv(): Promise<CsvResult> {
+  const caller = await getCallerRole();
+  if (!caller) {
+    return { success: false, error: "Please sign in." };
+  }
+  if (!isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can export the finale shortlist." };
+  }
+
+  const supabase = await createClient();
+  const { data: publication } = await supabase.from("results_publication").select("is_published").eq("id", true).single();
+  if (!publication?.is_published) {
+    return { success: false, error: "Publish the results first — the finale shortlist is available after that." };
+  }
+
+  const result = await getTeamsForAdmin();
+  if (!result.success) {
+    return result;
+  }
+  const shortlisted = result.teams.filter((t) => t.registration?.status === "shortlisted");
+
+  const csv = teamsCsv(shortlisted);
+  const today = new Date().toISOString().slice(0, 10);
+  await logAuditEvent(supabase, "registrations.finale_exported", { metadata: { teamCount: shortlisted.length } });
+
+  return { success: true, csv, filename: `gignite-finale-shortlist-${today}.csv` };
 }
 
 type DeleteResult = { success: true } | { success: false; error: string };
