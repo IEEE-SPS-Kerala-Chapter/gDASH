@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Trophy, FolderArchive } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Trophy, FolderArchive, FileText } from "lucide-react";
 import { useTeamReportsZip } from "./team-reports";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
-import { exportFinaleShortlistCsv, exportRegistrationsCsv } from "@/app/actions/admin";
+import { exportDeckCsv, exportFinaleShortlistCsv, exportRegistrationsCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
 import { roleLabel, isAdminLevelRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function DashboardShell({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [exporting, setExporting] = useState<"all" | "finale" | null>(null);
+  const [exporting, setExporting] = useState<"all" | "finale" | "deck" | "finale-deck" | null>(null);
   const reportsZip = useTeamReportsZip();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -50,9 +50,15 @@ export function DashboardShell({
     router.refresh();
   }
 
-  async function handleExport(which: "all" | "finale") {
+  async function handleExport(which: "all" | "finale" | "deck" | "finale-deck") {
     setExporting(which);
-    const result = await (which === "all" ? exportRegistrationsCsv() : exportFinaleShortlistCsv()).catch(() => ({
+    const exports = {
+      all: exportRegistrationsCsv,
+      finale: exportFinaleShortlistCsv,
+      deck: () => exportDeckCsv("all"),
+      "finale-deck": () => exportDeckCsv("shortlist"),
+    };
+    const result = await exports[which]().catch(() => ({
       success: false as const,
       error: "No connection — try again.",
     }));
@@ -151,6 +157,24 @@ export function DashboardShell({
               >
                 <Trophy className="h-[17px] w-[17px]" />
                 <span>{exporting === "finale" ? "Exporting…" : "Export finale shortlist"}</span>
+              </button>
+            )}
+            {isAdminLevelRole(role) && (
+              <button type="button" onClick={() => handleExport("deck")} disabled={exporting !== null} className={navItemClass(false)}>
+                <FileText className="h-[17px] w-[17px]" />
+                <span>{exporting === "deck" ? "Exporting…" : "Download deck CSV"}</span>
+              </button>
+            )}
+            {isAdminLevelRole(role) && (
+              <button
+                type="button"
+                onClick={() => handleExport("finale-deck")}
+                disabled={exporting !== null || !resultsPublished}
+                title={resultsPublished ? undefined : "Available once the results are published"}
+                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
+              >
+                <FileText className="h-[17px] w-[17px]" />
+                <span>{exporting === "finale-deck" ? "Exporting…" : "Download shortlisted deck CSV"}</span>
               </button>
             )}
             {isAdminLevelRole(role) && (

@@ -697,6 +697,70 @@ export async function exportFinaleShortlistCsv(): Promise<CsvResult> {
   return { success: true, csv, filename: `gignite-finale-shortlist-${today}.csv` };
 }
 
+// The idea answers, labelled as on the registration form (components/registration/step-idea.tsx).
+const DECK_CSV_HEADER = ["Team Name", "Team ID", "The Problem", "Your Solution", "AI + Tech", "The Impact"];
+
+type DeckCsvRow = {
+  name: string;
+  entry_code: string;
+  registrations: Record<string, string> | Record<string, string>[] | null;
+};
+
+/**
+ * Admin (or super-admin) only: each team's idea answers — every team, or
+ * (once results are published) the teams shortlisted for the Grand Finale.
+ * No contact details, just the team and what they wrote.
+ */
+export async function exportDeckCsv(scope: "all" | "shortlist"): Promise<CsvResult> {
+  const caller = await getCallerRole();
+  if (!caller) {
+    return { success: false, error: "Please sign in." };
+  }
+  if (!isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can export the deck CSV." };
+  }
+
+  const supabase = await createClient();
+  if (scope === "shortlist") {
+    const { data: publication } = await supabase.from("results_publication").select("is_published").eq("id", true).single();
+    if (!publication?.is_published) {
+      return { success: false, error: "Publish the results first — the finale shortlist is available after that." };
+    }
+  }
+
+  let query = supabase
+    .from("teams")
+    .select("name, entry_code, registrations!inner(status, problem_statement, proposed_solution, ai_approach, expected_impact)")
+    .order("created_at", { ascending: false });
+  if (scope === "shortlist") query = query.eq("registrations.status", "shortlisted");
+  const { data, error } = await query;
+  if (error) {
+    return { success: false, error: "Could not load the teams." };
+  }
+
+  const rows = ((data ?? []) as unknown as DeckCsvRow[]).map((team) => {
+    const reg = (Array.isArray(team.registrations) ? team.registrations[0] : team.registrations) ?? {};
+    return [
+      team.name,
+      team.entry_code,
+      reg.problem_statement ?? "",
+      reg.proposed_solution ?? "",
+      reg.ai_approach ?? "",
+      reg.expected_impact ?? "",
+    ].map(csvField);
+  });
+  const csv = [DECK_CSV_HEADER.map(csvField).join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const today = new Date().toISOString().slice(0, 10);
+
+  await logAuditEvent(supabase, "registrations.deck_exported", { metadata: { scope, teamCount: rows.length } });
+
+  return {
+    success: true,
+    csv,
+    filename: scope === "all" ? `gignite-deck-all-teams-${today}.csv` : `gignite-deck-finale-shortlist-${today}.csv`,
+  };
+}
+
 /**
  * Admin (or super-admin) only: the teams for a "zip of team reports"
  * download — every team, or (once results are published) the teams
