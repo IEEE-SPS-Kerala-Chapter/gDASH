@@ -33,7 +33,7 @@ export default async function TwoFactorPage() {
   // with the upgraded session, and a redirect here would cut off the
   // backup-codes screen shown right after setup. TwoFactor sends someone
   // who has nothing left to do here on to the dashboard itself.
-  const mfa = await getMfaState(supabase);
+  const mfa = await getMfaState(supabase, user);
   const enrolled = mfa?.enrolled ?? hasVerifiedTotp(user);
   const nothingToDo = mfaSatisfied(mfa, profile.role) && (enrolled || Boolean(profile.mfa_skipped_at));
   const initialMode = nothingToDo

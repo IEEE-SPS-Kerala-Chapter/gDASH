@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // app; the super-admin must set one up; anyone else who hasn't chosen yet
   // is asked once whether to set it up or skip. The database applies the
   // same rule regardless (20261022000000_optional_staff_mfa.sql).
-  const mfa = await getMfaState(supabase);
+  const mfa = await getMfaState(supabase, user);
   const owesCode = !mfaSatisfied(mfa, profile.role);
   const notChosenYet = !mfa?.enrolled && !profile.mfa_skipped_at;
   if (owesCode || notChosenYet) {

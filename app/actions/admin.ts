@@ -54,7 +54,7 @@ export async function getCallerRole(): Promise<{ userId: string; role: string } 
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (!profile) return null;
-  if (!mfaSatisfied(await getMfaState(supabase), profile.role)) return null;
+  if (!mfaSatisfied(await getMfaState(supabase, user), profile.role)) return null;
 
   return { userId: user.id, role: profile.role };
 }

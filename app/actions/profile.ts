@@ -27,7 +27,7 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     .eq("id", user.id)
     .single();
   if (!profile) return null;
-  if (!mfaSatisfied(await getMfaState(supabase), profile.role)) return null;
+  if (!mfaSatisfied(await getMfaState(supabase, user), profile.role)) return null;
 
   return { role: profile.role, fullName: profile.full_name, mustResetPassword: profile.must_reset_password };
 }

@@ -20,11 +20,17 @@ export type MfaState = {
   verified: boolean;
 };
 
-export async function getMfaState(supabase: SupabaseClient): Promise<MfaState | null> {
+/**
+ * `user` must be fresh from supabase.auth.getUser(). Whether an app is set
+ * up comes from its factors, not the assurance level's nextLevel: that reads
+ * the copy of the user saved in the session cookie, and stays aal2 for an
+ * aal2 session even with no factor left — so turning 2FA off (or on in
+ * another browser) only showed after signing in again.
+ */
+export async function getMfaState(supabase: SupabaseClient, user: Pick<User, "factors">): Promise<MfaState | null> {
   const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (error || !data) return null;
-  // nextLevel is aal2 exactly when the user has a verified factor.
-  return { enrolled: data.nextLevel === "aal2", verified: data.currentLevel === "aal2" };
+  return { enrolled: hasVerifiedTotp(user), verified: data.currentLevel === "aal2" };
 }
 
 /** Whether a staff session with this role may use staff powers. */
@@ -36,7 +42,8 @@ export function mfaSatisfied(state: MfaState | null, role: string): boolean {
 
 /** True when the current session has passed the authenticator-app code. */
 export async function sessionIsAal2(supabase: SupabaseClient): Promise<boolean> {
-  return (await getMfaState(supabase))?.verified ?? false;
+  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  return data?.currentLevel === "aal2";
 }
 
 /** True when the user has a confirmed authenticator app. */

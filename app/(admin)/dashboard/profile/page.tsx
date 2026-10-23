@@ -30,7 +30,7 @@ export default async function ProfilePage() {
     .single();
   if (!profile) redirect("/");
 
-  const mfa = await getMfaState(supabase);
+  const mfa = await getMfaState(supabase, user);
   const enrolled = mfa?.enrolled ?? false;
   const { count: backupCodesLeft } = enrolled
     ? await createAdminClient()
