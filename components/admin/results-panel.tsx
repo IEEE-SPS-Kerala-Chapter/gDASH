@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { exportFinaleShortlistCsv } from "@/app/actions/admin";
 import { downloadCsv } from "@/lib/csv-download";
@@ -32,7 +31,6 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
   const [switching, setSwitching] = useState(false);
   const [exporting, setExporting] = useState(false);
   const reportsZip = useTeamReportsZip();
-  const router = useRouter();
 
   async function handleExportFinale() {
     setExporting(true);
@@ -77,8 +75,6 @@ export function ResultsPanel({ initial }: { initial: ResultsPublication }) {
     }
     toast.success(publish ? "Results published." : "Results hidden again.");
     await reload();
-    // The sidebar's "Export finale shortlist" follows the published state.
-    router.refresh();
   }
 
   return (

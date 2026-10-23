@@ -3,13 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Trophy, FolderArchive, FileText } from "lucide-react";
-import { useTeamReportsZip } from "./team-reports";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
-import { exportDeckCsv, exportFinaleShortlistCsv, exportRegistrationsCsv } from "@/app/actions/admin";
-import { downloadCsv } from "@/lib/csv-download";
 import { roleLabel, isAdminLevelRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 
@@ -27,19 +23,14 @@ import { cn } from "@/lib/utils";
 export function DashboardShell({
   role,
   name,
-  resultsPublished = false,
   children,
 }: {
   role: string;
   name: string;
-  /** Enables "Export finale shortlist" (admins). */
-  resultsPublished?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [exporting, setExporting] = useState<"all" | "finale" | "deck" | "finale-deck" | null>(null);
-  const reportsZip = useTeamReportsZip();
   const [signingOut, setSigningOut] = useState(false);
 
   // No reset afterwards: the login page replaces this one once it's done.
@@ -48,26 +39,6 @@ export function DashboardShell({
     await signOut();
     router.push("/login");
     router.refresh();
-  }
-
-  async function handleExport(which: "all" | "finale" | "deck" | "finale-deck") {
-    setExporting(which);
-    const exports = {
-      all: exportRegistrationsCsv,
-      finale: exportFinaleShortlistCsv,
-      deck: () => exportDeckCsv("all"),
-      "finale-deck": () => exportDeckCsv("shortlist"),
-    };
-    const result = await exports[which]().catch(() => ({
-      success: false as const,
-      error: "No connection — try again.",
-    }));
-    setExporting(null);
-    if (!result.success) {
-      toast.error(result.error);
-      return;
-    }
-    downloadCsv(result.csv, result.filename);
   }
 
   const initials = name
@@ -88,7 +59,6 @@ export function DashboardShell({
   return (
     <div className="relative flex min-h-screen bg-ignite-bg font-ui text-ignite-ink-soft">
       <GridBackground faded />
-      {reportsZip.panel}
 
       {/* Sidebar — desktop only; mobile gets a compact top bar instead. */}
       <aside className="hero-dark sticky top-0 z-10 hidden h-screen w-[236px] flex-none flex-col justify-between overflow-y-auto border-r border-white/[0.06] px-3.5 py-5 lg:flex">
@@ -142,63 +112,10 @@ export function DashboardShell({
               </Link>
             )}
             {isAdminLevelRole(role) && (
-              <button type="button" onClick={() => handleExport("all")} disabled={exporting !== null} className={navItemClass(false)}>
+              <Link href="/dashboard/downloads" className={navItemClass(pathname === "/dashboard/downloads")}>
                 <Download className="h-[17px] w-[17px]" />
-                <span>{exporting === "all" ? "Exporting…" : "Export all teams"}</span>
-              </button>
-            )}
-            {isAdminLevelRole(role) && (
-              <button
-                type="button"
-                onClick={() => handleExport("finale")}
-                disabled={exporting !== null || !resultsPublished}
-                title={resultsPublished ? undefined : "Available once the results are published"}
-                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
-              >
-                <Trophy className="h-[17px] w-[17px]" />
-                <span>{exporting === "finale" ? "Exporting…" : "Export finale shortlist"}</span>
-              </button>
-            )}
-            {isAdminLevelRole(role) && (
-              <button type="button" onClick={() => handleExport("deck")} disabled={exporting !== null} className={navItemClass(false)}>
-                <FileText className="h-[17px] w-[17px]" />
-                <span>{exporting === "deck" ? "Exporting…" : "Download deck CSV"}</span>
-              </button>
-            )}
-            {isAdminLevelRole(role) && (
-              <button
-                type="button"
-                onClick={() => handleExport("finale-deck")}
-                disabled={exporting !== null || !resultsPublished}
-                title={resultsPublished ? undefined : "Available once the results are published"}
-                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
-              >
-                <FileText className="h-[17px] w-[17px]" />
-                <span>{exporting === "finale-deck" ? "Exporting…" : "Download shortlisted deck CSV"}</span>
-              </button>
-            )}
-            {isAdminLevelRole(role) && (
-              <button
-                type="button"
-                onClick={() => reportsZip.start("all")}
-                disabled={reportsZip.running}
-                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
-              >
-                <FolderArchive className="h-[17px] w-[17px]" />
-                <span>Download zip of all teams</span>
-              </button>
-            )}
-            {isAdminLevelRole(role) && (
-              <button
-                type="button"
-                onClick={() => reportsZip.start("shortlist")}
-                disabled={reportsZip.running || !resultsPublished}
-                title={resultsPublished ? undefined : "Available once the results are published"}
-                className={cn(navItemClass(false), "disabled:cursor-not-allowed disabled:opacity-50")}
-              >
-                <FolderArchive className="h-[17px] w-[17px]" />
-                <span>Download finale shortlist zip</span>
-              </button>
+                <span>Download team details</span>
+              </Link>
             )}
             <Link href="/dashboard/profile" className={navItemClass(pathname === "/dashboard/profile")}>
               <CircleUser className="h-[17px] w-[17px]" />
@@ -259,6 +176,7 @@ export function DashboardShell({
             { href: "/dashboard/staff", label: "Staff", show: role === "super_admin", active: pathname === "/dashboard/staff" },
             { href: "/dashboard/ambassadors", label: "Ambassadors", show: role === "super_admin", active: pathname === "/dashboard/ambassadors" },
             { href: "/dashboard/audit-logs", label: "Audit logs", show: role === "super_admin", active: pathname === "/dashboard/audit-logs" },
+            { href: "/dashboard/downloads", label: "Download team details", show: isAdminLevelRole(role), active: pathname === "/dashboard/downloads" },
             { href: "/dashboard/profile", label: "Profile", show: true, active: pathname === "/dashboard/profile" },
           ]
             .filter((item) => item.show)

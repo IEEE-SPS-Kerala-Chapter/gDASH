@@ -45,15 +45,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login/2fa");
   }
 
-  // Admins' "Export finale shortlist" is enabled once results are published.
-  let resultsPublished = false;
-  if (["admin", "super_admin"].includes(profile.role)) {
-    const { data: publication } = await supabase.from("results_publication").select("is_published").eq("id", true).maybeSingle();
-    resultsPublished = Boolean(publication?.is_published);
-  }
-
   return (
-    <DashboardShell role={profile.role} name={profile.full_name} resultsPublished={resultsPublished}>
+    <DashboardShell role={profile.role} name={profile.full_name}>
       {children}
     </DashboardShell>
   );
