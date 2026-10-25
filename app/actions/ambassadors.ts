@@ -8,6 +8,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { ambassadorNumbers, formatAmbassadorId, type AmbassadorDetails } from "@/lib/ambassador";
 import { MAX_SHEET_ROWS } from "@/lib/ambassador-sheet";
 import { csvField } from "@/lib/csv";
+import { isAdminLevelRole } from "@/lib/roles";
 
 /**
  * The last ambassador number (IDs run AMGIG-01 … AMGIG-<n>), or null when
@@ -72,11 +73,11 @@ export type AmbassadorRanking = {
   noAmbassador: number;
 };
 
-/** Super-admin only: every ID in the range with its referral counts, best first. */
+/** Admin (or super-admin) only: every ID in the range with its referral counts, best first. */
 export async function getAmbassadorRanking(): Promise<{ success: true; ranking: AmbassadorRanking } | { success: false; error: string }> {
   const caller = await getCallerRole();
-  if (caller?.role !== "super_admin") {
-    return { success: false, error: "Only the super-admin can view ambassadors." };
+  if (!caller || !isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can view ambassadors." };
   }
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("ambassador_ranking");
@@ -105,7 +106,7 @@ export async function getAmbassadorRanking(): Promise<{ success: true; ranking: 
 }
 
 /**
- * Super-admin only: every ambassador ID with its details and referral counts,
+ * Admin (or super-admin) only: every ambassador ID with its details and referral counts,
  * as CSV in ID order. The Name and College headers match the sheet import,
  * so the file can be edited and uploaded back (other columns are ignored).
  */

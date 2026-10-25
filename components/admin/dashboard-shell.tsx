@@ -99,7 +99,7 @@ export function DashboardShell({
                 <span>Staff</span>
               </Link>
             )}
-            {role === "super_admin" && (
+            {isAdminLevelRole(role) && (
               <Link href="/dashboard/ambassadors" className={navItemClass(pathname === "/dashboard/ambassadors")}>
                 <Megaphone className="h-[17px] w-[17px]" />
                 <span>Ambassadors</span>
@@ -174,7 +174,7 @@ export function DashboardShell({
             { href: "/dashboard/attendance", label: "Attendance", show: role === "volunteer" || isAdminLevelRole(role), active: pathname === "/dashboard/attendance" },
             { href: "/dashboard/check-in", label: "Check-in setup", show: isAdminLevelRole(role), active: pathname === "/dashboard/check-in" },
             { href: "/dashboard/staff", label: "Staff", show: role === "super_admin", active: pathname === "/dashboard/staff" },
-            { href: "/dashboard/ambassadors", label: "Ambassadors", show: role === "super_admin", active: pathname === "/dashboard/ambassadors" },
+            { href: "/dashboard/ambassadors", label: "Ambassadors", show: isAdminLevelRole(role), active: pathname === "/dashboard/ambassadors" },
             { href: "/dashboard/audit-logs", label: "Audit logs", show: role === "super_admin", active: pathname === "/dashboard/audit-logs" },
             { href: "/dashboard/downloads", label: "Download team details", show: isAdminLevelRole(role), active: pathname === "/dashboard/downloads" },
             { href: "/dashboard/profile", label: "Profile", show: true, active: pathname === "/dashboard/profile" },

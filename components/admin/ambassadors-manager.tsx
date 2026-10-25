@@ -23,8 +23,9 @@ import { cn } from "@/lib/utils";
  * Super-admin: set how many ambassador IDs exist (AMGIG-01 … AMGIG-NN),
  * enter each one's name and college (shown in the registration form's
  * dropdown), and see the ranking by registrations referred, refreshed live.
+ * Admins (`canManage` false) see the ranking and can export it, nothing else.
  */
-export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) {
+export function AmbassadorsManager({ ranking, canManage }: { ranking: AmbassadorRanking; canManage: boolean }) {
   useLiveRefresh({ intervalMs: 15_000 });
   const router = useRouter();
   const [lastInput, setLastInput] = useState(ranking.lastNumber === null ? "" : String(ranking.lastNumber));
@@ -63,45 +64,50 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
 
   return (
     <div className="flex flex-col gap-5">
-      <Panel className="flex flex-col gap-3 p-5">
-        <SectionLabel>Ambassador IDs</SectionLabel>
-        <div className="flex flex-wrap items-center gap-2 font-ui text-[15px] text-ignite-ink">
-          <span>IDs run from</span>
-          <span className="font-bold tracking-[0.04em]">AMGIG-01</span>
-          <span>to</span>
-          <span className="font-bold tracking-[0.04em]">AMGIG-</span>
-          <TextInput
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={999}
-            value={lastInput}
-            onChange={(e) => setLastInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && saveRange()}
-            placeholder="NN"
-            className="w-24 py-2"
-            aria-label="Last ambassador number"
-          />
-          <div className="w-28">
-            <PrimaryButton type="button" onClick={saveRange} disabled={savingRange} loading={savingRange}>
-              {savingRange ? "Saving…" : "Save"}
-            </PrimaryButton>
+      {!canManage && ranking.lastNumber === null && (
+        <Panel className="py-10 text-center text-[14px] text-ignite-muted">No ambassador IDs have been set up yet.</Panel>
+      )}
+      {canManage && (
+        <Panel className="flex flex-col gap-3 p-5">
+          <SectionLabel>Ambassador IDs</SectionLabel>
+          <div className="flex flex-wrap items-center gap-2 font-ui text-[15px] text-ignite-ink">
+            <span>IDs run from</span>
+            <span className="font-bold tracking-[0.04em]">AMGIG-01</span>
+            <span>to</span>
+            <span className="font-bold tracking-[0.04em]">AMGIG-</span>
+            <TextInput
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={999}
+              value={lastInput}
+              onChange={(e) => setLastInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveRange()}
+              placeholder="NN"
+              className="w-24 py-2"
+              aria-label="Last ambassador number"
+            />
+            <div className="w-28">
+              <PrimaryButton type="button" onClick={saveRange} disabled={savingRange} loading={savingRange}>
+                {savingRange ? "Saving…" : "Save"}
+              </PrimaryButton>
+            </div>
           </div>
-        </div>
-        <span className="text-[13px] leading-[1.5] text-ignite-muted">
-          {ranking.lastNumber === null
-            ? "No ambassador IDs yet — the registration form doesn't show the ambassador question until you set this."
-            : `${count} ambassador ID${count === 1 ? "" : "s"}. The registration form lists these plus “No ambassador referred”. You can raise the range any time; it can't be lowered below an ID a team has already picked.`}
-        </span>
-        {ranking.lastNumber !== null && (
           <span className="text-[13px] leading-[1.5] text-ignite-muted">
-            The name and college you enter below appear next to each ID in the registration form&apos;s dropdown, so
-            participants can find their ambassador.
+            {ranking.lastNumber === null
+              ? "No ambassador IDs yet — the registration form doesn't show the ambassador question until you set this."
+              : `${count} ambassador ID${count === 1 ? "" : "s"}. The registration form lists these plus “No ambassador referred”. You can raise the range any time; it can't be lowered below an ID a team has already picked.`}
           </span>
-        )}
-      </Panel>
+          {ranking.lastNumber !== null && (
+            <span className="text-[13px] leading-[1.5] text-ignite-muted">
+              The name and college you enter below appear next to each ID in the registration form&apos;s dropdown, so
+              participants can find their ambassador.
+            </span>
+          )}
+        </Panel>
+      )}
 
-      <AmbassadorSheetImport rows={ranking.rows} />
+      {canManage && <AmbassadorSheetImport rows={ranking.rows} />}
 
       {ranking.lastNumber !== null && (
         <div className="flex flex-col gap-3">
@@ -129,14 +135,16 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
                   <th className="px-4 py-3 text-right">Registrations</th>
                   <th className="px-4 py-3 text-right">Verified</th>
                   <th className="px-4 py-3 text-right">Finale shortlisted</th>
-                  <th className="px-4 py-3">
-                    <span className="sr-only">Delete</span>
-                  </th>
+                  {canManage && (
+                    <th className="px-4 py-3">
+                      <span className="sr-only">Delete</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {ranking.rows.map((row) => (
-                  <RankingRow key={row.number} row={row} />
+                  <RankingRow key={row.number} row={row} canManage={canManage} />
                 ))}
               </tbody>
             </table>
@@ -147,7 +155,7 @@ export function AmbassadorsManager({ ranking }: { ranking: AmbassadorRanking }) 
   );
 }
 
-function RankingRow({ row }: { row: AmbassadorRankingRow }) {
+function RankingRow({ row, canManage }: { row: AmbassadorRankingRow; canManage: boolean }) {
   const router = useRouter();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -222,66 +230,77 @@ function RankingRow({ row }: { row: AmbassadorRankingRow }) {
         )}
       </td>
       <td className="px-4 py-2.5 font-semibold tracking-[0.04em] text-ignite-ink">{formatAmbassadorId(row.number)}</td>
-      <td className="px-4 py-1.5">
-        <TextInput
-          {...inputProps}
-          value={name}
-          maxLength={80}
-          placeholder="Add a name"
-          onChange={(e) => setName(e.target.value)}
-          aria-label={`Name for ${formatAmbassadorId(row.number)}`}
-        />
-      </td>
-      <td className="px-4 py-1.5">
-        <TextInput
-          {...inputProps}
-          value={college}
-          maxLength={120}
-          placeholder="Add a college"
-          onChange={(e) => setCollege(e.target.value)}
-          aria-label={`College for ${formatAmbassadorId(row.number)}`}
-        />
-      </td>
+      {canManage ? (
+        <>
+          <td className="px-4 py-1.5">
+            <TextInput
+              {...inputProps}
+              value={name}
+              maxLength={80}
+              placeholder="Add a name"
+              onChange={(e) => setName(e.target.value)}
+              aria-label={`Name for ${formatAmbassadorId(row.number)}`}
+            />
+          </td>
+          <td className="px-4 py-1.5">
+            <TextInput
+              {...inputProps}
+              value={college}
+              maxLength={120}
+              placeholder="Add a college"
+              onChange={(e) => setCollege(e.target.value)}
+              aria-label={`College for ${formatAmbassadorId(row.number)}`}
+            />
+          </td>
+        </>
+      ) : (
+        <>
+          <td className="px-4 py-2.5 text-ignite-ink">{row.name || <span className="text-ignite-faint">—</span>}</td>
+          <td className="px-4 py-2.5 text-ignite-ink-soft">{row.college || <span className="text-ignite-faint">—</span>}</td>
+        </>
+      )}
       <td className="px-4 py-2.5 text-right font-display text-[16px] font-bold text-ignite-ink">{row.total}</td>
       <td className="px-4 py-2.5 text-right text-ignite-ink-soft">{row.verified}</td>
       <td className="px-4 py-2.5 text-right text-ignite-ink-soft">{row.shortlisted}</td>
-      <td className="px-4 py-2.5 text-right">
-        {row.deleted ? (
-          <span className="rounded-full bg-ignite-danger-pale px-2.5 py-1 font-ui text-[12px] font-bold text-ignite-danger">
-            Deleted
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmingDelete(true)}
-            className="rounded-full border border-ignite-danger/60 px-3 py-1 font-ui text-[13px] font-semibold text-ignite-danger transition-colors hover:bg-ignite-danger hover:text-white"
-            aria-label={`Delete ${formatAmbassadorId(row.number)}`}
-          >
-            Delete
-          </button>
-        )}
-        {confirmingDelete && (
-          <ConfirmDialog
-            title={`Delete ${formatAmbassadorId(row.number)}?`}
-            confirmLabel="Yes, delete"
-            busy={deleting}
-            onConfirm={confirmDelete}
-            onCancel={() => setConfirmingDelete(false)}
-          >
-            <p className="m-0 text-left">
-              <b>{formatAmbassadorId(row.number)}</b>
-              {label ? ` (${label})` : ""} will be removed from the registration form&apos;s ambassador list, and
-              participants won&apos;t be able to pick it any more. Other IDs keep their numbers.
-            </p>
-            {row.total > 0 && (
+      {canManage && (
+        <td className="px-4 py-2.5 text-right">
+          {row.deleted ? (
+            <span className="rounded-full bg-ignite-danger-pale px-2.5 py-1 font-ui text-[12px] font-bold text-ignite-danger">
+              Deleted
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(true)}
+              className="rounded-full border border-ignite-danger/60 px-3 py-1 font-ui text-[13px] font-semibold text-ignite-danger transition-colors hover:bg-ignite-danger hover:text-white"
+              aria-label={`Delete ${formatAmbassadorId(row.number)}`}
+            >
+              Delete
+            </button>
+          )}
+          {confirmingDelete && (
+            <ConfirmDialog
+              title={`Delete ${formatAmbassadorId(row.number)}?`}
+              confirmLabel="Yes, delete"
+              busy={deleting}
+              onConfirm={confirmDelete}
+              onCancel={() => setConfirmingDelete(false)}
+            >
               <p className="m-0 text-left">
-                {row.total} team{row.total === 1 ? " has" : "s have"} already picked this ambassador — those referrals
-                are kept.
+                <b>{formatAmbassadorId(row.number)}</b>
+                {label ? ` (${label})` : ""} will be removed from the registration form&apos;s ambassador list, and
+                participants won&apos;t be able to pick it any more. Other IDs keep their numbers.
               </p>
-            )}
-          </ConfirmDialog>
-        )}
-      </td>
+              {row.total > 0 && (
+                <p className="m-0 text-left">
+                  {row.total} team{row.total === 1 ? " has" : "s have"} already picked this ambassador — those referrals
+                  are kept.
+                </p>
+              )}
+            </ConfirmDialog>
+          )}
+        </td>
+      )}
     </tr>
   );
 }
