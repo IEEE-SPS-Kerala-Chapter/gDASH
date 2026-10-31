@@ -66,10 +66,10 @@ export function RegistrationWindowPanel({ initial }: { initial: RegistrationWind
 
       <Field
         label="Closed message (optional)"
-        hint="Shown as the headline at /register once closed. A sensible default is used if left blank."
+        hint="Shown at /register once closed. First line is the headline (its last sentence is highlighted); the rest is the body, with a blank line between paragraphs. **text** is bold, and email addresses become links. A sensible default is used if left blank."
       >
         <TextArea
-          rows={2}
+          rows={8}
           value={closedMessage}
           onChange={(e) => setClosedMessage(e.target.value)}
           placeholder="Registration for gIGNITE 2026 is no longer open."

@@ -8,17 +8,18 @@ import { getAmbassadorDirectory, getAmbassadorRange } from "@/app/actions/ambass
 import { isRegistrationCurrentlyOpen } from "@/lib/registration-window";
 import { checkContactAvailability } from "@/app/actions/registration";
 import { RegisterBackGuard } from "@/components/registration/submission-back-guards";
+import { ClosedMessageScreen } from "@/components/registration/closed-message";
 
 export const dynamic = "force-dynamic";
 
-// A custom closed message (set by admins on the dashboard) becomes the
-// headline itself; without one, the generic title and blurb are shown.
+// A custom closed message (set by admins on the dashboard) is laid out by
+// ClosedMessageScreen; without one, the generic title and blurb are shown.
 function ClosedScreen({ message }: { message?: string | null }) {
   return (
     <>
       <LogoHeaderBar onHero />
       {message ? (
-        <HeroShell label="g-IGNITE 2026" title={message} />
+        <ClosedMessageScreen message={message} />
       ) : (
         <HeroShell
           label="g-IGNITE 2026"
