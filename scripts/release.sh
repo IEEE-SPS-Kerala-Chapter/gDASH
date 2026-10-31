@@ -42,8 +42,9 @@ fail() { echo "✗ $*" >&2; exit 1; }
 say() { echo "→ $*"; }
 
 # Deploys the committed tree to a Vercel project; prints the deployment URL.
+# Returns non-zero if the deploy failed, so the caller's set -e stops the release.
 deploy_project() {
-  local project="$1" tmp out url
+  local project="$1" tmp out url status=0
   tmp="$(mktemp -d)"
   git archive --format=tar HEAD | tar -x -C "$tmp"
   (
@@ -59,8 +60,10 @@ deploy_project() {
       sleep 5
     done
     fail "deploy of $project failed: $(grep -m1 -iE 'error|message' <<<"$out")"
-  )
+  ) || status=$?
+  # The subshell's failure used to be masked by rm's exit status.
   rm -rf "$tmp"
+  return "$status"
 }
 
 # Which Supabase project a public site's page code points at.
