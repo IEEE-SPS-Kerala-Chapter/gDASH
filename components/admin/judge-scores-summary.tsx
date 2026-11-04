@@ -1,20 +1,20 @@
-import { STAGE1_CRITERIA } from "@/lib/scoring";
+import { STAGE1_CRITERIA, type Stage1CriterionKey } from "@/lib/scoring";
 import type { AdminJudgeScore } from "@/app/actions/admin";
 
-const CRITERION_ACCESSOR: Record<string, (s: AdminJudgeScore) => number | null> = {
+const CRITERION_ACCESSOR: Record<Stage1CriterionKey, (s: AdminJudgeScore) => number | null> = {
   problem_relevance: (s) => s.problemRelevance,
-  technical_implementation: (s) => s.technicalImplementation,
+  ai_approach_technology: (s) => s.aiApproachTechnology,
+  deck_clarity: (s) => s.deckClarity,
   innovation_creativity: (s) => s.innovationCreativity,
   feasibility_scalability: (s) => s.feasibilityScalability,
-  completion_functionality: (s) => s.completionFunctionality,
 };
 
-const CRITERION_SHORT_LABEL: Record<string, string> = {
+const CRITERION_SHORT_LABEL: Record<Stage1CriterionKey, string> = {
   problem_relevance: "Relev.",
-  technical_implementation: "Tech.",
+  ai_approach_technology: "AI",
+  deck_clarity: "Deck",
   innovation_creativity: "Innov.",
   feasibility_scalability: "Feas.",
-  completion_functionality: "Compl.",
 };
 
 const GRID_COLS = "grid grid-cols-[minmax(0,1.4fr)_repeat(5,56px)_72px] items-center gap-2.5";

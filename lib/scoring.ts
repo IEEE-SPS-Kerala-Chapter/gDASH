@@ -1,47 +1,45 @@
 /**
  * Stage 1 (virtual shortlisting) evaluation parameters and weights, per
- * gIGNITE_Hackathon_Rules.docx §Evaluation Framework.
+ * client-docs/gIGNITE 2026 Evaluation Parameters Weightage.docx.
  *
- * Only these five parameters carry weight at Stage 1 — User Experience &
- * Design, Team Learning & Growth, and Presentation & Communication are
- * 0%-weighted here and only come into play at the in-person Grand Finale
- * (Stage 2), which this platform doesn't cover yet.
+ * Judges shortlist on the submitted deck alone, with no interaction with
+ * participants, so deck clarity is scored and prototype completion is not.
+ * The Grand Finale (Stage 2) isn't covered by this platform yet.
  *
- * The rules doc explicitly notes weightages are "proposed defaults...
- * subject to joint sign-off by Gadgeon and IEEE SPS Kerala Chapter" — kept
- * here in code (not the DB) so a change to the numbers doesn't need a
- * migration, just a deploy.
+ * Kept in code (not the DB) so a change to the numbers doesn't need a
+ * migration, just a deploy. Order here is the order judges see.
  */
 export const STAGE1_CRITERIA = [
   {
     key: "problem_relevance",
     label: "Problem Relevance",
-    weight: 20,
+    weight: 15,
     description: "How well the solution addresses a genuine, well-articulated problem within the chosen AI theme.",
   },
   {
-    key: "technical_implementation",
-    label: "Technical Implementation",
-    weight: 25,
-    description: "Depth and difficulty of the AI/ML techniques used; correctness and robustness of the implementation.",
+    key: "ai_approach_technology",
+    label: "AI Approach & Technology Usage",
+    weight: 40,
+    description:
+      "Depth and difficulty of the AI techniques used; correctness and robustness of the technology used for creating the solution.",
+  },
+  {
+    key: "deck_clarity",
+    label: "Clarity of the Solution Deck",
+    weight: 20,
+    description: "Clarity of the deck and how well the team explained the problem, solution, and impact.",
   },
   {
     key: "innovation_creativity",
     label: "Innovation & Creativity",
-    weight: 25,
+    weight: 15,
     description: "Originality of the approach, novel use of technology, or a creative angle on a known problem.",
   },
   {
     key: "feasibility_scalability",
     label: "Feasibility & Scalability",
-    weight: 15,
-    description: "Practicality of real-world deployment and potential to scale beyond the prototype.",
-  },
-  {
-    key: "completion_functionality",
-    label: "Completion & Functionality",
-    weight: 15,
-    description: "Whether the prototype works as demonstrated and how much of the intended scope was achieved.",
+    weight: 10,
+    description: "Practicality of real-world deployment within 24 hours and scalability to create the prototype.",
   },
 ] as const;
 

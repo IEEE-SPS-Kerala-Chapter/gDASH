@@ -46,10 +46,10 @@ export type AdminJudgeScore = {
   judgeName: string;
   status: "draft" | "submitted";
   problemRelevance: number | null;
-  technicalImplementation: number | null;
+  aiApproachTechnology: number | null;
   innovationCreativity: number | null;
   feasibilityScalability: number | null;
-  completionFunctionality: number | null;
+  deckClarity: number | null;
   comments: string | null;
   weighted: number | null;
 };
@@ -124,8 +124,8 @@ export const TEAM_SELECT = `id, name, entry_code, ai_theme, district, status, cr
        declaration_eligibility, declaration_originality, declaration_rules, declaration_media_consent,
        registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
        judge_scores (
-         id, judge_id, status, problem_relevance, technical_implementation, innovation_creativity,
-         feasibility_scalability, completion_functionality, comments,
+         id, judge_id, status, problem_relevance, ai_approach_technology, innovation_creativity,
+         feasibility_scalability, deck_clarity, comments,
          profiles ( full_name )
        )
      )`;
@@ -147,8 +147,8 @@ export const TEAM_LIST_SELECT = `id, name, entry_code, ai_theme, district, statu
        status_changed_by:profiles!registrations_status_changed_by_fkey ( full_name ),
        registration_assignments ( id, judge_id, profiles!registration_assignments_judge_id_fkey ( full_name ) ),
        judge_scores (
-         id, judge_id, status, problem_relevance, technical_implementation, innovation_creativity,
-         feasibility_scalability, completion_functionality,
+         id, judge_id, status, problem_relevance, ai_approach_technology, innovation_creativity,
+         feasibility_scalability, deck_clarity,
          profiles ( full_name )
        )
      )`;
@@ -158,10 +158,10 @@ type RawJudgeScore = {
   judge_id: string;
   status: "draft" | "submitted";
   problem_relevance: number | null;
-  technical_implementation: number | null;
+  ai_approach_technology: number | null;
   innovation_creativity: number | null;
   feasibility_scalability: number | null;
-  completion_functionality: number | null;
+  deck_clarity: number | null;
   comments: string | null;
   profiles: { full_name: string } | null;
 };
@@ -195,10 +195,10 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
     const scores: AdminJudgeScore[] = (rawReg.judge_scores ?? []).map((s) => {
       const stage1: PartialStage1Scores = {
         problem_relevance: s.problem_relevance ?? undefined,
-        technical_implementation: s.technical_implementation ?? undefined,
+        ai_approach_technology: s.ai_approach_technology ?? undefined,
         innovation_creativity: s.innovation_creativity ?? undefined,
         feasibility_scalability: s.feasibility_scalability ?? undefined,
-        completion_functionality: s.completion_functionality ?? undefined,
+        deck_clarity: s.deck_clarity ?? undefined,
       };
       return {
         id: s.id,
@@ -206,10 +206,10 @@ export function mapTeamRow(t: RawTeamRow): AdminTeam {
         judgeName: s.profiles?.full_name ?? "Unknown",
         status: s.status,
         problemRelevance: s.problem_relevance,
-        technicalImplementation: s.technical_implementation,
+        aiApproachTechnology: s.ai_approach_technology,
         innovationCreativity: s.innovation_creativity,
         feasibilityScalability: s.feasibility_scalability,
-        completionFunctionality: s.completion_functionality,
+        deckClarity: s.deck_clarity,
         comments: s.comments,
         weighted: isCompleteStage1Scores(stage1) ? computeWeightedScore(stage1) : null,
       };

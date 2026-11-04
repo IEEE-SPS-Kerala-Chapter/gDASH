@@ -21,10 +21,10 @@ const SCORE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 function toPartialStage1Scores(score: AdminJudgeScore | undefined): PartialStage1Scores {
   return {
     problem_relevance: score?.problemRelevance ?? undefined,
-    technical_implementation: score?.technicalImplementation ?? undefined,
+    ai_approach_technology: score?.aiApproachTechnology ?? undefined,
     innovation_creativity: score?.innovationCreativity ?? undefined,
     feasibility_scalability: score?.feasibilityScalability ?? undefined,
-    completion_functionality: score?.completionFunctionality ?? undefined,
+    deck_clarity: score?.deckClarity ?? undefined,
   };
 }
 
