@@ -26,6 +26,8 @@ import { JudgeScoresSummary } from "./judge-scores-summary";
 import { ScoreForm } from "@/components/judge/score-form";
 import { Badge, Panel, Select, SectionLabel, StatusDotBadge } from "@/components/admin/ui";
 import {
+  INELIGIBLE_PILL,
+  INELIGIBLE_STATUS_HINT,
   REGISTRATION_STATUS_HINTS,
   REGISTRATION_STATUS_LABELS,
   REGISTRATION_STATUS_PILL,
@@ -118,7 +120,12 @@ export function TeamDetail({
         timeStyle: "short",
       })
     : null;
-  const pill = reg ? (REGISTRATION_STATUS_PILL[reg.status] ?? REGISTRATION_STATUS_PILL.submitted) : null;
+  const ineligible = reg?.verification_status === "ineligible";
+  const pill = reg
+    ? ineligible
+      ? INELIGIBLE_PILL
+      : (REGISTRATION_STATUS_PILL[reg.status] ?? REGISTRATION_STATUS_PILL.submitted)
+    : null;
 
   const declarationsAllConfirmed =
     reg?.declaration_eligibility && reg?.declaration_originality && reg?.declaration_rules && reg?.declaration_media_consent;
@@ -222,7 +229,7 @@ export function TeamDetail({
         {reg && pill && (
           <div className="flex flex-none flex-col items-end gap-2.5">
             <StatusDotBadge
-              label={REGISTRATION_STATUS_LABELS[reg.status] ?? reg.status}
+              label={ineligible ? "Ineligible" : (REGISTRATION_STATUS_LABELS[reg.status] ?? reg.status)}
               bg={pill.bg}
               fg={pill.fg}
               dot={pill.dot}
@@ -274,26 +281,37 @@ export function TeamDetail({
                   <SectionLabel>Registration status</SectionLabel>
                   <span className="font-ui text-[12px] font-bold uppercase tracking-[0.14em] text-ignite-orange">Admin only</span>
                 </div>
-                <Select
-                  value={reg.status}
-                  disabled={statusBusy}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className="border-ignite-ink font-semibold text-ignite-ink"
-                >
-                  {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => {
-                    const blocked =
-                      !allAssignedScoresIn(reg) && value !== reg.status && DECISION_STATUSES.includes(value as AdminRegistration["status"]);
-                    return (
-                      <option key={value} value={value} disabled={blocked}>
-                        {blocked ? `${label} (scores pending)` : label}
-                      </option>
-                    );
-                  })}
-                </Select>
-                <span className="text-[13px] leading-[1.5] text-ignite-muted">
-                  {REGISTRATION_STATUS_HINTS[reg.status]}
-                </span>
-                {!allAssignedScoresIn(reg) && !DECISION_STATUSES.includes(reg.status) && (
+                {ineligible ? (
+                  <>
+                    <span className="self-start rounded-full border-[1.5px] border-ignite-danger/25 bg-ignite-danger-pale px-3 py-1 font-ui text-[11px] font-bold uppercase tracking-[0.1em] text-ignite-danger">
+                      Ineligible
+                    </span>
+                    <span className="text-[13px] leading-[1.5] text-ignite-muted">{INELIGIBLE_STATUS_HINT}</span>
+                  </>
+                ) : (
+                  <>
+                    <Select
+                      value={reg.status}
+                      disabled={statusBusy}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      className="border-ignite-ink font-semibold text-ignite-ink"
+                    >
+                      {Object.entries(REGISTRATION_STATUS_LABELS).map(([value, label]) => {
+                        const blocked =
+                          !allAssignedScoresIn(reg) && value !== reg.status && DECISION_STATUSES.includes(value as AdminRegistration["status"]);
+                        return (
+                          <option key={value} value={value} disabled={blocked}>
+                            {blocked ? `${label} (scores pending)` : label}
+                          </option>
+                        );
+                      })}
+                    </Select>
+                    <span className="text-[13px] leading-[1.5] text-ignite-muted">
+                      {REGISTRATION_STATUS_HINTS[reg.status]}
+                    </span>
+                  </>
+                )}
+                {!ineligible && !allAssignedScoresIn(reg) && !DECISION_STATUSES.includes(reg.status) && (
                   <span className="text-[13px] leading-[1.5] text-ignite-muted">
                     {reg.assignments.length === 0
                       ? "Assign judges and collect their scores before shortlisting or rejecting."

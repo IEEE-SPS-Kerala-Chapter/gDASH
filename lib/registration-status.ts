@@ -39,6 +39,22 @@ export const REGISTRATION_STATUS_PILL: Record<string, { bg: string; fg: string; 
   rejected: { bg: "var(--ig-status-rejected-bg)", fg: "var(--ig-status-rejected-fg)", dot: "var(--ig-status-rejected-dot)" },
 };
 
+/**
+ * A team verified ineligible shows this red pill in place of its judging
+ * status, with no status dropdown: the status is locked (also enforced by
+ * the registrations_ineligible_status_lock trigger) until the team is
+ * verified eligible again. Red, unlike "Rejected", because it's a hard stop
+ * rather than a judging outcome.
+ */
+export const INELIGIBLE_PILL = {
+  bg: "rgb(var(--ig-danger-pale))",
+  fg: "rgb(var(--ig-danger))",
+  dot: "rgb(var(--ig-danger))",
+};
+
+export const INELIGIBLE_STATUS_HINT =
+  "This team was verified ineligible, so its status is locked. Reset its verification and mark it verified to change the status again.";
+
 /** Admin eligibility check, separate from the judging status above — see
  * supabase/migrations/20260923030000_registration_verification.sql. */
 export const VERIFICATION_STATUS_LABELS: Record<string, string> = {

@@ -451,6 +451,7 @@ const REVIEW_GUARD_MESSAGES: Record<string, string> = {
   has_assignments: "Unassign this team's judges before changing its verification.",
   no_judges: "Assign judges and collect their scores before shortlisting or rejecting.",
   scores_incomplete: "Every assigned judge must submit their score before shortlisting or rejecting.",
+  ineligible_locked: "This team was verified ineligible, so its status can't change until it's verified eligible again.",
 };
 
 /**

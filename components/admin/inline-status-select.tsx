@@ -7,7 +7,11 @@ import { toast } from "sonner";
 import type { AdminRegistration, RegistrationReviewState } from "@/app/actions/admin";
 import { updateRegistrationStatus } from "@/app/actions/admin";
 import { allAssignedScoresIn, DECISION_STATUSES } from "@/lib/admin-teams";
-import { REGISTRATION_STATUS_LABELS, REGISTRATION_STATUS_BADGE_VARIANT } from "@/lib/registration-status";
+import {
+  INELIGIBLE_STATUS_HINT,
+  REGISTRATION_STATUS_LABELS,
+  REGISTRATION_STATUS_BADGE_VARIANT,
+} from "@/lib/registration-status";
 import { cn } from "@/lib/utils";
 
 const VARIANT_SELECT_CLASSES: Record<string, string> = {
@@ -27,7 +31,8 @@ const VARIANT_SELECT_CLASSES: Record<string, string> = {
  * Sends the registration's version with the change; if another admin got
  * there first, the server refuses and returns the current state, which is
  * shown here in place of the stale one. Shortlisted/Rejected stay disabled
- * until every assigned judge has submitted a score.
+ * until every assigned judge has submitted a score. A team verified
+ * ineligible gets a red "Ineligible" label instead of the dropdown.
  */
 export function InlineStatusSelect({
   registration,
@@ -56,6 +61,22 @@ export function InlineStatusSelect({
     }
     onChange(result.state);
     toast.success("Status updated.");
+  }
+
+  // Verified ineligible: a red label with no dropdown. The status is locked
+  // until the team is verified eligible again (see INELIGIBLE_PILL).
+  if (registration.verification_status === "ineligible") {
+    return (
+      <span
+        title={INELIGIBLE_STATUS_HINT}
+        className={cn(
+          "inline-block rounded-full border-[1.5px] px-3 py-1 font-ui text-[10px] font-bold uppercase tracking-[0.1em]",
+          VARIANT_SELECT_CLASSES.danger,
+        )}
+      >
+        Ineligible
+      </span>
+    );
   }
 
   const variant = REGISTRATION_STATUS_BADGE_VARIANT[status] ?? "neutral";
