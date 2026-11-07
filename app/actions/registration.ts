@@ -219,7 +219,7 @@ export async function submitRegistration(
         return { success: false, error: "Teams need between 2 and 5 members." };
       }
       if (error.message?.includes("registration is closed")) {
-        return { success: false, error: "Registration is closed. Contact the organizers if you think this is a mistake." };
+        return { success: false, error: "Registration is closed. If you have any queries, feel free to contact the organisers." };
       }
       return { success: false, error: "Something went wrong submitting your registration." };
     }

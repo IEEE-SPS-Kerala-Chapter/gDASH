@@ -30,7 +30,7 @@ function ClosedScreen({ message }: { message?: string | null }) {
           }
         >
           <p className="m-0 text-center text-[15px] leading-[1.6] text-ignite-muted">
-            Registration for gIGNITE 2026 is no longer open. Contact the organizers if you think this is a mistake.
+            Registration for gIGNITE 2026 is no longer open. If you have any queries, feel free to contact the organisers.
           </p>
         </HeroShell>
       )}

@@ -341,7 +341,7 @@ export function ineligibleEmail(opts: {
       ) +
       (reason ? note(`<strong style="color:#2C1D44;">Reason</strong><br />${paragraphs(reason)}`) : "") +
       note(
-        `If you think this is a mistake, <strong style="color:#2C1D44;">reply to this email</strong> and the organising team will get back to you. Thank you for your interest in gIGNITE 2026.`,
+        `If you have any queries, <strong style="color:#2C1D44;">reply to this email</strong> and the organising team will be happy to help. Thank you for your interest in gIGNITE 2026.`,
       ),
   });
   return {
@@ -354,7 +354,7 @@ export function ineligibleEmail(opts: {
       `After verifying the registration for "${opts.teamName}", we're sorry to let you know that it can't move forward in gIGNITE 2026.`,
       "",
       ...(reason ? ["Reason:", reason, ""] : []),
-      "If you think this is a mistake, reply to this email and the organising team will get back to you. Thank you for your interest in gIGNITE 2026.",
+      "If you have any queries, reply to this email and the organising team will be happy to help. Thank you for your interest in gIGNITE 2026.",
       "",
       `Registration status: ${opts.statusUrl}`,
     ),
