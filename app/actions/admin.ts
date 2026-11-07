@@ -11,7 +11,9 @@ import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getMfaState, mfaSatisfied } from "@/lib/staff-mfa";
 import { registrationEditSchema, type RegistrationEdit } from "@/lib/validations/registration-edit";
-import { ambassadorFormValueToNumber, ambassadorLabel } from "@/lib/ambassador";
+import { ambassadorFormValueToNumber, ambassadorLabel, formatAmbassadorId } from "@/lib/ambassador";
+import { getAmbassadorDirectory } from "@/app/actions/ambassadors";
+import { REGISTRATION_STATUS_LABELS, VERIFICATION_STATUS_LABELS } from "@/lib/registration-status";
 import { reportFileBase } from "@/lib/report-file-name";
 import {
   TEAM_SELECT,
@@ -663,6 +665,84 @@ export async function exportRegistrationsCsv(): Promise<CsvResult> {
   await logAuditEvent(supabase, "registrations.exported", { metadata: { teamCount: result.teams.length } });
 
   return { success: true, csv, filename: `gignite-all-teams-${today}.csv` };
+}
+
+const TEAM_STAT_CSV_HEADER = [
+  "Team Id",
+  "Team Name",
+  "Ambassador Name",
+  "Verification Status",
+  "Registration Status",
+  "Judges",
+  "Judge 1 Score",
+  "Judge 2 Score",
+  "Avg Score",
+  "Submission Time",
+];
+
+/** "07 Nov 2026, 2:30 pm" in India time. */
+function istDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Admin (or super-admin) only: one row per team with its verification and
+ * judging status, judges and Stage 1 scores — the "Team stat" button on the
+ * teams list. Judge 1 / Judge 2 follow the order judges were assigned; a
+ * score is blank until that judge submits it (drafts don't count, as in the
+ * average). No contact details.
+ */
+export async function exportTeamStatsCsv(): Promise<CsvResult> {
+  const caller = await getCallerRole();
+  if (!caller) {
+    return { success: false, error: "Please sign in." };
+  }
+  if (!isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can export team stats." };
+  }
+
+  const [result, ambassadors] = await Promise.all([getTeamsForAdmin(), getAmbassadorDirectory()]);
+  if (!result.success) {
+    return result;
+  }
+
+  const rows = result.teams.map((team) => {
+    const reg = team.registration;
+    const ambassadorNo = reg?.ambassador_number ?? null;
+    const ambassador =
+      ambassadorNo === null ? "" : ambassadors[ambassadorNo]?.name || formatAmbassadorId(ambassadorNo);
+    const judgeScore = (i: number) => {
+      const judge = reg?.assignments[i];
+      const score = judge && reg?.scores.find((s) => s.judgeId === judge.judge_id && s.status === "submitted");
+      return score && score.weighted !== null ? score.weighted.toFixed(1) : "";
+    };
+    return [
+      team.entry_code,
+      team.name,
+      ambassador,
+      reg ? (VERIFICATION_STATUS_LABELS[reg.verification_status] ?? reg.verification_status) : "",
+      reg ? (REGISTRATION_STATUS_LABELS[reg.status] ?? reg.status) : "",
+      (reg?.assignments ?? []).map((a) => a.judge_name).join(", "),
+      judgeScore(0),
+      judgeScore(1),
+      reg?.avgScore != null ? reg.avgScore.toFixed(1) : "",
+      istDateTime(reg?.created_at ?? team.created_at),
+    ].map(csvField);
+  });
+  const csv = [TEAM_STAT_CSV_HEADER.map(csvField).join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const today = new Date().toISOString().slice(0, 10);
+
+  const supabase = await createClient();
+  await logAuditEvent(supabase, "registrations.stats_exported", { metadata: { teamCount: result.teams.length } });
+
+  return { success: true, csv, filename: `gignite-team-stats-${today}.csv` };
 }
 
 /**

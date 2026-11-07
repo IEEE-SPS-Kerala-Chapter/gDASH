@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { LayoutGrid, List } from "lucide-react";
 import type { AdminTeam, AdminJudge, AdminAssignment, RegistrationReviewState, RegistrationStats } from "@/app/actions/admin";
-import { exportRegistrationsCsv, getRegistrationStats, listAdminTeams, refreshAdminTeams } from "@/app/actions/admin";
+import { exportRegistrationsCsv, exportTeamStatsCsv, getRegistrationStats, listAdminTeams, refreshAdminTeams } from "@/app/actions/admin";
 import { applyReviewState, DECISION_STATUSES } from "@/lib/admin-teams";
 import { useDebounced, usePagedList, useVisiblePolling } from "./use-paged-list";
 import { InlineJudgeAssign } from "./inline-judge-assign";
@@ -63,6 +63,7 @@ export function TeamsBrowser({
   const [baselineTotal, setBaselineTotal] = useState(initialStats.total);
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [exportingStats, setExportingStats] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "card">("list");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [themeFilter, setThemeFilter] = useState<string | null>(null);
@@ -173,6 +174,17 @@ export function TeamsBrowser({
     setExporting(true);
     const result = await exportRegistrationsCsv();
     setExporting(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    downloadCsv(result.csv, result.filename);
+  }
+
+  async function handleStatsExport() {
+    setExportingStats(true);
+    const result = await exportTeamStatsCsv();
+    setExportingStats(false);
     if (!result.success) {
       toast.error(result.error);
       return;
@@ -309,9 +321,14 @@ export function TeamsBrowser({
               { value: "card", label: "Card", icon: <LayoutGrid className="h-4 w-4" /> },
             ]}
           />
-          <SecondaryButton type="button" onClick={handleExport} disabled={exporting}>
-            {exporting ? "Exporting…" : "Export CSV"}
-          </SecondaryButton>
+          <div className="flex flex-col gap-2">
+            <SecondaryButton type="button" onClick={handleStatsExport} disabled={exportingStats}>
+              {exportingStats ? "Exporting…" : "Team stat"}
+            </SecondaryButton>
+            <SecondaryButton type="button" onClick={handleExport} disabled={exporting}>
+              {exporting ? "Exporting…" : "Export CSV"}
+            </SecondaryButton>
+          </div>
         </div>
       </div>
 
