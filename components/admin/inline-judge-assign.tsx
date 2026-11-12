@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import type { AdminAssignment, AdminJudge } from "@/app/actions/admin";
 import { assignJudge, unassignJudge } from "@/app/actions/admin";
 import { Badge, ChipButton, Spinner } from "@/components/admin/ui";
+import { JUDGE_PROGRESS_BADGE, JUDGE_PROGRESS_LABELS, type JudgeProgress } from "@/lib/judging";
 
 /**
  * Assign/unassign judges directly from a list or card row, without
@@ -31,6 +32,7 @@ export function InlineJudgeAssign({
   assignments,
   judges,
   scoredJudgeIds = [],
+  draftJudgeIds = [],
   verificationStatus,
   decided = false,
   onChange,
@@ -44,6 +46,8 @@ export function InlineJudgeAssign({
   judges: AdminJudge[];
   /** judge_ids who have already submitted a score for this registration — only used to word the unassign confirmation. */
   scoredJudgeIds?: string[];
+  /** judge_ids with a saved draft score — with scoredJudgeIds, colours each chip: green scored, yellow in progress, red not started. */
+  draftJudgeIds?: string[];
   onChange: (next: AdminAssignment[]) => void;
 }) {
   const router = useRouter();
@@ -52,6 +56,9 @@ export function InlineJudgeAssign({
   const [removing, setRemoving] = useState(false);
   const assignedIds = new Set(assignments.map((a) => a.judge_id));
   const scoredIds = new Set(scoredJudgeIds);
+  const draftIds = new Set(draftJudgeIds);
+  const progressOf = (judgeId: string): JudgeProgress =>
+    scoredIds.has(judgeId) ? "done" : draftIds.has(judgeId) ? "in_progress" : "not_started";
   const available = judges.filter((j) => !assignedIds.has(j.id));
 
   async function handlePick(judgeId: string) {
@@ -93,8 +100,8 @@ export function InlineJudgeAssign({
     <div className="flex flex-col gap-2.5" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-wrap items-center gap-1.5">
         {assignments.map((a) => (
-          <Badge key={a.id} className="gap-1.5">
-            {a.judge_name}
+          <Badge key={a.id} variant={JUDGE_PROGRESS_BADGE[progressOf(a.judge_id)]} className="gap-1.5">
+            <span title={`${a.judge_name} — ${JUDGE_PROGRESS_LABELS[progressOf(a.judge_id)]}`}>{a.judge_name}</span>
             <ChipButton tone="danger" ariaLabel={`Unassign ${a.judge_name}`} onClick={() => setConfirming(a)}>
               ×
             </ChipButton>

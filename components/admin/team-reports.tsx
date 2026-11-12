@@ -76,7 +76,7 @@ export function TeamReportButton({ teamId, className }: { teamId: string; classN
 
 // ---------------------------------------------------------------------------
 
-type SaveTarget = { write: (chunk: Uint8Array) => Promise<void>; finish: () => Promise<void>; abort: () => Promise<void> };
+export type SaveTarget = { write: (chunk: Uint8Array) => Promise<void>; finish: () => Promise<void>; abort: () => Promise<void> };
 
 type FileHandleWindow = Window & {
   showSaveFilePicker?: (opts: {
@@ -86,7 +86,7 @@ type FileHandleWindow = Window & {
 };
 
 /** Where the zip goes: the file picked in the save dialog, or memory then a normal download. Null if cancelled. */
-async function openSaveTarget(fileName: string): Promise<SaveTarget | null> {
+export async function openSaveTarget(fileName: string): Promise<SaveTarget | null> {
   const w = window as FileHandleWindow;
   if (w.showSaveFilePicker) {
     try {
@@ -124,14 +124,14 @@ async function openSaveTarget(fileName: string): Promise<SaveTarget | null> {
 
 const PARALLEL = 3;
 
-type Progress = { label: string; done: number; total: number; failed: number };
+export type ZipProgress = { label: string; done: number; total: number; failed: number };
 
 /**
  * `start()` builds and saves a zip of team reports; render `panel` once on
  * the page for the progress card. One zip at a time per hook.
  */
 export function useTeamReportsZip(): { start: (scope: "all" | "shortlist") => Promise<void>; running: boolean; panel: ReactNode } {
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [progress, setProgress] = useState<ZipProgress | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   async function start(scope: "all" | "shortlist") {
@@ -232,7 +232,14 @@ export function useTeamReportsZip(): { start: (scope: "all" | "shortlist") => Pr
     }
   }
 
-  const panel = progress ? (
+  const panel = progress ? <ZipProgressPanel progress={progress} onCancel={() => abortRef.current?.abort()} /> : null;
+
+  return { start, running: progress !== null, panel };
+}
+
+/** The floating progress card while a zip is being built. */
+export function ZipProgressPanel({ progress, onCancel }: { progress: ZipProgress; onCancel: () => void }) {
+  return (
     <div
       role="status"
       className="fixed bottom-4 right-4 z-50 flex w-[300px] flex-col gap-2.5 rounded-2xl border border-ignite-edge/[0.12] bg-ignite-surface p-4 font-ui shadow-2xl"
@@ -251,17 +258,11 @@ export function useTeamReportsZip(): { start: (scope: "all" | "shortlist") => Pr
         <span>
           {progress.done} of {progress.total} teams{progress.failed > 0 ? ` · ${progress.failed} failed` : ""}
         </span>
-        <button
-          type="button"
-          onClick={() => abortRef.current?.abort()}
-          className="font-semibold text-ignite-ink hover:text-ignite-danger"
-        >
+        <button type="button" onClick={onCancel} className="font-semibold text-ignite-ink hover:text-ignite-danger">
           Cancel
         </button>
       </div>
       <span className="text-[11px] leading-[1.45] text-ignite-muted">Keep this tab open until it finishes.</span>
     </div>
-  ) : null;
-
-  return { start, running: progress !== null, panel };
+  );
 }

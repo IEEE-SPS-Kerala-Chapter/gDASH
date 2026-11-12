@@ -226,6 +226,7 @@ export function TeamsBrowser({
         assignments={team.registration.assignments}
         judges={judges}
         scoredJudgeIds={team.registration.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
+        draftJudgeIds={team.registration.scores.filter((s) => s.status === "draft").map((s) => s.judgeId)}
         verificationStatus={team.registration.verification_status}
         decided={DECISION_STATUSES.includes(team.registration.status)}
         onChange={(a) => handleAssignmentsChange(team.id, a)}

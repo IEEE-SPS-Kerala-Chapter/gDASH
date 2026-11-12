@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser } from "lucide-react";
+import { Users, UserCog, Download, LogOut, ScrollText, ScanLine, ListChecks, ClipboardCheck, Megaphone, CircleUser, Gavel } from "lucide-react";
 import { BrandLogo, GridBackground, LogoHeaderBar, Spinner } from "@/components/admin/ui";
 import { signOut } from "@/app/actions/auth";
 import { roleLabel, isAdminLevelRole } from "@/lib/roles";
@@ -100,6 +100,12 @@ export function DashboardShell({
               </Link>
             )}
             {isAdminLevelRole(role) && (
+              <Link href="/dashboard/judging" className={navItemClass(pathname === "/dashboard/judging")}>
+                <Gavel className="h-[17px] w-[17px]" />
+                <span>Judging</span>
+              </Link>
+            )}
+            {isAdminLevelRole(role) && (
               <Link href="/dashboard/ambassadors" className={navItemClass(pathname === "/dashboard/ambassadors")}>
                 <Megaphone className="h-[17px] w-[17px]" />
                 <span>Ambassadors</span>
@@ -174,6 +180,7 @@ export function DashboardShell({
             { href: "/dashboard/attendance", label: "Attendance", show: role === "volunteer" || isAdminLevelRole(role), active: pathname === "/dashboard/attendance" },
             { href: "/dashboard/check-in", label: "Check-in setup", show: isAdminLevelRole(role), active: pathname === "/dashboard/check-in" },
             { href: "/dashboard/staff", label: "Staff", show: role === "super_admin", active: pathname === "/dashboard/staff" },
+            { href: "/dashboard/judging", label: "Judging", show: isAdminLevelRole(role), active: pathname === "/dashboard/judging" },
             { href: "/dashboard/ambassadors", label: "Ambassadors", show: isAdminLevelRole(role), active: pathname === "/dashboard/ambassadors" },
             { href: "/dashboard/audit-logs", label: "Audit logs", show: role === "super_admin", active: pathname === "/dashboard/audit-logs" },
             { href: "/dashboard/downloads", label: "Download team details", show: isAdminLevelRole(role), active: pathname === "/dashboard/downloads" },

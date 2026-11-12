@@ -18,6 +18,8 @@ import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
 import { EditRegistration } from "./edit-registration";
 import { TeamReportButton } from "./team-reports";
+import { JudgingReportButton } from "./judging-reports";
+import { JUDGE_PROGRESS_LABELS } from "@/lib/judging";
 import { ambassadorDisplay, type AmbassadorDetails } from "@/lib/ambassador";
 import { TeamEmails } from "./team-emails";
 import { useLiveRefresh } from "./use-live-refresh";
@@ -197,6 +199,12 @@ export function TeamDetail({
               className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
             />
           )}
+          {isAdmin && reg && (reg.assignments.length > 0 || reg.scores.length > 0) && (
+            <JudgingReportButton
+              teamId={team.id}
+              className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
+            />
+          )}
           {leader && isAdmin && (
             <a
               href={`mailto:${leader.email}`}
@@ -346,6 +354,7 @@ export function TeamDetail({
                   assignments={reg.assignments}
                   judges={judges}
                   scoredJudgeIds={reg.scores.filter((s) => s.status === "submitted").map((s) => s.judgeId)}
+                  draftJudgeIds={reg.scores.filter((s) => s.status === "draft").map((s) => s.judgeId)}
                   verificationStatus={reg.verification_status}
                   decided={DECISION_STATUSES.includes(reg.status)}
                   onChange={(assignments) =>
@@ -354,6 +363,13 @@ export function TeamDetail({
                 />
                 {judges.length === 0 && (
                   <span className="text-[13px] leading-[1.5] text-ignite-muted">No judge accounts yet.</span>
+                )}
+                {reg.assignments.length > 0 && (
+                  <div className="flex flex-wrap gap-3 font-ui text-[11.5px] text-ignite-muted">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-ignite-success" />{JUDGE_PROGRESS_LABELS.done}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-ignite-warn" />{JUDGE_PROGRESS_LABELS.in_progress}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-ignite-danger" />{JUDGE_PROGRESS_LABELS.not_started}</span>
+                  </div>
                 )}
               </Panel>
             )}

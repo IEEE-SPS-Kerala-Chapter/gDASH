@@ -146,10 +146,10 @@ export const TEAM_REPORTS_BUCKET = REPORTS_BUCKET;
 // ---------------------------------------------------------------------------
 // PDF layout (A4, points).
 
-const PAGE_W = 595.28;
+export const PAGE_W = 595.28;
 const PAGE_H = 841.89;
-const MARGIN = 48;
-const CONTENT_W = PAGE_W - MARGIN * 2;
+export const MARGIN = 48;
+export const CONTENT_W = PAGE_W - MARGIN * 2;
 // The logo bar and brand strip at the top of every page.
 const HEADER_H = 74;
 // Image grids (ID cards): one row is the box, its caption and the gap below.
@@ -157,12 +157,12 @@ const IMAGE_BOX_H = 190;
 const IMAGE_CAPTION_H = 26;
 const IMAGE_ROW_H = IMAGE_BOX_H + IMAGE_CAPTION_H + 8;
 
-const INK = rgb(0x2c / 255, 0x1d / 255, 0x44 / 255);
-const MUTED = rgb(0x6a / 255, 0x72 / 255, 0x82 / 255);
-const MAGENTA = rgb(0xc7 / 255, 0x56 / 255, 0xd9 / 255);
-const RULE = rgb(0xe1 / 255, 0xdc / 255, 0xef / 255);
+export const INK = rgb(0x2c / 255, 0x1d / 255, 0x44 / 255);
+export const MUTED = rgb(0x6a / 255, 0x72 / 255, 0x82 / 255);
+export const MAGENTA = rgb(0xc7 / 255, 0x56 / 255, 0xd9 / 255);
+export const RULE = rgb(0xe1 / 255, 0xdc / 255, 0xef / 255);
 
-type Fonts = { regular: PDFFont; semi: PDFFont; bold: PDFFont; display: PDFFont };
+export type Fonts = { regular: PDFFont; semi: PDFFont; bold: PDFFont; display: PDFFont };
 /** The site header's partner logos (components/registration/ui.tsx LogoHeaderBar) and the gIGNITE wordmark. */
 type Logos = { gadgeon: PDFImage; fisat: PDFImage; ieee: PDFImage; gignite: PDFImage };
 
@@ -234,7 +234,7 @@ function clean(text: string): string {
     .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, "");
 }
 
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const out: string[] = [];
   for (const paragraph of clean(text).split("\n")) {
     const words = paragraph.split(/ +/);
@@ -262,7 +262,7 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
 }
 
 /** Writes top to bottom, starting a new page when the current one is full. */
-class Writer {
+export class Writer {
   page!: PDFPage;
   y = 0;
 
@@ -398,11 +398,16 @@ async function embedImage(doc: PDFDocument, bytes: Uint8Array | null): Promise<P
   return null;
 }
 
-function formatDate(value: string): string {
+export function formatDate(value: string): string {
   return new Date(value).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
 }
 
-async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promise<Uint8Array> {
+/**
+ * A new A4 document in the reports' house style (fonts, partner logos,
+ * brand strip, footer line), shared with the judging report
+ * (lib/judging-report.ts). The Writer starts on its first page.
+ */
+export async function createBrandedPdf(title: string, footer: string): Promise<{ doc: PDFDocument; fonts: Fonts; w: Writer }> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const bytes = await loadAssetBytes();
@@ -418,9 +423,12 @@ async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promis
     ieee: await doc.embedPng(bytes.logos.ieee),
     gignite: await doc.embedPng(bytes.logos.gignite),
   };
-  doc.setTitle(`${team.name} (${team.entry_code}) — gIGNITE 2026 team report`);
+  doc.setTitle(title);
   doc.setCreator("gIGNITE 2026");
+  return { doc, fonts, w: new Writer(doc, fonts, logos, footer) };
+}
 
+async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promise<Uint8Array> {
   const members = [...team.team_members].sort((a, b) => a.member_no - b.member_no);
   const leader = members.find((m) => m.is_leader) ?? members[0];
   const site = publicSiteUrl();
@@ -432,7 +440,10 @@ async function buildReportPdf(team: ReportTeam, reg: ReportRegistration): Promis
   ]);
   const fileBase = reportFileBase(team.name, team.entry_code);
 
-  const w = new Writer(doc, fonts, logos, `gIGNITE 2026 · ${team.name} · ${team.entry_code} · generated ${formatDate(new Date().toISOString())}`);
+  const { doc, fonts, w } = await createBrandedPdf(
+    `${team.name} (${team.entry_code}) — gIGNITE 2026 team report`,
+    `gIGNITE 2026 · ${team.name} · ${team.entry_code} · generated ${formatDate(new Date().toISOString())}`,
+  );
 
   // Team.
   w.wordmark(30);
