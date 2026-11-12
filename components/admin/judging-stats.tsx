@@ -86,12 +86,75 @@ function Tile({ label, value, hint }: { label: string; value: ReactNode; hint?: 
   );
 }
 
-function SectionTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
+function SectionTitle({ children, aside, help }: { children: ReactNode; aside?: ReactNode; help?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3">
-      <h2 className="m-0 font-display text-[19px] font-bold tracking-[-0.01em] text-ignite-ink">{children}</h2>
-      {aside}
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 className="m-0 font-display text-[19px] font-bold tracking-[-0.01em] text-ignite-ink">{children}</h2>
+        {aside}
+      </div>
+      {help && <HelpText>{help}</HelpText>}
     </div>
+  );
+}
+
+/** A short "what this shows" line under a section title. */
+function HelpText({ children }: { children: ReactNode }) {
+  return <p className="m-0 max-w-[900px] font-ui text-[13px] leading-[1.6] text-ignite-muted">{children}</p>;
+}
+
+/** The colours and the score maths, open by default; folds away once read. */
+function HowToRead() {
+  return (
+    <details open className="group rounded-[20px] border border-ignite-edge/[0.07] bg-ignite-surface p-5 shadow-[0_1px_6px_rgba(0,0,0,0.06)]">
+      <summary className="cursor-pointer list-none font-display text-[15px] font-semibold text-ignite-ink">
+        <span className="mr-2 inline-block transition-transform group-open:rotate-90">›</span>
+        How to read this page
+      </summary>
+      <div className="mt-3 grid grid-cols-1 gap-5 font-ui text-[13px] leading-[1.6] text-ignite-ink-soft lg:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <span className="font-semibold text-ignite-ink">The colours</span>
+          <span>Every judge and team pairing is in one of three states, here and on the Teams screens:</span>
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+            <li className="flex gap-2">
+              <span className="mt-[6px] h-2.5 w-2.5 flex-none rounded-full bg-ignite-success" />
+              <span>
+                <b className="text-ignite-ink">Scored</b>: the judge submitted their score for that team.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-[6px] h-2.5 w-2.5 flex-none rounded-full bg-ignite-warn" />
+              <span>
+                <b className="text-ignite-ink">Scoring in progress</b>: the judge saved a draft but hasn&apos;t submitted it. Drafts don&apos;t count
+                in any average.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-[6px] h-2.5 w-2.5 flex-none rounded-full bg-ignite-danger" />
+              <span>
+                <b className="text-ignite-ink">Not started</b>: the judge is assigned but hasn&apos;t saved anything yet.
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="font-semibold text-ignite-ink">How scores are worked out</span>
+          <span>
+            Each judge scores five criteria from 1 to 10: Problem Relevance 15%, AI Approach &amp; Technology 40%, Deck Clarity 20%,
+            Innovation 15% and Feasibility 10%.
+          </span>
+          <span>
+            <b className="text-ignite-ink">Weighted score</b> (one judge, out of 10): each criterion score times its weight, added up. For
+            example, 8 for AI Approach adds 8 × 40% = 3.2 points.
+          </span>
+          <span>
+            <b className="text-ignite-ink">Total</b>: the judges&apos; weighted scores added together (out of 20 with two judges).{" "}
+            <b className="text-ignite-ink">Average</b>: the total divided by the number of judges who submitted. Teams are ranked by the
+            average.
+          </span>
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -303,20 +366,56 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
           {zip.running ? "Building zip…" : `Download all judging reports (${zipTeams.length})`}
         </button>
       </div>
+      <HelpText>
+        The download is a zip with one judging report PDF for every team that has judges (each judge&apos;s scores and comments, the total
+        and the average), plus <b>Judging summary.csv</b> with one row per team.
+      </HelpText>
+
+      <HowToRead />
 
       {/* Overview */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <Tile label="Judges" value={data.judgeSummaries.length} hint={`${data.judgeSummaries.length - data.idleJudges.length} with teams assigned`} />
-        <Tile label="Verified teams" value={data.eligible.length} hint={`${data.withJudges.length} have judges assigned`} />
-        <Tile label="Fully judged" value={`${data.complete.length}/${data.withJudges.length}`} hint="Teams where every assigned judge submitted" />
-        <Tile
-          label="Judging done"
-          value={`${completion}%`}
-          hint={<ProgressBar counts={data.pairs} className="mt-1" />}
-        />
-        <Tile label="Panel average" value={formatScore(data.panelAvg, 2)} hint="Mean of the teams' average scores, out of 10" />
-        <Tile label="Ready to decide" value={data.readyForDecision.length} hint="All scores in, still not shortlisted or rejected" />
-      </div>
+      <section className="flex flex-col gap-3">
+        <SectionTitle help="The big picture: who is judging, how much of the scoring is done, and how many teams are waiting for your decision.">
+          Overview
+        </SectionTitle>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+          <Tile
+            label="Judges"
+            value={data.judgeSummaries.length}
+            hint={`Judge accounts. ${data.judgeSummaries.length - data.idleJudges.length} of them have at least one team.`}
+          />
+          <Tile
+            label="Verified teams"
+            value={data.eligible.length}
+            hint={`Teams checked and eligible to be judged. ${data.withJudges.length} teams have judges assigned.`}
+          />
+          <Tile
+            label="Fully judged"
+            value={`${data.complete.length}/${data.withJudges.length}`}
+            hint="Of the teams with judges, how many have a submitted score from every assigned judge."
+          />
+          <Tile
+            label="Judging done"
+            value={`${completion}%`}
+            hint={
+              <>
+                Share of all judge and team pairings that are scored.
+                <ProgressBar counts={data.pairs} className="mt-1.5" />
+              </>
+            }
+          />
+          <Tile
+            label="Panel average"
+            value={formatScore(data.panelAvg, 2)}
+            hint="The average score across all scored teams, out of 10. Use it as the yardstick for high and low."
+          />
+          <Tile
+            label="Ready to decide"
+            value={data.readyForDecision.length}
+            hint="Every score is in, but the team is still Submitted or Under review. Shortlist or reject them."
+          />
+        </div>
+      </section>
 
       <Panel className="flex flex-col gap-2 p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -325,12 +424,18 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
             {data.pairs.done} scored · {data.pairs.in_progress} in progress · {data.pairs.not_started} not started — of {data.pairTotal} judge-team assignments
           </span>
         </div>
+        <HelpText>
+          Each judge and team pairing counts once. A team with two judges is two pairings, so this shows how much of the judges&apos; work is
+          done overall.
+        </HelpText>
         <ProgressBar counts={data.pairs} className="h-3.5" />
       </Panel>
 
       {/* Attention */}
       <section className="flex flex-col gap-3">
-        <SectionTitle>Needs attention</SectionTitle>
+        <SectionTitle help="To-do lists for organisers. The number on each card is how many items need action; a green 0 means nothing to do. Click a team to open it.">
+          Needs attention
+        </SectionTitle>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <AttentionList
             title="Verified teams with no judge"
@@ -406,6 +511,33 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
         >
           Judges and their teams
         </SectionTitle>
+        <div className="flex flex-col gap-1.5 font-ui text-[13px] leading-[1.6] text-ignite-muted">
+          <span>
+            One card per judge. The number at the top right is teams scored out of teams assigned, and the chips are their teams in the
+            colours above (a green chip also shows the score). Click a chip to open the team.
+          </span>
+          <ul className="m-0 flex list-disc flex-col gap-0.5 pl-5">
+            <li>
+              <b className="text-ignite-ink-soft">Average given</b>: the average of the scores this judge has submitted.
+            </li>
+            <li>
+              <b className="text-ignite-ink-soft">Range</b>: their lowest and highest score. A narrow range can mean they rate every team
+              about the same.
+            </li>
+            <li>
+              <b className="text-ignite-ink-soft">Compared with the panel</b>: how this judge scores against the other judges on the{" "}
+              <i>same</i> teams, so a judge who simply got stronger teams isn&apos;t called generous. &ldquo;Higher&rdquo; or
+              &ldquo;lower&rdquo; means {LENIENCY_THRESHOLD} points or more apart; it needs at least 3 submitted scores.
+            </li>
+            <li>
+              <b className="text-ignite-ink-soft">Last scored</b>: when they last saved or submitted a score, to spot inactive judges.
+            </li>
+          </ul>
+          <span>
+            Use the buttons to show only teams in one state (for example Not started), search for a judge or a team, and sort with the
+            judges furthest behind first.
+          </span>
+        </div>
         <SegmentedToggle
           value={filter}
           onChange={setFilter}
@@ -429,7 +561,9 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
 
       {/* Criteria */}
       <section className="flex flex-col gap-3">
-        <SectionTitle>Average score by criterion</SectionTitle>
+        <SectionTitle help="Each judge's average for each of the five criteria, under the whole panel's average. It shows where a judge is stricter or more generous than the rest. AI Approach carries 40%, so differences there move a team's total the most.">
+          Average score by criterion
+        </SectionTitle>
         <Panel className="overflow-x-auto p-0">
           <table className="w-full min-w-[720px] border-collapse font-ui text-[13px]">
             <thead>
@@ -482,13 +616,18 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
             </tbody>
           </table>
         </Panel>
-        <span className="font-ui text-[12px] text-ignite-muted">Green or red: a judge&apos;s average for that criterion is a point or more above or below the whole panel&apos;s.</span>
+        <span className="font-ui text-[12px] text-ignite-muted">
+          A green cell means that judge&apos;s average for the criterion is 1 point or more above the whole panel&apos;s; red means 1 point
+          or more below. Only judges with submitted scores are listed.
+        </span>
       </section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1.6fr]">
         {/* Distribution */}
         <section className="flex flex-col gap-3">
-          <SectionTitle>Spread of team averages</SectionTitle>
+          <SectionTitle help="How many teams fall in each score band. Bunched-up scores make teams hard to tell apart; a wide spread separates them clearly.">
+            Spread of team averages
+          </SectionTitle>
           <Panel className="flex flex-col gap-2 p-5">
             {data.distribution
               .slice()
@@ -508,7 +647,11 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
 
         {/* Ranking */}
         <section className="flex flex-col gap-3">
-          <SectionTitle>Ranking of fully judged teams</SectionTitle>
+          <SectionTitle
+            help={`Only teams where every assigned judge has submitted, highest average first, with each judge's score. "Disagree" marks judges ${DISAGREEMENT_THRESHOLD} or more points apart. Use it when choosing the shortlist.`}
+          >
+            Ranking of fully judged teams
+          </SectionTitle>
           <Panel className="overflow-x-auto p-0">
             <table className="w-full min-w-[560px] border-collapse font-ui text-[13px]">
               <thead>
