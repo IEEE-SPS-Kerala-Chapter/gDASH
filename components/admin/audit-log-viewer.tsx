@@ -33,6 +33,8 @@ const ACTION_LABELS: Record<string, string> = {
   "team.report_downloaded": "Downloaded a team report",
   "team.judging_report_downloaded": "Downloaded a judging report",
   "judging.reports_exported": "Downloaded judging reports (zip)",
+  "team.judging_csv_downloaded": "Downloaded a judging report (CSV)",
+  "judging.csv_exported": "Downloaded judging details (CSV)",
   "ambassadors.exported": "Exported ambassadors CSV",
   "auth.signed_in": "Signed in",
   "auth.password_reset": "Reset their password",

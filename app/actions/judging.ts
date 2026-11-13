@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCallerRole } from "@/app/actions/admin";
 import { isAdminLevelRole } from "@/lib/roles";
 import { logAuditEvent } from "@/lib/audit-log";
-import { JUDGING_TEAM_SELECT, mapJudgingTeams } from "@/lib/judging-load";
+import { JUDGING_REPORT_SELECT, JUDGING_TEAM_SELECT, mapJudgingReportTeam, mapJudgingTeams, type JudgingReportTeam } from "@/lib/judging-load";
+import { judgingDetailsCsv } from "@/lib/judging-csv";
+import { reportFileBase } from "@/lib/report-file-name";
 import type { JudgingJudge, JudgingTeam } from "@/lib/judging";
 
 export type JudgingOverview =
@@ -42,4 +44,45 @@ export async function logJudgingReportsZip(teamCount: number): Promise<void> {
   if (!caller || !isAdminLevelRole(caller.role)) return;
   const supabase = await createClient();
   await logAuditEvent(supabase, "judging.reports_exported", { metadata: { teamCount } });
+}
+
+type CsvResult = { success: true; csv: string; filename: string } | { success: false; error: string };
+
+/**
+ * Admin (or super-admin) only: the judging report as a CSV (lib/judging-csv.ts),
+ * one row per judge per team — for one team (its page's button) or, with
+ * no team, every team that has judges or scores (the Judging page and the zip).
+ * `log: false` skips the audit entry (the zip logs once for the batch).
+ */
+export async function exportJudgingCsv(teamId?: string, opts: { log?: boolean } = {}): Promise<CsvResult> {
+  const caller = await getCallerRole();
+  if (!caller || !isAdminLevelRole(caller.role)) {
+    return { success: false, error: "Only admins can export judging reports." };
+  }
+  const supabase = await createClient();
+  let query = supabase.from("teams").select(JUDGING_REPORT_SELECT).order("name");
+  if (teamId) query = query.eq("id", teamId);
+  const { data, error } = await query;
+  if (error) {
+    console.error("exportJudgingCsv failed:", error);
+    return { success: false, error: "Could not load judging data." };
+  }
+  const teams = (data ?? [])
+    .map(mapJudgingReportTeam)
+    .filter((t): t is JudgingReportTeam => t !== null)
+    .filter((t) => teamId || t.assignments.length > 0 || t.scores.length > 0);
+  if (teamId && teams.length === 0) {
+    return { success: false, error: "Team not found." };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const filename = teamId ? `${reportFileBase(teams[0].name, teams[0].entryCode)}-judging.csv` : `gignite-judging-details-${today}.csv`;
+  if (opts.log !== false) {
+    await logAuditEvent(
+      supabase,
+      teamId ? "team.judging_csv_downloaded" : "judging.csv_exported",
+      teamId ? { targetType: "team", targetId: teamId, targetLabel: filename } : { metadata: { teamCount: teams.length } },
+    );
+  }
+  return { success: true, csv: judgingDetailsCsv(teams), filename };
 }

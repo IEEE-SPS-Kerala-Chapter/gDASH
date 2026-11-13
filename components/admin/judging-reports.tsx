@@ -3,7 +3,8 @@
 import { useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Zip, ZipPassThrough, ZipDeflate } from "fflate";
-import { logJudgingReportsZip } from "@/app/actions/judging";
+import { exportJudgingCsv, logJudgingReportsZip } from "@/app/actions/judging";
+import { downloadCsv } from "@/lib/csv-download";
 import { openSaveTarget, ZipProgressPanel, type ZipProgress } from "./team-reports";
 import { csvField } from "@/lib/csv";
 import { reportFileBase } from "@/lib/report-file-name";
@@ -55,6 +56,26 @@ export function JudgingReportButton({ teamId, className }: { teamId: string; cla
   return (
     <button type="button" onClick={download} disabled={busy} className={className}>
       {busy ? "Building report…" : "Judging report (PDF)"}
+    </button>
+  );
+}
+
+/** "Judging report (CSV)" on a team's page — and, with no teamId, every team's on the Judging page. */
+export function JudgingCsvButton({ teamId, label, className }: { teamId?: string; label: string; className?: string }) {
+  const [busy, setBusy] = useState(false);
+  async function download() {
+    setBusy(true);
+    const result = await exportJudgingCsv(teamId).catch(() => ({ success: false as const, error: "No connection — try again." }));
+    setBusy(false);
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+    downloadCsv(result.csv, result.filename);
+  }
+  return (
+    <button type="button" onClick={download} disabled={busy} className={className}>
+      {busy ? "Exporting…" : label}
     </button>
   );
 }
@@ -169,6 +190,8 @@ export function useJudgingReportsZip(): { start: (teams: JudgingTeam[]) => Promi
         return;
       }
       addFile("Judging summary.csv", new TextEncoder().encode(judgingSummaryCsv(teams)), true);
+      const details = await exportJudgingCsv(undefined, { log: false }).catch(() => null);
+      if (details?.success) addFile("Judging details.csv", new TextEncoder().encode(details.csv), true);
       if (failures.length > 0) {
         addFile(
           "_teams-not-included.txt",

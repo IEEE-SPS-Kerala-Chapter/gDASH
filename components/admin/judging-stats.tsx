@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Download, Search } from "lucide-react";
 import { Badge, Panel, SegmentedToggle } from "@/components/admin/ui";
-import { useJudgingReportsZip } from "./judging-reports";
+import { JudgingCsvButton, useJudgingReportsZip } from "./judging-reports";
 import { REGISTRATION_STATUS_LABELS } from "@/lib/registration-status";
 import { STAGE1_CRITERIA } from "@/lib/scoring";
 import {
@@ -356,19 +356,23 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Legend />
-        <button
-          type="button"
-          onClick={() => zip.start(zipTeams)}
-          disabled={zip.running}
-          className="flex items-center gap-2 rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
-        >
-          <Download className="h-4 w-4" />
-          {zip.running ? "Building zip…" : `Download all judging reports (${zipTeams.length})`}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <JudgingCsvButton label="Download judging details (CSV)" className="flex items-center gap-2 rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60" />
+          <button
+            type="button"
+            onClick={() => zip.start(zipTeams)}
+            disabled={zip.running}
+            className="flex items-center gap-2 rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {zip.running ? "Building zip…" : `Download all judging reports (${zipTeams.length})`}
+          </button>
+        </div>
       </div>
       <HelpText>
-        The download is a zip with one judging report PDF for every team that has judges (each judge&apos;s scores and comments, the total
-        and the average), plus <b>Judging summary.csv</b> with one row per team.
+        <b>Judging details (CSV)</b> has everything in the judging reports as a spreadsheet: one row per judge per team, with each
+        criterion score, the weighted score, the comments, and the team&apos;s total and average. The zip has one judging report PDF for
+        every team that has judges, plus <b>Judging summary.csv</b> (one row per team) and the same <b>Judging details.csv</b>.
       </HelpText>
 
       <HowToRead />

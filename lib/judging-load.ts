@@ -83,3 +83,40 @@ export function mapJudgingTeams(rows: unknown[]): JudgingTeam[] {
     // The page never shows comments; keep the payload small.
     .map((t) => ({ ...t, scores: t.scores.map((s) => ({ ...s, comments: null })) }));
 }
+
+// ---------------------------------------------------------------------------
+// The judging report (PDF and CSV): the same, plus the team's college and
+// submission time, and the judges' comments.
+
+export const JUDGING_REPORT_SELECT = `${JUDGING_TEAM_SELECT.replace("registrations!inner (", "registrations!inner ( created_at,")},
+  team_members ( college, is_leader, member_no )`;
+
+export type JudgingReportTeam = Omit<JudgingTeam, "scores"> & {
+  scores: JudgingScoreWithComments[];
+  /** The leader's college. */
+  college: string;
+  /** When the registration was submitted. */
+  submittedAt: string | null;
+};
+
+export function mapJudgingReportTeam(row: unknown): JudgingReportTeam | null {
+  const raw = row as RawJudgingTeam & { team_members: { college: string; is_leader: boolean; member_no: number }[] | null };
+  const team = mapJudgingTeam(raw);
+  if (!team) return null;
+  const regs = raw.registrations as unknown as { created_at?: string } | { created_at?: string }[] | null;
+  const members = [...(raw.team_members ?? [])].sort((a, b) => a.member_no - b.member_no);
+  return {
+    ...team,
+    college: (members.find((m) => m.is_leader) ?? members[0])?.college ?? "",
+    submittedAt: (Array.isArray(regs) ? regs[0] : regs)?.created_at ?? null,
+  };
+}
+
+/** The team's judges in assignment order, then anyone who scored but was unassigned since. */
+export function reportJudges(team: JudgingTeam): { id: string; name: string; assigned: boolean }[] {
+  const assignedIds = new Set(team.assignments.map((a) => a.judgeId));
+  return [
+    ...team.assignments.map((a) => ({ id: a.judgeId, name: a.judgeName, assigned: true })),
+    ...team.scores.filter((s) => !assignedIds.has(s.judgeId)).map((s) => ({ id: s.judgeId, name: s.judgeName, assigned: false })),
+  ];
+}

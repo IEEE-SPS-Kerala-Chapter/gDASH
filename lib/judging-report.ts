@@ -2,7 +2,7 @@ import { rgb, type PDFFont } from "pdf-lib";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createBrandedPdf, formatDate, wrap, CONTENT_W, INK, MAGENTA, MARGIN, MUTED, RULE, type Fonts, type Writer } from "@/lib/team-report";
 import { JUDGE_PROGRESS_LABELS, judgeProgress, summariseTeam, formatScore, DISAGREEMENT_THRESHOLD } from "@/lib/judging";
-import { JUDGING_TEAM_SELECT, mapJudgingTeam, type JudgingScoreWithComments } from "@/lib/judging-load";
+import { JUDGING_REPORT_SELECT, mapJudgingReportTeam, reportJudges } from "@/lib/judging-load";
 import { STAGE1_CRITERIA } from "@/lib/scoring";
 import { REGISTRATION_STATUS_LABELS, VERIFICATION_STATUS_LABELS } from "@/lib/registration-status";
 import { reportFileBase } from "@/lib/report-file-name";
@@ -24,9 +24,6 @@ const HEADER_FILL = rgb(0xf4 / 255, 0xf1 / 255, 0xfa / 255);
 const GREEN = rgb(0x1f / 255, 0x8a / 255, 0x4c / 255);
 const AMBER = rgb(0xb7 / 255, 0x79 / 255, 0x0b / 255);
 const RED = rgb(0xc5 / 255, 0x30 / 255, 0x30 / 255);
-
-const SELECT = `${JUDGING_TEAM_SELECT.replace("registrations!inner (", "registrations!inner ( created_at,")},
-  team_members ( college, is_leader, member_no )`;
 
 type Column = { label: string; width: number; align?: "left" | "right" };
 
@@ -63,29 +60,17 @@ function table(w: Writer, fonts: Fonts, columns: Column[], rows: string[][], opt
 }
 
 export async function buildJudgingReport(teamId: string): Promise<JudgingReport | null> {
-  const { data, error } = await createAdminClient().from("teams").select(SELECT).eq("id", teamId).maybeSingle();
+  const { data, error } = await createAdminClient().from("teams").select(JUDGING_REPORT_SELECT).eq("id", teamId).maybeSingle();
   if (error) throw new Error(`could not load team: ${error.message}`);
-  if (!data) return null;
-  const raw = data as unknown as Parameters<typeof mapJudgingTeam>[0] & {
-    team_members: { college: string; is_leader: boolean; member_no: number }[] | null;
-  };
-  const team = mapJudgingTeam(raw);
+  const team = data ? mapJudgingReportTeam(data) : null;
   if (!team) return null;
-  const regs = raw.registrations as unknown as { created_at?: string } | { created_at?: string }[] | null;
-  const regCreated = (Array.isArray(regs) ? regs[0] : regs)?.created_at;
-  const members = [...(raw.team_members ?? [])].sort((a, b) => a.member_no - b.member_no);
-  const college = (members.find((m) => m.is_leader) ?? members[0])?.college ?? "";
+  const { college, submittedAt: regCreated } = team;
 
   const summary = summariseTeam(team);
   const fileBase = reportFileBase(team.name, team.entryCode);
 
-  // Judges in assignment order, then anyone who scored but was unassigned since.
-  const assignedIds = new Set(team.assignments.map((a) => a.judgeId));
-  const judges = [
-    ...team.assignments.map((a) => ({ id: a.judgeId, name: a.judgeName, assigned: true })),
-    ...team.scores.filter((s) => !assignedIds.has(s.judgeId)).map((s) => ({ id: s.judgeId, name: s.judgeName, assigned: false })),
-  ];
-  const scoreOf = (judgeId: string) => team.scores.find((s) => s.judgeId === judgeId) as JudgingScoreWithComments | undefined;
+  const judges = reportJudges(team);
+  const scoreOf = (judgeId: string) => team.scores.find((s) => s.judgeId === judgeId);
   const submitted = (judgeId: string) => {
     const s = scoreOf(judgeId);
     return s && s.status === "submitted" ? s : undefined;

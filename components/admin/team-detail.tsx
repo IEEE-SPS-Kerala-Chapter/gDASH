@@ -18,7 +18,7 @@ import { IdCardPanel } from "./id-card-panel";
 import { VerificationPanel } from "./verification-panel";
 import { EditRegistration } from "./edit-registration";
 import { TeamReportButton } from "./team-reports";
-import { JudgingReportButton } from "./judging-reports";
+import { JudgingCsvButton, JudgingReportButton } from "./judging-reports";
 import { JUDGE_PROGRESS_LABELS } from "@/lib/judging";
 import { ambassadorDisplay, type AmbassadorDetails } from "@/lib/ambassador";
 import { TeamEmails } from "./team-emails";
@@ -200,10 +200,17 @@ export function TeamDetail({
             />
           )}
           {isAdmin && reg && (reg.assignments.length > 0 || reg.scores.length > 0) && (
-            <JudgingReportButton
-              teamId={team.id}
-              className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
-            />
+            <>
+              <JudgingReportButton
+                teamId={team.id}
+                className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
+              />
+              <JudgingCsvButton
+                teamId={team.id}
+                label="Judging report (CSV)"
+                className="rounded-[9px] border-[1.5px] border-ignite-ink px-4 py-2 font-display text-[14px] font-medium text-ignite-ink transition-colors hover:bg-ignite-primary hover:text-ignite-on-primary disabled:cursor-wait disabled:opacity-60"
+              />
+            </>
           )}
           {leader && isAdmin && (
             <a
