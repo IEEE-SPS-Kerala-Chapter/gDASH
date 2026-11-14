@@ -50,7 +50,7 @@ type CsvResult = { success: true; csv: string; filename: string } | { success: f
 
 /**
  * Admin (or super-admin) only: the judging report as a CSV (lib/judging-csv.ts),
- * one row per judge per team — for one team (its page's button) or, with
+ * one row per team, judges side by side — for one team (its page's button) or, with
  * no team, every team that has judges or scores (the Judging page and the zip).
  * `log: false` skips the audit entry (the zip logs once for the batch).
  */

@@ -370,8 +370,9 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
         </div>
       </div>
       <HelpText>
-        <b>Judging details (CSV)</b> has everything in the judging reports as a spreadsheet: one row per judge per team, with each
-        criterion score, the weighted score, the comments, and the team&apos;s total and average. The zip has one judging report PDF for
+        <b>Judging details (CSV)</b> has everything in the judging reports as a spreadsheet: one row per team, with how many judges
+        have scored, are scoring and haven&apos;t started, the team&apos;s total and average, then each judge&apos;s criterion scores,
+        weighted score and comments side by side (Judge 1, Judge 2, …). The zip has one judging report PDF for
         every team that has judges, plus <b>Judging summary.csv</b> (one row per team) and the same <b>Judging details.csv</b>.
       </HelpText>
 
