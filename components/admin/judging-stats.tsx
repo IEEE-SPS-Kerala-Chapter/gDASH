@@ -16,6 +16,7 @@ import {
   leniencyLabel,
   panelCriteriaAverages,
   scoreDistribution,
+  submittedScores,
   summariseJudge,
   summariseTeam,
   type JudgeProgress,
@@ -49,6 +50,12 @@ function formatWhen(iso: string | null): string {
 
 function teamHref(id: string) {
   return `/dashboard/teams/${id}`;
+}
+
+/** Judge 1, Judge 2… in assignment order; a judge since unassigned goes last. */
+function assignmentIndex(team: JudgingTeam, judgeId: string) {
+  const i = team.assignments.findIndex((a) => a.judgeId === judgeId);
+  return i === -1 ? team.assignments.length : i;
 }
 
 function ProgressBar({ counts, className }: { counts: Record<JudgeProgress, number>; className?: string }) {
@@ -653,17 +660,17 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
         {/* Ranking */}
         <section className="flex flex-col gap-3">
           <SectionTitle
-            help={`Only teams where every assigned judge has submitted, highest average first, with each judge's score. "Disagree" marks judges ${DISAGREEMENT_THRESHOLD} or more points apart. Use it when choosing the shortlist.`}
+            help={`Only teams where every assigned judge has submitted, highest average first, with each judge's name and the score they gave. "Disagree" marks judges ${DISAGREEMENT_THRESHOLD} or more points apart. Use it when choosing the shortlist.`}
           >
             Ranking of fully judged teams
           </SectionTitle>
           <Panel className="overflow-x-auto p-0">
-            <table className="w-full min-w-[560px] border-collapse font-ui text-[13px]">
+            <table className="w-full min-w-[640px] border-collapse font-ui text-[13px]">
               <thead>
                 <tr className="border-b border-ignite-edge/[0.08] text-left text-[11px] uppercase tracking-[0.1em] text-ignite-muted">
                   <th className="px-4 py-3 font-bold">#</th>
                   <th className="px-3 py-3 font-bold">Team</th>
-                  <th className="px-3 py-3 font-bold">Judges&apos; scores</th>
+                  <th className="px-3 py-3 font-bold">Judge · score</th>
                   <th className="px-3 py-3 text-right font-bold">Average</th>
                   <th className="px-4 py-3 font-bold">Status</th>
                 </tr>
@@ -681,12 +688,18 @@ export function JudgingStats({ teams, judges }: { teams: JudgingTeam[]; judges: 
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-ignite-ink-soft">
-                      {s.team.scores
-                        .filter((x) => x.status === "submitted")
-                        .map((x) => formatScore(x.weighted))
-                        .join(" · ")}
+                      <ul className="flex flex-col gap-0.5">
+                        {submittedScores(s.team)
+                          .sort((a, b) => assignmentIndex(s.team, a.judgeId) - assignmentIndex(s.team, b.judgeId))
+                          .map((x) => (
+                            <li key={x.judgeId} className="flex items-baseline justify-between gap-3">
+                              <span className="truncate">{x.judgeName}</span>
+                              <span className="flex-none font-semibold text-ignite-ink">{formatScore(x.weighted)}</span>
+                            </li>
+                          ))}
+                      </ul>
                       {s.spread !== null && s.spread >= DISAGREEMENT_THRESHOLD && (
-                        <Badge variant="warn" className="ml-2 px-2 py-0.5 text-[9px]">
+                        <Badge variant="warn" className="mt-1 px-2 py-0.5 text-[9px]">
                           Disagree
                         </Badge>
                       )}
